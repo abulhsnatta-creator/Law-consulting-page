@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // إعدادات Supabase
     // =========================================================
 
-    const SUPABASE_URL = 'https://wacvbnebicebutyzpnkez.supabase.co';
+    const SUPABASE_URL =
+        'https://wacvbnebicubytzpnkez.supabase.co';
 
     const SUPABASE_ANON_KEY =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w';
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================
-    // 1. تهيئة مكتبة AOS
+    // تهيئة AOS
     // =========================================================
 
     if (typeof AOS !== 'undefined') {
@@ -26,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================
-    // 2. قائمة الموبايل
+    // قائمة الهاتف المحمول
     // =========================================================
 
     const menuToggle = document.querySelector('.menu-toggle');
@@ -36,11 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         menuToggle.addEventListener('click', () => {
 
-            navLinks.style.display =
-                navLinks.style.display === 'flex' ? 'none' : 'flex';
-
             if (navLinks.style.display === 'flex') {
 
+                navLinks.style.display = 'none';
+
+            } else {
+
+                navLinks.style.display = 'flex';
                 navLinks.style.flexDirection = 'column';
                 navLinks.style.position = 'absolute';
                 navLinks.style.top = '80px';
@@ -56,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================
-    // 3. الأسئلة الشائعة Accordion
+    // الأسئلة الشائعة
     // =========================================================
 
     const accordionHeaders =
@@ -92,8 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 content.style.display = 'none';
 
                 if (icon) {
-                    icon.className =
-                        'fas fa-chevron-down';
+                    icon.className = 'fas fa-chevron-down';
                 }
 
             } else {
@@ -101,8 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 content.style.display = 'block';
 
                 if (icon) {
-                    icon.className =
-                        'fas fa-chevron-up';
+                    icon.className = 'fas fa-chevron-up';
                 }
             }
         });
@@ -110,50 +111,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================
-    // 4. العداد التصاعدي
+    // العدادات
     // =========================================================
 
-    const counters = document.querySelectorAll('.counter');
+    const counters =
+        document.querySelectorAll('.counter');
 
-    let animated = false;
+    let countersAnimated = false;
 
-    const startCounters = () => {
+    function startCounters() {
 
         counters.forEach(counter => {
 
             const target =
-                +counter.getAttribute('data-target');
+                Number(counter.getAttribute('data-target'));
 
-            const speed = 200;
+            const duration = 2000;
+            const startTime = performance.now();
 
-            const updateCount = () => {
+            function updateCounter(currentTime) {
 
-                const count =
-                    +counter.innerText;
+                const elapsed =
+                    currentTime - startTime;
 
-                const inc =
-                    target / speed;
+                const progress =
+                    Math.min(elapsed / duration, 1);
 
-                if (count < target) {
+                const currentValue =
+                    Math.floor(progress * target);
 
-                    counter.innerText =
-                        Math.ceil(count + inc);
+                counter.innerText = currentValue;
 
-                    setTimeout(updateCount, 20);
+                if (progress < 1) {
+
+                    requestAnimationFrame(updateCounter);
 
                 } else {
 
                     counter.innerText = target;
                 }
-            };
+            }
 
-            updateCount();
+            requestAnimationFrame(updateCounter);
         });
-    };
+    }
 
 
     // =========================================================
-    // تشغيل العداد + زر العودة للأعلى
+    // التمرير + زر العودة للأعلى
     // =========================================================
 
     window.addEventListener('scroll', () => {
@@ -161,22 +166,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const statsSection =
             document.querySelector('.stats');
 
-        if (statsSection) {
+        if (statsSection && !countersAnimated) {
 
-            const sectionPos =
+            const sectionPosition =
                 statsSection.getBoundingClientRect().top;
 
-            const screenPos =
-                window.innerHeight;
-
-            if (sectionPos < screenPos && !animated) {
+            if (sectionPosition < window.innerHeight) {
 
                 startCounters();
 
-                animated = true;
+                countersAnimated = true;
             }
         }
-
 
         const backToTopBtn =
             document.getElementById('backToTop');
@@ -199,9 +200,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // زر العودة للأعلى
     // =========================================================
 
-    document
-        .getElementById('backToTop')
-        ?.addEventListener('click', () => {
+    const backToTopBtn =
+        document.getElementById('backToTop');
+
+    if (backToTopBtn) {
+
+        backToTopBtn.addEventListener('click', () => {
 
             window.scrollTo({
                 top: 0,
@@ -209,10 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
         });
+    }
 
 
     // =========================================================
-    // 5. إرسال نموذج الاستشارة إلى Supabase
+    // نموذج الاستشارة القانونية
     // =========================================================
 
     const leadForm =
@@ -222,182 +227,343 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('formResponse');
 
 
-    if (leadForm) {
+    if (!leadForm) {
 
-        leadForm.addEventListener('submit', async (e) => {
+        console.error(
+            'لم يتم العثور على النموذج: #leadForm'
+        );
 
-            e.preventDefault();
+        return;
+    }
+
+
+    leadForm.addEventListener('submit', async (event) => {
+
+        event.preventDefault();
+
+
+        // -----------------------------------------------------
+        // عناصر النموذج
+        // -----------------------------------------------------
+
+        const nameInput =
+            document.getElementById('name');
+
+        const phoneInput =
+            document.getElementById('phone');
+
+        const emailInput =
+            document.getElementById('email');
+
+        const companyInput =
+            document.getElementById('company');
+
+        const serviceInput =
+            document.getElementById('service-type');
+
+        const messageInput =
+            document.getElementById('message');
+
+        const privacyInput =
+            document.getElementById('privacy');
+
+
+        // -----------------------------------------------------
+        // قراءة البيانات
+        // -----------------------------------------------------
+
+        const fullName =
+            nameInput ? nameInput.value.trim() : '';
+
+        const phone =
+            phoneInput ? phoneInput.value.trim() : '';
+
+        const email =
+            emailInput ? emailInput.value.trim() : '';
+
+        const company =
+            companyInput ? companyInput.value.trim() : '';
+
+        const service =
+            serviceInput ? serviceInput.value.trim() : '';
+
+        const message =
+            messageInput ? messageInput.value.trim() : '';
+
+        const privacyAccepted =
+            privacyInput ? privacyInput.checked : false;
+
+
+        // -----------------------------------------------------
+        // التحقق من البيانات الأساسية
+        // -----------------------------------------------------
+
+        if (!fullName) {
+
+            showFormMessage(
+                'من فضلك أدخل الاسم.',
+                'error'
+            );
+
+            if (nameInput) nameInput.focus();
+
+            return;
+        }
+
+
+        if (!phone) {
+
+            showFormMessage(
+                'من فضلك أدخل رقم الهاتف.',
+                'error'
+            );
+
+            if (phoneInput) phoneInput.focus();
+
+            return;
+        }
+
+
+        if (!service) {
+
+            showFormMessage(
+                'من فضلك اختر نوع الخدمة المطلوبة.',
+                'error'
+            );
+
+            if (serviceInput) serviceInput.focus();
+
+            return;
+        }
+
+
+        if (!privacyAccepted) {
+
+            showFormMessage(
+                'يجب الموافقة على سياسة الخصوصية قبل إرسال الطلب.',
+                'error'
+            );
+
+            if (privacyInput) privacyInput.focus();
+
+            return;
+        }
+
+
+        // -----------------------------------------------------
+        // زر الإرسال
+        // -----------------------------------------------------
+
+        const submitButton =
+            leadForm.querySelector('button[type="submit"]');
+
+        const originalButtonText =
+            submitButton
+                ? submitButton.innerText
+                : 'إرسال طلب الاستشارة';
+
+
+        if (submitButton) {
+
+            submitButton.disabled = true;
+
+            submitButton.innerText =
+                'جاري إرسال الطلب...';
+        }
+
+
+        showFormMessage(
+            'جاري إرسال طلب الاستشارة...',
+            'loading'
+        );
+
+
+        try {
+
+            // -------------------------------------------------
+            // تجهيز البيانات
+            // -------------------------------------------------
+
+            const consultationData = {
+
+                full_name: fullName,
+
+                phone: phone,
+
+                email: email || null,
+
+                company: company || null,
+
+                service: service || null,
+
+                message: message || null,
+
+                privacy_accepted: true
+            };
+
+
+            console.log(
+                'إرسال البيانات إلى Supabase:',
+                consultationData
+            );
 
 
             // -------------------------------------------------
-            // قراءة البيانات من النموذج
+            // الاتصال بـ Supabase
             // -------------------------------------------------
 
-            const fullName =
-                document.getElementById('name')?.value.trim();
+            const response = await fetch(
+                `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`,
+                {
+                    method: 'POST',
 
-            const phone =
-                document.getElementById('phone')?.value.trim();
+                    headers: {
 
-            const email =
-                document.getElementById('email')?.value.trim();
+                        'Content-Type':
+                            'application/json',
 
-            const company =
-                document.getElementById('company')?.value.trim();
+                        'apikey':
+                            SUPABASE_ANON_KEY,
 
-            const service =
-                document.getElementById('service-type')?.value;
+                        'Authorization':
+                            `Bearer ${SUPABASE_ANON_KEY}`,
 
-            const message =
-                document.getElementById('message')?.value.trim();
+                        'Prefer':
+                            'return=minimal'
+                    },
 
-            const privacyAccepted =
-                document.getElementById('privacy')?.checked;
-
-
-            // -------------------------------------------------
-            // التحقق من الموافقة
-            // -------------------------------------------------
-
-            if (!privacyAccepted) {
-
-                formResponse.style.color = '#dc2626';
-
-                formResponse.innerText =
-                    'يجب الموافقة على سياسة الخصوصية قبل إرسال الطلب.';
-
-                return;
-            }
+                    body:
+                        JSON.stringify(consultationData)
+                }
+            );
 
 
             // -------------------------------------------------
-            // تغيير حالة الزر أثناء الإرسال
+            // في حالة وجود خطأ من Supabase
             // -------------------------------------------------
 
-            const submitButton =
-                leadForm.querySelector('button[type="submit"]');
+            if (!response.ok) {
 
-            const originalButtonText =
-                submitButton ? submitButton.innerText : '';
+                let errorMessage =
+                    'حدث خطأ أثناء حفظ الطلب.';
 
-            if (submitButton) {
+                try {
 
-                submitButton.disabled = true;
-
-                submitButton.innerText =
-                    'جاري إرسال الطلب...';
-            }
-
-
-            formResponse.style.color = '#666';
-
-            formResponse.innerText =
-                'جاري إرسال طلب الاستشارة...';
-
-
-            try {
-
-                // -------------------------------------------------
-                // إرسال البيانات إلى Supabase
-                // -------------------------------------------------
-
-                const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`,
-                    {
-                        method: 'POST',
-
-                        headers: {
-                            'Content-Type': 'application/json',
-
-                            'apikey': SUPABASE_ANON_KEY,
-
-                            'Authorization':
-                                `Bearer ${SUPABASE_ANON_KEY}`,
-
-                            'Prefer': 'return=minimal'
-                        },
-
-                        body: JSON.stringify({
-
-                            full_name: fullName,
-
-                            phone: phone,
-
-                            email: email,
-
-                            company: company || null,
-
-                            service: service,
-
-                            message: message || null,
-
-                            privacy_accepted: true
-
-                        })
-                    }
-                );
-
-
-                // -------------------------------------------------
-                // التحقق من نتيجة Supabase
-                // -------------------------------------------------
-
-                if (!response.ok) {
-
-                    const errorText =
-                        await response.text();
+                    const errorData =
+                        await response.json();
 
                     console.error(
                         'Supabase Error:',
-                        errorText
+                        errorData
                     );
 
-                    throw new Error(
-                        'فشل في حفظ الطلب'
+                    if (errorData.message) {
+
+                        errorMessage =
+                            errorData.message;
+
+                    } else if (errorData.hint) {
+
+                        errorMessage =
+                            errorData.hint;
+                    }
+
+                } catch (jsonError) {
+
+                    const text =
+                        await response.text();
+
+                    console.error(
+                        'Supabase Error Response:',
+                        text
                     );
                 }
 
 
-                // -------------------------------------------------
-                // نجاح الحفظ
-                // -------------------------------------------------
-
-                formResponse.style.color = '#10b981';
-
-                formResponse.innerText =
-                    'تم استلام طلبك بنجاح! سيتواصل معك مستشارنا القانوني خلال 24 ساعة.';
-
-
-                // تنظيف النموذج
-                leadForm.reset();
-
-
-            } catch (error) {
-
-                console.error(
-                    'Form submission error:',
-                    error
-                );
-
-                formResponse.style.color = '#dc2626';
-
-                formResponse.innerText =
-                    'حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى أو التواصل معنا عبر الهاتف أو واتساب.';
-
-            } finally {
-
-                // إعادة الزر إلى حالته الطبيعية
-
-                if (submitButton) {
-
-                    submitButton.disabled = false;
-
-                    submitButton.innerText =
-                        originalButtonText;
-                }
+                throw new Error(errorMessage);
             }
 
-        });
+
+            // -------------------------------------------------
+            // نجاح الإرسال
+            // -------------------------------------------------
+
+            console.log(
+                'تم حفظ طلب الاستشارة بنجاح في Supabase.'
+            );
+
+
+            showFormMessage(
+                'تم استلام طلبك بنجاح! سيتواصل معك مستشارنا القانوني خلال 24 ساعة.',
+                'success'
+            );
+
+
+            // تنظيف النموذج بعد نجاح الحفظ فقط
+            leadForm.reset();
+
+
+        } catch (error) {
+
+            console.error(
+                'خطأ في إرسال نموذج الاستشارة:',
+                error
+            );
+
+
+            showFormMessage(
+                'حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى أو التواصل معنا عبر الهاتف أو واتساب.',
+                'error'
+            );
+
+        } finally {
+
+            // -------------------------------------------------
+            // إعادة زر الإرسال
+            // -------------------------------------------------
+
+            if (submitButton) {
+
+                submitButton.disabled = false;
+
+                submitButton.innerText =
+                    originalButtonText;
+            }
+        }
+
+    });
+
+
+    // =========================================================
+    // دالة عرض رسائل النموذج
+    // =========================================================
+
+    function showFormMessage(message, type) {
+
+        if (!formResponse) {
+            return;
+        }
+
+
+        formResponse.innerText =
+            message;
+
+
+        if (type === 'success') {
+
+            formResponse.style.color =
+                '#10b981';
+
+        } else if (type === 'error') {
+
+            formResponse.style.color =
+                '#dc2626';
+
+        } else {
+
+            formResponse.style.color =
+                '#666';
+        }
     }
 
 });
