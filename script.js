@@ -4,13 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // إعدادات Supabase
     // =========================================================
 
-    const SUPABASE_URL =
-        'https://wacvbnebicbutyzpnkez.supabase.co';
+const SUPABASE_URL =
+    'https://wacvbnebicbutyzpnkez.supabase.co';
 
-    const SUPABASE_ANON_KEY =
+const SUPABASE_ANON_KEY =
     'sb_publishable_HoLI_0uX8-OuQtTBUjjO4Q_WlaUHKD2';
-    const SUPABASE_TABLE = 'consultation_requests';
 
+const SUPABASE_TABLE = 'consultation_requests';
 
     // =========================================================
     // تهيئة AOS
