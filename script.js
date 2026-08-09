@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'https://wacvbnebicbutyzpnkez.supabase.co';
 
     const SUPABASE_ANON_KEY =
-sb_publishable_HoLI_0uX8-OuQtTBUjjO4Q_WlaUHKD2
+    'sb_publishable_HoLI_0uX8-OuQtTBUjjO4Q_WlaUHKD2';
     const SUPABASE_TABLE = 'consultation_requests';
 
 
