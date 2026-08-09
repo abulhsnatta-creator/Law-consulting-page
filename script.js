@@ -5,8 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================
 
     const SUPABASE_URL =
-        'https://wacvbnebicbutyzpnkez
-.supabase.co';
+        'https://wacvbnebicbutyzpnkez.supabase.co';
 
     const SUPABASE_ANON_KEY =
 sb_publishable_HoLI_0uX8-OuQtTBUjjO4Q_WlaUHKD2
