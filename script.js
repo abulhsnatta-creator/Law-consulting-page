@@ -8,8 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'https://wacvbnebicubtyzpnkez.supabase.co';
 
     const SUPABASE_ANON_KEY =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w';
-
+sb_publishable_HoLI_0uX8-OuQtTBUjjO4Q_WlaUHKD2
     const SUPABASE_TABLE = 'consultation_requests';
 
 
