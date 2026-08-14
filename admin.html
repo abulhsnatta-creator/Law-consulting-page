@@ -111,8 +111,8 @@ th{background:#fafafa;color:#718096;font-size:14px}tr:hover td{background:#fcfbf
 <button id="close" class="close">×</button><h2>تفاصيل الطلب</h2>
 <div id="details" class="details"></div>
 <div class="assignment-section">
-<h3>تعيين القائم بالمتابعة</h3>
-<p class="small">بعد التعيين تظهر المهمة في لوحة القائم بالمتابعة. يستطيع المدير هنا معاينة آخر وضع للاستشارة وسجل المتابعات، بينما يقوم القائم بالمتابعة بإدخال تفاصيل التنفيذ.</p>
+<h3>إدارة إسناد المتابعة</h3>
+<p class="small">هذه منطقة إدارية لإسناد المهمة ومراجعة ما أنجزه القائم بالمتابعة. المدير لا يدخل بيانات التنفيذ من هنا.</p>
 <div class="assignment-grid">
 <div><label for="assignedTo" class="label">القائم بالمتابعة</label><select id="assignedTo"><option value="">جاري تحميل الموظفين...</option></select></div>
 <div class="assignment-action"><button id="assignFollowup" class="add-followup" type="button">إسناد المتابعة</button><button id="editAssignment" class="secondary assignment-edit" type="button" disabled>تعديل الإسناد</button></div>
@@ -139,6 +139,7 @@ const STAFF_TABLE="staff_profiles";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const $=id=>document.getElementById(id);
 let rows=[],currentRequest=null,currentSession=null,staffMembers=[],assignmentEditMode=false;
+let currentStaffProfile=null;
 
 const SERVICE_NAMES={corporate:'استشارات وخدمات الشركات',litigation:'قضايا وتقاضي',contracts:'العقود والاتفاقيات',labor:'قضايا العمل والعمال',family:'الأحوال الشخصية والأسرة',real_estate:'العقارات',criminal:'القضايا الجنائية',commercial:'القضايا التجارية',other:'أخرى'};
 const STATUS_NAMES={new:'جديد',contacted:'تم التواصل',in_progress:'قيد المتابعة',completed:'مكتمل',cancelled:'ملغى'};
@@ -158,12 +159,18 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 const {data,error}=await db.auth.getSession();
 if(error){showLogin('تعذر التحقق من جلسة المدير.');return}
-if(data.session){currentSession=data.session;showDash(data.session.user);await loadStaff();await load()}
-else showLogin('');
-db.auth.onAuthStateChange((event,session)=>{
+if(data.session){
+  currentSession=data.session;
+  const guard=await verifyManagerRole(data.session.user.id);
+  if(!guard.ok){await db.auth.signOut();showLogin(guard.message);return;}
+  showDash(data.session.user);await loadStaff();await load();
+}else showLogin('');
+db.auth.onAuthStateChange(async (event,session)=>{
 currentSession=session||null;
-if(event==='SIGNED_OUT'||!session)showLogin('');
-else showDash(session.user);
+if(event==='SIGNED_OUT'||!session){showLogin('');return;}
+const guard=await verifyManagerRole(session.user.id);
+if(!guard.ok){await db.auth.signOut();showLogin(guard.message);return;}
+showDash(session.user);
 });
 }
 
@@ -175,15 +182,25 @@ btn.disabled=true;btn.textContent='جاري تسجيل الدخول...';msg.text
 const {data,error}=await db.auth.signInWithPassword({email,password});
 btn.disabled=false;btn.textContent='تسجيل الدخول';
 if(error){console.error(error);msg.textContent='بيانات الدخول غير صحيحة أو تعذر الاتصال.';return}
-currentSession=data.session||null;showDash(data.user);await loadStaff();await load();
+currentSession=data.session||null;
+const guard=await verifyManagerRole(data.user.id);
+if(!guard.ok){await db.auth.signOut();msg.textContent=guard.message;return;}
+showDash(data.user);await loadStaff();await load();
 }
 
 async function logout(){await db.auth.signOut();rows=[];currentSession=null}
 function showLogin(text){login.classList.remove('hidden');dashboard.classList.add('hidden');msg.textContent=text||''}
 function showDash(user){login.classList.add('hidden');dashboard.classList.remove('hidden');$('adminEmail').textContent=user?.email?`الحساب: ${user.email}`:''}
 
+async function verifyManagerRole(userId){
+  const {data,error}=await db.from(STAFF_TABLE).select('id,full_name,role,is_active').eq('id',userId).eq('is_active',true).maybeSingle();
+  if(error){console.error('verifyManagerRole error:',error);return {ok:false,message:'تعذر التحقق من صلاحيات الحساب.'};}
+  if(!data || data.role!=='manager') return {ok:false,message:'هذا الحساب ليس حساب مدير ولا يملك صلاحية دخول لوحة المدير.'};
+  currentStaffProfile=data; return {ok:true,profile:data};
+}
+
 async function loadStaff(){
-  const {data,error}=await db.from(STAFF_TABLE).select('id,full_name,role,is_active').eq('is_active',true).order('full_name');
+  const {data,error}=await db.from(STAFF_TABLE).select('id,full_name,role,is_active').eq('is_active',true).neq('role','manager').order('full_name');
   if(error){console.error('loadStaff error:',error);staffMembers=[];populateStaffSelect();return}
   staffMembers=data||[];
   populateStaffSelect();
