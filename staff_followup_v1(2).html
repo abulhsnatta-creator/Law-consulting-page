@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>لوحة القائم بالمتابعة | الخبير للاستشارات القانونية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Tajawal,Arial,sans-serif;color:#263043;background:#f6f7f9;min-height:100vh}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.page{min-height:100vh;padding:28px}
+.auth{width:min(440px,100%);margin:7vh auto 0;background:#fff;border:1px solid #e6e8ec;border-radius:20px;padding:36px;box-shadow:0 18px 50px rgba(23,32,51,.08)}
+.mark{width:64px;height:64px;display:grid;place-items:center;margin:0 auto 18px;border-radius:50%;background:#172033;color:#d4b57e;font-size:30px}
+.auth h1{text-align:center;margin:0;color:#172033}
+.sub{text-align:center;color:#718096;margin:8px 0 28px}
+.auth label{display:block;margin:14px 0 7px;font-weight:700}
+.auth input{width:100%;border:1px solid #d8dde5;border-radius:10px;padding:13px 14px;outline:0;background:#fff}
+.auth input:focus{border-color:#b8955f;box-shadow:0 0 0 3px rgba(184,149,95,.12)}
+#loginBtn{width:100%;border:0;border-radius:10px;margin-top:22px;padding:13px;background:#b8955f;color:#fff;font-weight:800}
+.msg{min-height:24px;text-align:center;color:#c0392b;margin-top:12px}
+.dashboard{width:min(1400px,100%);margin:auto}
+.head{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}
+.eyebrow{color:#8d6e3f;font-weight:800;margin:0 0 4px}
+.head h1{margin:0;color:#172033}
+.email{color:#718096;margin:6px 0 0}
+.logout,.secondary{border:1px solid #e6e8ec;background:#fff;color:#263043;border-radius:10px;padding:10px 16px;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px}
+.stat{background:#fff;border:1px solid #e6e8ec;border-radius:16px;padding:20px}
+.stat span{color:#718096}.stat strong{display:block;color:#172033;font-size:34px;margin-top:8px}
+.panel{background:#fff;border:1px solid #e6e8ec;border-radius:18px;overflow:hidden}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:22px;border-bottom:1px solid #e6e8ec;flex-wrap:wrap}
+.toolbar h2{margin:0;color:#172033}.small{margin:5px 0 0;color:#718096}
+.search{width:min(420px,100%);border:1px solid #d8dde5;border-radius:10px;padding:12px 14px;outline:0}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th,td{padding:14px 16px;text-align:right;border-bottom:1px solid #eef0f3;white-space:nowrap}
+th{background:#fafafa;color:#718096;font-size:14px}
+tr:hover td{background:#fcfbf8}
+.open{border:0;border-radius:8px;padding:8px 13px;background:#172033;color:#fff}
+.badge{display:inline-block;border-radius:20px;padding:5px 10px;background:#eef1f5;font-size:12px}
+.badge.waiting{background:#fff7e6}.badge.progress{background:#eef6ff}.badge.completed{background:#eef9f1}.badge.cancelled{background:#fff0f0}
+.empty{text-align:center;padding:40px;color:#718096}
+.notice{margin-bottom:16px;padding:13px 16px;background:#fff;border:1px solid #e6e8ec;border-radius:12px;color:#718096}
+.notice.error{border-color:#e6b7b7;color:#a33;background:#fff7f7}
+.modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px}
+.backdrop{position:absolute;inset:0;background:rgba(10,16,28,.58)}
+.modal-card{position:relative;z-index:1;width:min(900px,100%);max-height:94vh;overflow:auto;background:#fff;border-radius:18px;padding:28px;box-shadow:0 25px 80px rgba(0,0,0,.25)}
+.close{position:absolute;left:16px;top:12px;width:38px;height:38px;border:0;border-radius:50%;background:#f1f2f4;font-size:25px}
+.modal-card h2{margin:0 0 20px;color:#172033}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.detail{border:1px solid #e6e8ec;border-radius:12px;padding:13px;background:#fbfbfc}
+.full{grid-column:1/-1}.label{display:block;color:#718096;font-size:13px;margin-bottom:6px}
+.value{white-space:pre-wrap;overflow-wrap:anywhere}
+.followup{margin-top:22px;border-top:1px solid #e6e8ec;padding-top:22px}
+.followup h3{margin:0 0 16px;color:#172033}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+.field label{display:block;color:#718096;font-size:13px;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;border:1px solid #d8dde5;border-radius:10px;padding:12px 13px;outline:0;background:#fff}
+.field textarea{min-height:100px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#b8955f;box-shadow:0 0 0 3px rgba(184,149,95,.12)}
+.save-row{display:flex;align-items:center;gap:12px;margin-top:16px}
+.save{border:0;border-radius:10px;padding:12px 20px;background:#b8955f;color:#fff;font-weight:800}
+.save:disabled{opacity:.6;cursor:not-allowed}
+.result{font-size:13px;color:#718096}
+.result.ok{color:#26734d}.result.err{color:#b42318}
+@media(max-width:760px){
+.page{padding:14px}.head{align-items:flex-start}.stats{grid-template-columns:1fr}
+.details,.form-grid{grid-template-columns:1fr}.full{grid-column:auto}
+.toolbar{align-items:stretch}.search{width:100%}.modal-card{padding:22px}
+}
+</style>
+</head>
+<body>
+
+<div id="loginPage" class="page">
+  <section class="auth">
+    <div class="mark">⚖</div>
+    <h1>لوحة القائم بالمتابعة</h1>
+    <p class="sub">الخبير للاستشارات القانونية</p>
+    <label for="email">البريد الإلكتروني</label>
+    <input id="email" type="email" autocomplete="username" placeholder="أدخل البريد الإلكتروني">
+    <label for="password">كلمة المرور</label>
+    <input id="password" type="password" autocomplete="current-password" placeholder="أدخل كلمة المرور">
+    <button id="loginBtn" type="button">دخول</button>
+    <p id="loginMsg" class="msg"></p>
+  </section>
+</div>
+
+<div id="app" class="page hidden">
+  <main class="dashboard">
+    <header class="head">
+      <div>
+        <p class="eyebrow">لوحة القائم بالمتابعة</p>
+        <h1 id="staffName">...</h1>
+        <p id="staffEmail" class="email"></p>
+      </div>
+      <button id="logoutBtn" class="logout" type="button">تسجيل الخروج</button>
+    </header>
+
+    <div id="pageNotice" class="notice">جاري تحميل المتابعات المسندة إليك...</div>
+
+    <section class="stats">
+      <div class="stat"><span>إجمالي المهام</span><strong id="totalCount">0</strong></div>
+      <div class="stat"><span>تحتاج إجراء</span><strong id="pendingCount">0</strong></div>
+      <div class="stat"><span>مكتملة</span><strong id="completedCount">0</strong></div>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>المتابعات المسندة إليّ</h2>
+          <p class="small">تظهر هنا المهام التي عيّنها المدير لهذا المستخدم فقط.</p>
+        </div>
+        <input id="search" class="search" type="search" placeholder="بحث باسم العميل أو الهاتف...">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>العميل</th>
+              <th>الهاتف</th>
+              <th>الخدمة</th>
+              <th>تاريخ التكليف</th>
+              <th>الحالة</th>
+              <th>الإجراء</th>
+            </tr>
+          </thead>
+          <tbody id="taskBody"></tbody>
+        </table>
+      </div>
+      <div id="empty" class="empty hidden">لا توجد متابعات مسندة إليك حاليًا.</div>
+    </section>
+  </main>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="backdrop" id="backdrop"></div>
+  <section class="modal-card">
+    <button id="closeModal" class="close" type="button">×</button>
+    <h2>تنفيذ المتابعة</h2>
+
+    <div class="details">
+      <div class="detail"><span class="label">اسم العميل</span><div id="dName" class="value">-</div></div>
+      <div class="detail"><span class="label">الهاتف</span><div id="dPhone" class="value">-</div></div>
+      <div class="detail"><span class="label">البريد الإلكتروني</span><div id="dEmail" class="value">-</div></div>
+      <div class="detail"><span class="label">الشركة</span><div id="dCompany" class="value">-</div></div>
+      <div class="detail"><span class="label">الخدمة</span><div id="dService" class="value">-</div></div>
+      <div class="detail"><span class="label">تاريخ الطلب</span><div id="dCreated" class="value">-</div></div>
+      <div class="detail full"><span class="label">رسالة العميل</span><div id="dMessage" class="value">-</div></div>
+    </div>
+
+    <div class="followup">
+      <h3>بيانات المتابعة</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label for="followupDate">تاريخ ووقت المتابعة</label>
+          <input id="followupDate" type="datetime-local">
+        </div>
+        <div class="field">
+          <label for="contactMethod">طريقة التواصل</label>
+          <select id="contactMethod">
+            <option value="phone">هاتف</option>
+            <option value="whatsapp">واتساب</option>
+            <option value="email">بريد إلكتروني</option>
+            <option value="meeting">مقابلة</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="followupStatus">نتيجة المتابعة</label>
+          <select id="followupStatus">
+            <option value="contacted">تم التواصل</option>
+            <option value="no_answer">لم يتم التواصل</option>
+            <option value="waiting">يحتاج متابعة أخرى</option>
+            <option value="transferred">تم التحويل</option>
+            <option value="completed">تم إغلاق الطلب</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="nextFollowup">موعد المتابعة القادمة</label>
+          <input id="nextFollowup" type="datetime-local">
+        </div>
+        <div class="field full">
+          <label for="action">ما تم في المتابعة؟</label>
+          <textarea id="action" placeholder="اكتب ما تم مع العميل..."></textarea>
+        </div>
+        <div class="field full">
+          <label for="notes">ملاحظات</label>
+          <textarea id="notes" placeholder="اكتب الملاحظات..."></textarea>
+        </div>
+      </div>
+      <div class="save-row">
+        <button id="saveBtn" class="save" type="button">حفظ المتابعة</button>
+        <span id="saveResult" class="result"></span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(() => {
+"use strict";
+
+const SUPABASE_URL="https://wacvbnebicbutyzpnkez.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_HoLI_0uX8-OuQtTBUjjO4Q_WlaUHKD2";
+const FOLLOWUPS_TABLE="client_followups";
+const STAFF_TABLE="staff_profiles";
+const REQUESTS_TABLE="consultation_requests";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const $=id=>document.getElementById(id);
+
+const SERVICE_NAMES={
+  corporate:"استشارات وخدمات الشركات",litigation:"قضايا وتقاضي",contracts:"العقود والاتفاقيات",
+  labor:"قضايا العمل والعمال",family:"الأحوال الشخصية والأسرة",real_estate:"العقارات",
+  criminal:"القضايا الجنائية",commercial:"القضايا التجارية",other:"أخرى"
+};
+const STATUS_NAMES={
+  waiting:"بانتظار المتابعة",contacted:"تم التواصل",no_answer:"لم يتم التواصل",
+  transferred:"تم التحويل",completed:"مكتمل",in_progress:"قيد المتابعة",cancelled:"ملغى"
+};
+const CONTACT_NAMES={phone:"هاتف",whatsapp:"واتساب",email:"بريد إلكتروني",meeting:"مقابلة",other:"أخرى"};
+
+let session=null;
+let staff=null;
+let tasks=[];
+let currentTask=null;
+
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+function fmtDate(v){
+  if(!v)return "-";
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime()))return "-";
+  return d.toLocaleString("ar-EG",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+}
+function toLocalInput(v){
+  if(!v)return "";
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime()))return "";
+  const pad=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fromLocalInput(v){
+  return v ? new Date(v).toISOString() : null;
+}
+function badgeClass(status){
+  if(status==="completed")return "completed";
+  if(status==="in_progress"||status==="contacted")return "progress";
+  if(status==="cancelled")return "cancelled";
+  return "waiting";
+}
+function showLogin(){
+  $("loginPage").classList.remove("hidden");
+  $("app").classList.add("hidden");
+}
+function showApp(){
+  $("loginPage").classList.add("hidden");
+  $("app").classList.remove("hidden");
+}
+function notice(text,error=false){
+  const el=$("pageNotice");
+  el.textContent=text;
+  el.className=error?"notice error":"notice";
+}
+
+async function login(){
+  const email=$("email").value.trim();
+  const password=$("password").value;
+  $("loginMsg").textContent="";
+  if(!email||!password){$("loginMsg").textContent="أدخل البريد الإلكتروني وكلمة المرور.";return;}
+  $("loginBtn").disabled=true;
+  $("loginBtn").textContent="جاري الدخول...";
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  $("loginBtn").disabled=false;
+  $("loginBtn").textContent="دخول";
+  if(error){
+    console.error(error);
+    $("loginMsg").textContent="تعذر تسجيل الدخول: "+(error.message||"بيانات الدخول غير صحيحة.");
+    return;
+  }
+  session=data.session;
+  await startApp();
+}
+
+async function startApp(){
+  showApp();
+  const user=session?.user;
+  if(!user){showLogin();return;}
+
+  $("staffEmail").textContent=user.email||"";
+  notice("جاري التحقق من ملف المستخدم...");
+
+  const {data:profile,error:profileError}=await db
+    .from(STAFF_TABLE)
+    .select("id,full_name,role,is_active")
+    .eq("id",user.id)
+    .maybeSingle();
+
+  if(profileError){
+    console.error(profileError);
+    notice(`تعذر قراءة ملف الموظف. ${profileError.message||""}`,true);
+    return;
+  }
+  if(!profile){
+    notice("هذا المستخدم مسجل في Auth لكنه غير موجود في staff_profiles. يجب إنشاء ملف موظف مرتبط بنفس User ID.",true);
+    return;
+  }
+  if(profile.is_active===false){
+    notice("هذا المستخدم غير نشط ولا يمكنه استخدام لوحة المتابعة.",true);
+    return;
+  }
+
+  staff=profile;
+  $("staffName").textContent=profile.full_name||"القائم بالمتابعة";
+  await loadTasks();
+}
+
+async function loadTasks(){
+  notice("جاري تحميل المتابعات المسندة إليك...");
+  const {data:followups,error}=await db
+    .from(FOLLOWUPS_TABLE)
+    .select("id,request_id,followup_date,contact_method,action,notes,next_followup,followup_status,created_by,created_at,assigned_to")
+    .eq("assigned_to",session.user.id)
+    .order("created_at",{ascending:false});
+
+  if(error){
+    console.error("followups select error:",error);
+    notice(`تعذر قراءة المتابعات. كود الخطأ: ${error.code||"-"} | ${error.message||""}`,true);
+    tasks=[];
+    render();
+    return;
+  }
+
+  if(!followups?.length){
+    tasks=[];
+    notice("لا توجد حاليًا متابعات مسندة إلى هذا المستخدم.");
+    render();
+    return;
+  }
+
+  const requestIds=[...new Set(followups.map(x=>x.request_id).filter(Boolean))];
+  const {data:requests,error:requestError}=await db
+    .from(REQUESTS_TABLE)
+    .select("id,full_name,phone,email,company,service,message,created_at")
+    .in("id",requestIds);
+
+  if(requestError){
+    console.error("requests select error:",requestError);
+    notice(`تم تحميل المهام لكن تعذر قراءة بيانات العملاء. كود الخطأ: ${requestError.code||"-"} | ${requestError.message||""}`,true);
+    tasks=followups.map(f=>({...f,request:null}));
+    render();
+    return;
+  }
+
+  const map=new Map((requests||[]).map(r=>[r.id,r]));
+  tasks=followups.map(f=>({...f,request:map.get(f.request_id)||null}));
+  notice(`تم تحميل ${tasks.length} مهمة مسندة إليك.`);
+  render();
+}
+
+function render(){
+  const q=$("search").value.trim().toLowerCase();
+  const filtered=tasks.filter(t=>{
+    const r=t.request||{};
+    return !q || [r.full_name,r.phone,r.email,r.company,SERVICE_NAMES[r.service]||r.service]
+      .filter(Boolean).join(" ").toLowerCase().includes(q);
+  });
+
+  $("totalCount").textContent=tasks.length;
+  $("pendingCount").textContent=tasks.filter(t=>!["completed","cancelled"].includes(t.followup_status)).length;
+  $("completedCount").textContent=tasks.filter(t=>t.followup_status==="completed").length;
+
+  const body=$("taskBody");
+  body.innerHTML="";
+  $("empty").classList.toggle("hidden",filtered.length!==0);
+
+  filtered.forEach(t=>{
+    const r=t.request||{};
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${esc(r.full_name||"بيانات العميل غير متاحة")}</td>
+      <td>${esc(r.phone||"-")}</td>
+      <td>${esc(SERVICE_NAMES[r.service]||r.service||"-")}</td>
+      <td>${esc(fmtDate(t.created_at))}</td>
+      <td><span class="badge ${badgeClass(t.followup_status)}">${esc(STATUS_NAMES[t.followup_status]||t.followup_status||"-")}</span></td>
+      <td><button class="open" type="button" data-id="${esc(t.id)}">فتح المتابعة</button></td>`;
+    body.appendChild(tr);
+  });
+}
+
+function openTask(id){
+  currentTask=tasks.find(t=>t.id===id);
+  if(!currentTask)return;
+  const r=currentTask.request||{};
+  $("dName").textContent=r.full_name||"-";
+  $("dPhone").textContent=r.phone||"-";
+  $("dEmail").textContent=r.email||"-";
+  $("dCompany").textContent=r.company||"-";
+  $("dService").textContent=SERVICE_NAMES[r.service]||r.service||"-";
+  $("dCreated").textContent=fmtDate(r.created_at);
+  $("dMessage").textContent=r.message||"-";
+
+  $("followupDate").value=toLocalInput(currentTask.followup_date)||toLocalInput(new Date().toISOString());
+  $("contactMethod").value=currentTask.contact_method||"phone";
+  $("followupStatus").value=currentTask.followup_status||"waiting";
+  $("nextFollowup").value=toLocalInput(currentTask.next_followup);
+  $("action").value=currentTask.action||"";
+  $("notes").value=currentTask.notes||"";
+  $("saveResult").textContent="";
+  $("saveResult").className="result";
+  $("modal").classList.remove("hidden");
+}
+
+function closeModal(){
+  $("modal").classList.add("hidden");
+  currentTask=null;
+}
+
+async function saveTask(){
+  if(!currentTask||!session?.user)return;
+  const payload={
+    followup_date:fromLocalInput($("followupDate").value)||new Date().toISOString(),
+    contact_method:$("contactMethod").value,
+    action:$("action").value.trim(),
+    notes:$("notes").value.trim(),
+    next_followup:fromLocalInput($("nextFollowup").value),
+    followup_status:$("followupStatus").value,
+    assigned_to:session.user.id
+  };
+
+  $("saveBtn").disabled=true;
+  $("saveBtn").textContent="جاري الحفظ...";
+  $("saveResult").textContent="";
+  $("saveResult").className="result";
+
+  const {data,error}=await db
+    .from(FOLLOWUPS_TABLE)
+    .update(payload)
+    .eq("id",currentTask.id)
+    .eq("assigned_to",session.user.id)
+    .select()
+    .single();
+
+  $("saveBtn").disabled=false;
+  $("saveBtn").textContent="حفظ المتابعة";
+
+  if(error){
+    console.error("update followup error:",error);
+    $("saveResult").className="result err";
+    $("saveResult").textContent=`تعذر حفظ المتابعة. كود الخطأ: ${error.code||"-"} | ${error.message||""}`;
+    return;
+  }
+
+  Object.assign(currentTask,data);
+  $("saveResult").className="result ok";
+  $("saveResult").textContent="تم حفظ المتابعة بنجاح.";
+  await loadTasks();
+}
+
+async function logout(){
+  await db.auth.signOut();
+  session=null;staff=null;tasks=[];currentTask=null;
+  showLogin();
+}
+
+$("loginBtn").addEventListener("click",login);
+$("password").addEventListener("keydown",e=>{if(e.key==="Enter")login();});
+$("logoutBtn").addEventListener("click",logout);
+$("search").addEventListener("input",render);
+$("closeModal").addEventListener("click",closeModal);
+$("backdrop").addEventListener("click",closeModal);
+$("saveBtn").addEventListener("click",saveTask);
+$("taskBody").addEventListener("click",e=>{
+  const btn=e.target.closest("button[data-id]");
+  if(btn)openTask(btn.dataset.id);
+});
+
+(async()=>{
+  const {data}=await db.auth.getSession();
+  if(data.session){
+    session=data.session;
+    await startApp();
+  }else{
+    showLogin();
+  }
+})();
+})();
+</script>
+</body>
+</html>
