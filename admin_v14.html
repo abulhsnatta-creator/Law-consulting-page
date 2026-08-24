@@ -222,7 +222,6 @@ th{background:#fafafa;color:#718096;font-size:14px}tr:hover td{background:#fcfbf
 </section>
 </div>
 
-
 <div id="passwordModal" class="modal password-modal hidden"><div class="backdrop" id="passwordBackdrop"></div><section class="modal-card"><button id="closePassword" class="close">×</button><h2>تغيير كلمة المرور</h2><div class="form-row"><label for="currentPassword">كلمة المرور الحالية</label><input id="currentPassword" type="password" autocomplete="current-password"></div><div class="form-row"><label for="newPassword">كلمة المرور الجديدة</label><input id="newPassword" type="password" autocomplete="new-password"></div><div class="form-row"><label for="confirmPassword">تأكيد كلمة المرور الجديدة</label><input id="confirmPassword" type="password" autocomplete="new-password"></div><button id="savePassword" class="primary" type="button">حفظ كلمة المرور</button><p id="passwordMsg" class="staff-msg"></p></section></div>
 <div id="forcedPassword" class="forced-password hidden"><section class="forced-card"><h2>🔐 يجب تغيير كلمة المرور</h2><p class="hint">هذه أول مرة تدخل فيها بالحساب. كلمة المرور الحالية مؤقتة، ويجب تعيين كلمة مرور جديدة قبل استخدام لوحة المتابعة.</p><label for="forcedNewPassword">كلمة المرور الجديدة</label><input id="forcedNewPassword" type="password" autocomplete="new-password"><label for="forcedConfirmPassword">تأكيد كلمة المرور الجديدة</label><input id="forcedConfirmPassword" type="password" autocomplete="new-password"><button id="forcedSavePassword" class="primary" type="button">تغيير كلمة المرور والمتابعة</button><p id="forcedMsg" class="forced-msg"></p></section></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -338,23 +337,19 @@ async function addStaff(){
   if(!name||!email){out.className='staff-msg staff-error';out.textContent='أدخل اسم الموظف والبريد الإلكتروني.';return}
   btn.disabled=true;btn.textContent='جاري إنشاء الموظف...';
   try{
-    const {data:sessionData}=await db.auth.getSession();
-    if(!sessionData.session || !sessionData.session.access_token) throw new Error('جلسة المدير غير متاحة.');
-    const accessToken = sessionData.session.access_token.trim();
-    const res=await fetch(SUPABASE_URL+'/functions/v1/staff-management',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer '+accessToken
-      },
-      body:JSON.stringify({action:'create',full_name:name,email,role})
+    // استخدام دالة invoke الرسمية لتجنب أخطاء ترويسات الـ fetch والـ ByteString
+    const {data:json, error:fnError}=await db.functions.invoke('staff-management',{
+      body:{action:'create',full_name:name,email,role}
     });
-    const json=await res.json();
-    if(!res.ok||!json.ok) throw new Error(json.error||'تعذر إنشاء الموظف.');
+    if(fnError||!json?.ok) throw new Error(fnError?.message||json?.error||'تعذر إنشاء الموظف.');
     out.className='staff-msg staff-success';out.textContent='تم إنشاء الموظف بنجاح. كلمة المرور المؤقتة: 00000 — يجب تغييرها عند أول دخول.';
     $('staffName').value='';$('staffEmail').value='';$('staffRole').value='followup_staff';await renderStaffList();
-  }catch(e){out.className='staff-msg staff-error';out.textContent=e.message||'تعذر إنشاء الموظف.';}
-  finally{btn.disabled=false;btn.textContent='➕ إضافة الموظف';}
+  }catch(e){
+    out.className='staff-msg staff-error';
+    out.textContent=e.message||'تعذر إنشاء الموظف.';
+  }finally{
+    btn.disabled=false;btn.textContent='➕ إضافة الموظف';
+  }
 }
 
 async function renderStaffList(){
