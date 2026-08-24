@@ -124,7 +124,7 @@ th{background:#fafafa;color:#718096;font-size:14px}tr:hover td{background:#fcfbf
 </section>
 
 <section id="dashboard" class="dashboard hidden">
-<header class="head"><div><p class="eyebrow">الإدارة</p><h1>لوحة تحكم طلبات الاستشارات</h1><p id="adminEmail" class="email"></p></div><div><button id="manageStaffBtn" class="secondary hidden">👥 إدارة الموظفين</button><button id="changePassword" class="secondary change-password-btn">🔐 تغيير كلمة المرور</button><button id="logout" class="logout">تسجيل الخروج</button></div></header>
+<header class="head"><div><p class="eyebrow">الإدارة</p><h1>لوحة تحكم طلبات الاستشارات</h1><p id="adminEmail" class="email"></p></div><div><button id="manageStaffBtn" class="secondary">👥 إدارة الموظفين</button><button id="changePassword" class="secondary change-password-btn">🔐 تغيير كلمة المرور</button><button id="logout" class="logout">تسجيل الخروج</button></div></header>
 <section class="stats">
 <article class="stat"><span>إجمالي الطلبات</span><strong id="total">0</strong></article>
 <article class="stat"><span>طلبات اليوم</span><strong id="today">0</strong></article>
@@ -290,7 +290,7 @@ async function loadProfile(user){
   if(!error && data) currentUserProfile=data;
   const isManager=currentUserProfile?.role==='manager';
   $('staffPanel').classList.toggle('hidden',!isManager);
-  $('manageStaffBtn').classList.toggle('hidden',!isManager);
+  $('manageStaffBtn').classList.remove('hidden');
   if(isManager) renderStaffList();
 }
 
@@ -339,8 +339,16 @@ async function addStaff(){
   btn.disabled=true;btn.textContent='جاري إنشاء الموظف...';
   try{
     const {data:sessionData}=await db.auth.getSession();
-    if(!sessionData.session) throw new Error('جلسة المدير غير متاحة.');
-    const res=await fetch(SUPABASE_URL+'/functions/v1/staff-management',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionData.session.access_token},body:JSON.stringify({action:'create',full_name:name,email,role})});
+    if(!sessionData.session || !sessionData.session.access_token) throw new Error('جلسة المدير غير متاحة.');
+    const accessToken = sessionData.session.access_token.trim();
+    const res=await fetch(SUPABASE_URL+'/functions/v1/staff-management',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+accessToken
+      },
+      body:JSON.stringify({action:'create',full_name:name,email,role})
+    });
     const json=await res.json();
     if(!res.ok||!json.ok) throw new Error(json.error||'تعذر إنشاء الموظف.');
     out.className='staff-msg staff-success';out.textContent='تم إنشاء الموظف بنجاح. كلمة المرور المؤقتة: 00000 — يجب تغييرها عند أول دخول.';
