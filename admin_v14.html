@@ -124,7 +124,7 @@ th{background:#fafafa;color:#718096;font-size:14px}tr:hover td{background:#fcfbf
 </section>
 
 <section id="dashboard" class="dashboard hidden">
-<header class="head"><div><p class="eyebrow">الإدارة</p><h1>لوحة تحكم طلبات الاستشارات</h1><p id="adminEmail" class="email"></p></div><div><button id="changePassword" class="secondary change-password-btn">🔐 تغيير كلمة المرور</button><button id="logout" class="logout">تسجيل الخروج</button></div></header>
+<header class="head"><div><p class="eyebrow">الإدارة</p><h1>لوحة تحكم طلبات الاستشارات</h1><p id="adminEmail" class="email"></p></div><div><button id="manageStaffBtn" class="secondary hidden">👥 إدارة الموظفين</button><button id="changePassword" class="secondary change-password-btn">🔐 تغيير كلمة المرور</button><button id="logout" class="logout">تسجيل الخروج</button></div></header>
 <section class="stats">
 <article class="stat"><span>إجمالي الطلبات</span><strong id="total">0</strong></article>
 <article class="stat"><span>طلبات اليوم</span><strong id="today">0</strong></article>
@@ -250,7 +250,7 @@ const login=$('login'),dashboard=$('dashboard'),form=$('loginForm'),btn=$('login
 
 async function init(){
 form.addEventListener('submit',loginUser);
-$('logout').addEventListener('click',logout);$('changePassword').addEventListener('click',openPasswordModal);$('closePassword').addEventListener('click',closePasswordModal);$('passwordBackdrop').addEventListener('click',closePasswordModal);$('savePassword').addEventListener('click',changePassword);$('forcedSavePassword').addEventListener('click',forcedChangePassword);$('addStaffBtn').addEventListener('click',addStaff);$('refresh').addEventListener('click',async()=>{await loadStaff();await load()});
+$('logout').addEventListener('click',logout);$('changePassword').addEventListener('click',openPasswordModal);$('manageStaffBtn').addEventListener('click',()=>{$('staffPanel').classList.remove('hidden');$('staffPanel').scrollIntoView({behavior:'smooth',block:'start'});});$('closePassword').addEventListener('click',closePasswordModal);$('passwordBackdrop').addEventListener('click',closePasswordModal);$('savePassword').addEventListener('click',changePassword);$('forcedSavePassword').addEventListener('click',forcedChangePassword);$('addStaffBtn').addEventListener('click',addStaff);$('refresh').addEventListener('click',async()=>{await loadStaff();await load()});
 $('search').addEventListener('input',applyFilters);$('statusFilter').addEventListener('change',applyFilters);$('serviceFilter').addEventListener('change',applyFilters);$('dateFilter').addEventListener('change',applyFilters);
 $('close').addEventListener('click',closeModal);$('backdrop').addEventListener('click',closeModal);
 $('saveInitialConsultation').addEventListener('click',saveInitialConsultation);
@@ -259,7 +259,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 const {data,error}=await db.auth.getSession();
 if(error){showLogin('تعذر التحقق من جلسة المدير.');return}
-if(data.session){currentSession=data.session;showDash(data.session.user);await loadStaff();await load()}
+if(data.session){currentSession=data.session;showDash(data.session.user);await loadProfile(data.session.user);await loadStaff();await load();await enforcePasswordChange();}
 else showLogin('');
 db.auth.onAuthStateChange((event,session)=>{
 currentSession=session||null;
@@ -290,6 +290,7 @@ async function loadProfile(user){
   if(!error && data) currentUserProfile=data;
   const isManager=currentUserProfile?.role==='manager';
   $('staffPanel').classList.toggle('hidden',!isManager);
+  $('manageStaffBtn').classList.toggle('hidden',!isManager);
   if(isManager) renderStaffList();
 }
 
