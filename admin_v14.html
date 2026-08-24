@@ -294,6 +294,11 @@ async function loadProfile(user){
 }
 
 async function enforcePasswordChange(){
+  // تخطي إجبار تغيير كلمة المرور تماماً إذا كان المستخدم مديراً
+  if(currentUserProfile?.role === 'manager') {
+    return;
+  }
+  
   if(currentUserProfile?.must_change_password){
     $('forcedPassword').classList.remove('hidden');
     $('dashboard').classList.add('hidden');
@@ -337,13 +342,28 @@ async function addStaff(){
   if(!name||!email){out.className='staff-msg staff-error';out.textContent='أدخل اسم الموظف والبريد الإلكتروني.';return}
   btn.disabled=true;btn.textContent='جاري إنشاء الموظف...';
   try{
-    // استخدام دالة invoke الرسمية لتجنب أخطاء ترويسات الـ fetch والـ ByteString
-    const {data:json, error:fnError}=await db.functions.invoke('staff-management',{
-      body:{action:'create',full_name:name,email,role}
+    const {data:sessionData} = await db.auth.getSession();
+    const token = sessionData?.session?.access_token || '';
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/staff-management`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.trim()}`,
+        'apikey': SUPABASE_ANON_KEY.trim()
+      },
+      body: JSON.stringify({ action: 'create', full_name: name, email, role })
     });
-    if(fnError||!json?.ok) throw new Error(fnError?.message||json?.error||'تعذر إنشاء الموظف.');
-    out.className='staff-msg staff-success';out.textContent='تم إنشاء الموظف بنجاح. كلمة المرور المؤقتة: 00000 — يجب تغييرها عند أول دخول.';
-    $('staffName').value='';$('staffEmail').value='';$('staffRole').value='followup_staff';await renderStaffList();
+
+    const json = await response.json();
+    if(!response.ok || !json?.ok) {
+      throw new Error(json?.error || json?.message || `خطأ في الخادم (${response.status})`);
+    }
+
+    out.className='staff-msg staff-success';
+    out.textContent='تم إنشاء الموظف بنجاح. كلمة المرور المؤقتة: 00000 — يجب تغييرها عند أول دخول.';
+    $('staffName').value='';$('staffEmail').value='';$('staffRole').value='followup_staff';
+    await renderStaffList();
   }catch(e){
     out.className='staff-msg staff-error';
     out.textContent=e.message||'تعذر إنشاء الموظف.';
