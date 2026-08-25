@@ -1,48 +1,434 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
-    <title>لوحة تحكم المدير</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المدير - النظام الجديد</title>
+
+    <!-- ====== استيراد مكتبة Supabase من CDN ====== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
+
     <style>
-        .section { display: none; } /* إخفاء جميع الأقسام افتراضياً */
-        .section.active { display: block; } /* إظهار القسم النشط */
-        .nav-btn { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        /* ====== التنسيقات العامة ====== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #f4f6f9;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1a2a3a;
+            border-bottom: 3px solid #2d7aff;
+            padding-bottom: 12px;
+            margin-bottom: 25px;
+        }
+
+        /* ====== شريط الأزرار ====== */
+        .nav-bar {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            background: #eef2f7;
+            padding: 15px;
+            border-radius: 12px;
+        }
+        .nav-btn {
+            background: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a2a3a;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            transition: 0.3s;
+            border: 1px solid transparent;
+        }
+        .nav-btn:hover {
+            background: #2d7aff;
+            color: white;
+            box-shadow: 0 6px 14px rgba(45, 122, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .nav-btn.logout {
+            background: #ff4d4d;
+            color: white;
+        }
+        .nav-btn.logout:hover {
+            background: #cc0000;
+        }
+
+        /* ====== الأقسام ====== */
+        .section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        .section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section h2 {
+            color: #1a2a3a;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        /* ====== الجداول ====== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        }
+        th {
+            background: #2d7aff;
+            color: white;
+            padding: 14px 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e9edf4;
+            text-align: center;
+        }
+        tr:hover td {
+            background: #f8faff;
+        }
+
+        /* ====== قائمة الموظفين ====== */
+        .employee-card {
+            background: #f8faff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-right: 5px solid #2d7aff;
+        }
+        .employee-card .info {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .employee-card .info strong {
+            color: #1a2a3a;
+        }
+        .employee-card .status {
+            background: #28a745;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+        }
+        .employee-card .status.inactive {
+            background: #dc3545;
+        }
+
+        /* ====== رسائل ====== */
+        .message {
+            padding: 16px;
+            background: #fff3cd;
+            border-radius: 10px;
+            border-right: 6px solid #ffc107;
+            margin: 20px 0;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        /* ====== استجابة للجوال ====== */
+        @media (max-width: 700px) {
+            .nav-bar {
+                flex-direction: column;
+            }
+            .nav-btn {
+                width: 100%;
+                text-align: center;
+            }
+            .employee-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- شريط التنقل العلوي -->
-    <div style="display: flex; gap: 10px; padding: 20px; background: #f0f0f0;">
-        <button class="nav-btn" onclick="showSection('consultations')">📋 عرض كل الطلبات</button>
-        <button class="nav-btn" onclick="showSection('employees')">👥 إدارة الموظفين</button>
-        <button class="nav-btn" onclick="logout()" style="background:red; color:white;">🚪 تسجيل الخروج</button>
+
+    <div class="container">
+
+        <h1>🏛️ لوحة تحكم المدير</h1>
+
+        <!-- ====== شريط الأزرار ====== -->
+        <div class="nav-bar">
+            <button class="nav-btn" id="btnShowConsultations">📋 عرض كل الطلبات</button>
+            <button class="nav-btn" id="btnShowEmployees">👥 إدارة الموظفين</button>
+            <button class="nav-btn logout" id="btnLogout">🚪 تسجيل الخروج</button>
+        </div>
+
+        <!-- ====== القسم الأول: عرض الطلبات ====== -->
+        <div id="sectionConsultations" class="section active">
+            <h2>📋 جميع استشارات العملاء</h2>
+            <div id="consultationsContainer">
+                <div class="loading">⏳ جاري تحميل البيانات...</div>
+            </div>
+        </div>
+
+        <!-- ====== القسم الثاني: إدارة الموظفين ====== -->
+        <div id="sectionEmployees" class="section">
+            <h2>👥 إدارة الموظفين</h2>
+            <div id="employeesContainer">
+                <div class="loading">⏳ جاري تحميل قائمة الموظفين...</div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- القسم 1: عرض الطلبات (نفس الكود القديم ولكن بدون قيود) -->
-    <div id="section-consultations" class="section active">
-        <h2>جميع استشارات العملاء</h2>
-        <!-- ضع هنا جدول عرض الطلبات القديم الخاص بك مع فلاتر التاريخ -->
-        <div id="consultations-table">...</div>
-    </div>
-
-    <!-- القسم 2: إدارة الموظفين -->
-    <div id="section-employees" class="section">
-        <h2>إدارة الموظفين</h2>
-        <!-- ضع هنا نموذج الإضافة وقائمة الموظفين -->
-        <div id="employees-list">...</div>
-    </div>
-
+    <!-- ========================================================== -->
+    <!-- ====== كود الجافا سكريبت (جميع الدوال في مكان واحد) ====== -->
+    <!-- ========================================================== -->
     <script>
-        // دالة التبديل بين الأقسام
-        function showSection(sectionName) {
-            // إخفاء الكل
-            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-            // إظهار القسم المطلوب
-            const target = document.getElementById('section-' + sectionName);
-            if (target) target.classList.add('active');
-            
-            // اختياري: تحديث البيانات عند التبديل
-            if (sectionName === 'consultations') fetchAllConsultations();
-            if (sectionName === 'employees') fetchEmployeesList();
-        }
+        (function() {
+            'use strict';
+
+            // =====================================================
+            // 1. تهيئة اتصال Supabase (ضع مفاتيحك الحقيقية هنا)
+            // =====================================================
+            const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
+            const SUPABASE_ANON_KEY = 'EYJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBu...'; // ⚠️ استبدل بالمفتاح العام الصحيح من مشروعك
+
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // =====================================================
+            // 2. دوال العرض (Render)
+            // =====================================================
+
+            // عرض جدول الاستشارات
+            function renderConsultations(data) {
+                const container = document.getElementById('consultationsContainer');
+                if (!container) return;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<div class="message">📭 لا توجد استشارات مسجلة حتى الآن.</div>`;
+                    return;
+                }
+
+                let rows = '';
+                data.forEach((item, idx) => {
+                    rows += `
+                        <tr>
+                            <td>${idx + 1}</td>
+                            <td>${item.client_name || 'غير محدد'}</td>
+                            <td>${item.email || '—'}</td>
+                            <td>${item.phone || '—'}</td>
+                            <td>${item.status || 'جديد'}</td>
+                            <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
+                        </tr>
+                    `;
+                });
+
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اسم العميل</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>الهاتف</th>
+                                <th>الحالة</th>
+                                <th>التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+            }
+
+            // عرض قائمة الموظفين
+            function renderEmployees(data) {
+                const container = document.getElementById('employeesContainer');
+                if (!container) return;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<div class="message">👤 لا يوجد موظفون مسجلون حالياً.</div>`;
+                    return;
+                }
+
+                let cards = '';
+                data.forEach(emp => {
+                    const statusClass = emp.status === 'active' ? '' : 'inactive';
+                    cards += `
+                        <div class="employee-card">
+                            <div class="info">
+                                <strong>${emp.name || 'بدون اسم'}</strong>
+                                <span>📧 ${emp.email}</span>
+                                <span>🔹 ${emp.role || 'موظف'}</span>
+                            </div>
+                            <span class="status ${statusClass}">${emp.status === 'active' ? 'نشط' : 'غير نشط'}</span>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = `
+                    <div style="margin-bottom:20px;">
+                        <button class="nav-btn" id="btnAddEmployee" style="background:#28a745; color:white;">➕ إضافة موظف جديد</button>
+                    </div>
+                    ${cards}
+                `;
+
+                // ربط زر الإضافة (يمكن تفعيله لاحقاً)
+                document.getElementById('btnAddEmployee')?.addEventListener('click', function() {
+                    alert('🚧 سيتم تفعيل إضافة الموظفين قريباً باستخدام دالة Edge Function.');
+                });
+            }
+
+            // =====================================================
+            // 3. دوال جلب البيانات (Fetch)
+            // =====================================================
+
+            async function fetchConsultations() {
+                const container = document.getElementById('consultationsContainer');
+                if (container) container.innerHTML = `<div class="loading">⏳ جاري تحميل الاستشارات...</div>`;
+
+                try {
+                    const { data, error } = await supabase
+                        .from('consultation_requests')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (error) {
+                        console.error('خطأ في جلب الاستشارات:', error);
+                        if (container) container.innerHTML =
+                        `<div class="message" style="background:#f8d7da; border-color:#dc3545;">❌ خطأ: ${error.message}</div>`;
+                        return;
+                    }
+
+                    renderConsultations(data);
+                } catch (err) {
+                    console.error('استثناء أثناء الجلب:', err);
+                    if (container) container.innerHTML =
+                        `<div class="message" style="background:#f8d7da; border-color:#dc3545;">❌ حدث خطأ غير متوقع: ${err.message}</div>`;
+                }
+            }
+
+            async function fetchEmployees() {
+                const container = document.getElementById('employeesContainer');
+                if (container) container.innerHTML = `<div class="loading">⏳ جاري تحميل الموظفين...</div>`;
+
+                try {
+                    const { data, error } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('role', 'employee')
+                        .order('name');
+
+                    if (error) {
+                        console.error('خطأ في جلب الموظفين:', error);
+                        if (container) container.innerHTML =
+                            `<div class="message" style="background:#f8d7da; border-color:#dc3545;">❌ خطأ: ${error.message}</div>`;
+                        return;
+                    }
+
+                    renderEmployees(data);
+                } catch (err) {
+                    console.error('استثناء أثناء جلب الموظفين:', err);
+                    if (container) container.innerHTML =
+                        `<div class="message" style="background:#f8d7da; border-color:#dc3545;">❌ حدث خطأ غير متوقع: ${err.message}</div>`;
+                }
+            }
+
+            // =====================================================
+            // 4. التبديل بين الأقسام
+            // =====================================================
+
+            function showSection(sectionId) {
+                // إخفاء الكل
+                document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+                // إظهار القسم المطلوب
+                const target = document.getElementById(sectionId);
+                if (target) target.classList.add('active');
+
+                // جلب البيانات حسب القسم
+                if (sectionId === 'sectionConsultations') {
+                    fetchConsultations();
+                } else if (sectionId === 'sectionEmployees') {
+                    fetchEmployees();
+                }
+            }
+
+            // =====================================================
+            // 5. تسجيل الخروج
+            // =====================================================
+
+            async function handleLogout() {
+                try {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) {
+                        alert('❌ فشل تسجيل الخروج: ' + error.message);
+                    } else {
+                        window.location.href = 'login.html'; // أو الصفحة الرئيسية
+                    }
+                } catch (err) {
+                    alert('❌ حدث خطأ أثناء تسجيل الخروج');
+                    console.error(err);
+                }
+            }
+
+            // =====================================================
+            // 6. ربط الأزرار عند تحميل الصفحة
+            // =====================================================
+
+            document.addEventListener('DOMContentLoaded', function() {
+                // زر عرض الطلبات
+                document.getElementById('btnShowConsultations').addEventListener('click', function() {
+                    showSection('sectionConsultations');
+                });
+
+                // زر إدارة الموظفين
+                document.getElementById('btnShowEmployees').addEventListener('click', function() {
+                    showSection('sectionEmployees');
+                });
+
+                // زر تسجيل الخروج
+                document.getElementById('btnLogout').addEventListener('click', handleLogout);
+
+                // تحميل القسم الافتراضي (الاستشارات) عند فتح الصفحة
+                showSection('sectionConsultations');
+            });
+
+        })(); // نهاية الـ IIFE
     </script>
+
 </body>
 </html>
