@@ -6,7 +6,7 @@
     <title>لوحة تحكم المدير</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* نفس التنسيقات السابقة (اختصرتها للاختصار) */
+        /* ... نفس التنسيقات السابقة (يمكنك استخدامها كما هي) ... */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f6f9; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; padding: 25px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
@@ -56,14 +56,31 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', async function() {
+    // ====== التحقق من الجلسة ======
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session) {
+        // إذا لم يكن هناك جلسة، أعد التوجيه إلى الصفحة الرئيسية أو صفحة تسجيل الدخول
+        alert('يرجى تسجيل الدخول أولاً للوصول إلى لوحة التحكم.');
+        window.location.href = 'index.html'; // أو 'login.html' حسب اسم ملف الدخول لديك
+        return;
+    }
+
+    // ====== بعد التأكد من وجود جلسة، نربط الأزرار ونحمل البيانات ======
+    document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
+    document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
+    document.getElementById('btnLogout').addEventListener('click', handleLogout);
+    showSection('sectionConsultations');
+});
 (function() {
     'use strict';
 
     // ============================================================
     // 🔑 ضع المفتاح العام الصحيح هنا (من Settings → API → anon public)
+    // تأكد من عدم وجود مسافات أو فواصل أسطر
     // ============================================================
     const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w'; // ⚠️ استبدل بالمفتاح الحقيقي
+    const SUPABASE_ANON_KEY = 'EYJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBrZXoiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY5ODc5NTYzNSwiZXhwIjoyMDE0MzcxNjM1fQ.5dQx6pP0Xf0xX0xX0xX0xX0xX0xX0xX0xX0xX0xX0'; // ⚠️ استبدل هذا بالمفتاح الحقيقي
 
     // ============================================================
     // ✏️ أسماء الأعمدة حسب جداولك (عدل القيم أدناه)
@@ -78,8 +95,8 @@
         },
         employees: {
             nameCol: 'full_name',     // ← من جدول staff_profiles
-            emailCol: 'email',        // ← موجود
-            roleCol: 'role',          // ← موجود (manager أو followup_staff)
+            emailCol: 'email',
+            roleCol: 'role',
             statusCol: 'is_active'    // ← منطقي (true/false)
         }
     };
@@ -88,9 +105,15 @@
     // لا تغير أي شيء بعد هذا السطر
     // ============================================================
 
+    // التحقق من صحة المفتاح (إذا كان افتراضياً أو غير صحيح)
+    if (SUPABASE_ANON_KEY.includes('x0x') || SUPABASE_ANON_KEY.length < 20) {
+        alert('⚠️ يرجى وضع مفتاح Supabase ANON KEY الصحيح في الكود (السطر 112)');
+        console.error('مفتاح API غير صحيح:', SUPABASE_ANON_KEY);
+    }
+
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // دوال العرض
+    // دوال العرض (نفسها كما هي)
     function renderConsultations(data) {
         const container = document.getElementById('consultationsContainer');
         if (!container) return;
@@ -133,7 +156,6 @@
             const name = emp[nameCol] || 'بدون اسم';
             const email = emp[emailCol] || '—';
             const role = emp[roleCol] || 'موظف';
-            // is_active عمود منطقي (true/false)
             const isActive = emp[statusCol] === true;
             const statusClass = isActive ? '' : 'inactive';
             const statusText = isActive ? 'نشط' : 'غير نشط';
@@ -159,11 +181,17 @@
         });
     }
 
-    // دوال جلب البيانات
+    // دوال جلب البيانات (مع تحقق إضافي من الجلسة)
     async function fetchConsultations() {
         const container = document.getElementById('consultationsContainer');
         if (container) container.innerHTML = `<div class="loading">⏳ جاري التحميل...</div>`;
         try {
+            // تحقق من الجلسة أولاً
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                container.innerHTML = `<div class="message error">❌ يرجى تسجيل الدخول أولاً. <a href="index.html">الذهاب إلى صفحة الدخول</a></div>`;
+                return;
+            }
             const { data, error } = await supabase
                 .from('consultation_requests')
                 .select('*')
@@ -184,6 +212,11 @@
         const container = document.getElementById('employeesContainer');
         if (container) container.innerHTML = `<div class="loading">⏳ جاري التحميل...</div>`;
         try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                container.innerHTML = `<div class="message error">❌ يرجى تسجيل الدخول أولاً. <a href="index.html">الذهاب إلى صفحة الدخول</a></div>`;
+                return;
+            }
             const { data, error } = await supabase
                 .from('staff_profiles')
                 .select('*')
@@ -212,10 +245,14 @@
     async function handleLogout() {
         try {
             const { error } = await supabase.auth.signOut();
-            if (error) alert('❌ ' + error.message);
-            else window.location.href = 'login.html';
+            if (error) {
+                alert('❌ فشل تسجيل الخروج: ' + error.message);
+            } else {
+                // ✅ التغيير المهم: التوجيه إلى الصفحة الرئيسية بدلاً من login.html
+                window.location.href = 'index.html';
+            }
         } catch (e) {
-            alert('❌ حدث خطأ');
+            alert('❌ حدث خطأ أثناء تسجيل الخروج');
             console.error(e);
         }
     }
