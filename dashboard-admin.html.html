@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>لوحة تحكم المدير</title>
+    <style>
+        .section { display: none; } /* إخفاء جميع الأقسام افتراضياً */
+        .section.active { display: block; } /* إظهار القسم النشط */
+        .nav-btn { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <!-- شريط التنقل العلوي -->
+    <div style="display: flex; gap: 10px; padding: 20px; background: #f0f0f0;">
+        <button class="nav-btn" onclick="showSection('consultations')">📋 عرض كل الطلبات</button>
+        <button class="nav-btn" onclick="showSection('employees')">👥 إدارة الموظفين</button>
+        <button class="nav-btn" onclick="logout()" style="background:red; color:white;">🚪 تسجيل الخروج</button>
+    </div>
+
+    <!-- القسم 1: عرض الطلبات (نفس الكود القديم ولكن بدون قيود) -->
+    <div id="section-consultations" class="section active">
+        <h2>جميع استشارات العملاء</h2>
+        <!-- ضع هنا جدول عرض الطلبات القديم الخاص بك مع فلاتر التاريخ -->
+        <div id="consultations-table">...</div>
+    </div>
+
+    <!-- القسم 2: إدارة الموظفين -->
+    <div id="section-employees" class="section">
+        <h2>إدارة الموظفين</h2>
+        <!-- ضع هنا نموذج الإضافة وقائمة الموظفين -->
+        <div id="employees-list">...</div>
+    </div>
+
+    <script>
+        // دالة التبديل بين الأقسام
+        function showSection(sectionName) {
+            // إخفاء الكل
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            // إظهار القسم المطلوب
+            const target = document.getElementById('section-' + sectionName);
+            if (target) target.classList.add('active');
+            
+            // اختياري: تحديث البيانات عند التبديل
+            if (sectionName === 'consultations') fetchAllConsultations();
+            if (sectionName === 'employees') fetchEmployeesList();
+        }
+    </script>
+</body>
+</html>
