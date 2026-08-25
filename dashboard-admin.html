@@ -60,13 +60,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ====== التحقق من الجلسة ======
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
-        // إذا لم يكن هناك جلسة، أعد التوجيه إلى الصفحة الرئيسية أو صفحة تسجيل الدخول
+        // إذا لم توجد جلسة، أعد التوجيه إلى صفحة تسجيل الدخول
         alert('يرجى تسجيل الدخول أولاً للوصول إلى لوحة التحكم.');
-        window.location.href = 'index.html'; // أو 'login.html' حسب اسم ملف الدخول لديك
+        window.location.href = 'login.html';
         return;
     }
 
-    // ====== بعد التأكد من وجود جلسة، نربط الأزرار ونحمل البيانات ======
+    // ====== بعد التأكد من وجود جلسة ======
     document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
     document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
     document.getElementById('btnLogout').addEventListener('click', handleLogout);
