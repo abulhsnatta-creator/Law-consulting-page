@@ -4,382 +4,231 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم المدير</title>
-
-    <!-- ====== استيراد Supabase ====== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-    </script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: #f4f6f9;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #1a2a3a;
-            border-bottom: 3px solid #2d7aff;
-            padding-bottom: 12px;
-            margin-bottom: 25px;
-        }
-        .nav-bar {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-            background: #eef2f7;
-            padding: 15px;
-            border-radius: 12px;
-        }
-        .nav-btn {
-            background: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 30px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1a2a3a;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-            transition: 0.3s;
-            border: 1px solid transparent;
-        }
-        .nav-btn:hover {
-            background: #2d7aff;
-            color: white;
-            box-shadow: 0 6px 14px rgba(45, 122, 255, 0.3);
-            transform: translateY(-2px);
-        }
-        .nav-btn.logout {
-            background: #ff4d4d;
-            color: white;
-        }
-        .nav-btn.logout:hover {
-            background: #cc0000;
-        }
-        .section {
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-        .section.active {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .section h2 {
-            color: #1a2a3a;
-            margin-bottom: 20px;
-            font-size: 24px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-        }
-        th {
-            background: #2d7aff;
-            color: white;
-            padding: 14px 10px;
-            text-align: center;
-            font-weight: 600;
-        }
-        td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #e9edf4;
-            text-align: center;
-        }
-        tr:hover td {
-            background: #f8faff;
-        }
-        .employee-card {
-            background: #f8faff;
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-right: 5px solid #2d7aff;
-        }
-        .employee-card .info {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-        }
-        .employee-card .info strong {
-            color: #1a2a3a;
-        }
-        .status-badge {
-            background: #28a745;
-            color: white;
-            padding: 4px 16px;
-            border-radius: 30px;
-            font-size: 13px;
-        }
-        .status-badge.inactive {
-            background: #dc3545;
-        }
-        .message {
-            padding: 16px;
-            background: #fff3cd;
-            border-radius: 10px;
-            border-right: 6px solid #ffc107;
-            margin: 20px 0;
-        }
-        .message.error {
-            background: #f8d7da;
-            border-color: #dc3545;
-        }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-        @media (max-width: 700px) {
-            .nav-bar {
-                flex-direction: column;
-            }
-            .nav-btn {
-                width: 100%;
-                text-align: center;
-            }
-            .employee-card {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-        }
+        /* نفس التنسيقات السابقة (اختصرتها للاختصار) */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f6f9; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; padding: 25px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
+        h1 { color: #1a2a3a; border-bottom: 3px solid #2d7aff; padding-bottom: 12px; margin-bottom: 25px; }
+        .nav-bar { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; background: #eef2f7; padding: 15px; border-radius: 12px; }
+        .nav-btn { background: white; border: none; padding: 12px 28px; border-radius: 30px; font-size: 16px; font-weight: 600; color: #1a2a3a; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: 0.3s; border: 1px solid transparent; }
+        .nav-btn:hover { background: #2d7aff; color: white; box-shadow: 0 6px 14px rgba(45,122,255,0.3); transform: translateY(-2px); }
+        .nav-btn.logout { background: #ff4d4d; color: white; }
+        .nav-btn.logout:hover { background: #cc0000; }
+        .section { display: none; animation: fadeIn 0.4s ease; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        th { background: #2d7aff; color: white; padding: 14px 10px; text-align: center; }
+        td { padding: 12px 10px; border-bottom: 1px solid #e9edf4; text-align: center; }
+        tr:hover td { background: #f8faff; }
+        .employee-card { background: #f8faff; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-right: 5px solid #2d7aff; }
+        .employee-card .info { display: flex; gap: 30px; flex-wrap: wrap; }
+        .employee-card .info strong { color: #1a2a3a; }
+        .status-badge { background: #28a745; color: white; padding: 4px 16px; border-radius: 30px; font-size: 13px; }
+        .status-badge.inactive { background: #dc3545; }
+        .message { padding: 16px; background: #fff3cd; border-radius: 10px; border-right: 6px solid #ffc107; margin: 20px 0; }
+        .message.error { background: #f8d7da; border-color: #dc3545; }
+        .loading { text-align: center; padding: 40px; color: #6c757d; }
+        @media (max-width: 700px) { .nav-bar { flex-direction: column; } .nav-btn { width: 100%; text-align: center; } .employee-card { flex-direction: column; align-items: flex-start; gap: 10px; } }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>🏛️ لوحة تحكم المدير</h1>
-
-        <div class="nav-bar">
-            <button class="nav-btn" id="btnShowConsultations">📋 عرض كل الطلبات</button>
-            <button class="nav-btn" id="btnShowEmployees">👥 إدارة الموظفين</button>
-            <button class="nav-btn logout" id="btnLogout">🚪 تسجيل الخروج</button>
-        </div>
-
-        <!-- قسم الاستشارات -->
-        <div id="sectionConsultations" class="section active">
-            <h2>📋 جميع استشارات العملاء</h2>
-            <div id="consultationsContainer">
-                <div class="loading">⏳ جاري تحميل البيانات...</div>
-            </div>
-        </div>
-
-        <!-- قسم الموظفين -->
-        <div id="sectionEmployees" class="section">
-            <h2>👥 إدارة الموظفين</h2>
-            <div id="employeesContainer">
-                <div class="loading">⏳ جاري تحميل قائمة الموظفين...</div>
-            </div>
-        </div>
+<div class="container">
+    <h1>🏛️ لوحة تحكم المدير</h1>
+    <div class="nav-bar">
+        <button class="nav-btn" id="btnShowConsultations">📋 عرض كل الطلبات</button>
+        <button class="nav-btn" id="btnShowEmployees">👥 إدارة الموظفين</button>
+        <button class="nav-btn logout" id="btnLogout">🚪 تسجيل الخروج</button>
     </div>
 
-    <script>
-        (function() {
-            'use strict';
+    <div id="sectionConsultations" class="section active">
+        <h2>📋 جميع استشارات العملاء</h2>
+        <div id="consultationsContainer"><div class="loading">⏳ جاري التحميل...</div></div>
+    </div>
 
-            // ============================================================
-            // 🛑 هام جداً: ضع هنا المفتاح العام (ANON KEY) من مشروعك
-            // ============================================================
-            const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w'; 
-            // ⚠️ استبدل هذا المفتاح بالمفتاح الحقيقي من (Settings -> API -> anon public)
+    <div id="sectionEmployees" class="section">
+        <h2>👥 إدارة الموظفين</h2>
+        <div id="employeesContainer"><div class="loading">⏳ جاري التحميل...</div></div>
+    </div>
+</div>
 
-            // التحقق: إذا كان المفتاح لا يزال افتراضياً، أظهر تحذيراً
-            if (SUPABASE_ANON_KEY.includes('x0x')) {
-                alert('⚠️ يرجى وضع مفتاح Supabase ANON KEY الصحيح في الكود (السطر 112)');
-            }
+<script>
+(function() {
+    'use strict';
 
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ============================================================
+    // 🔑 ضع المفتاح العام الصحيح هنا (من Settings → API → anon public)
+    // ============================================================
+    const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
+    const SUPABASE_ANON_KEY = 'EYJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // ⚠️ استبدل بالمفتاح الحقيقي
 
-            // ============================================================
-            // 1. دالة عرض الاستشارات (باستخدام الجدول consultation_requests)
-            // ============================================================
-            function renderConsultations(data) {
-                const container = document.getElementById('consultationsContainer');
-                if (!container) return;
-                if (!data || data.length === 0) {
-                    container.innerHTML = `<div class="message">📭 لا توجد استشارات مسجلة.</div>`;
-                    return;
-                }
-                let rows = '';
-                data.forEach((item, idx) => {
-                    rows += `
-                        <tr>
-                            <td>${idx + 1}</td>
-                            <td>${item.client_name || item.name || 'غير محدد'}</td>
-                            <td>${item.email || '—'}</td>
-                            <td>${item.phone || '—'}</td>
-                            <td>${item.status || 'جديد'}</td>
-                            <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
-                        </tr>
-                    `;
-                });
-                container.innerHTML = `
-                    <table>
-                        <thead><tr><th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الحالة</th><th>التاريخ</th></tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                `;
-            }
+    // ============================================================
+    // ✏️ أسماء الأعمدة حسب جداولك (عدل القيم أدناه)
+    // ============================================================
+    const COLUMNS = {
+        consultations: {
+            nameCol: 'client_name',   // ← تأكد من وجود هذا العمود في consultation_requests
+            emailCol: 'email',
+            phoneCol: 'phone',
+            statusCol: 'status',
+            dateCol: 'created_at'
+        },
+        employees: {
+            nameCol: 'full_name',     // ← من جدول staff_profiles
+            emailCol: 'email',        // ← موجود
+            roleCol: 'role',          // ← موجود (manager أو followup_staff)
+            statusCol: 'is_active'    // ← منطقي (true/false)
+        }
+    };
 
-            // ============================================================
-            // 2. دالة عرض الموظفين (باستخدام الجدول staff_profiles)
-            // ============================================================
-            function renderEmployees(data) {
-                const container = document.getElementById('employeesContainer');
-                if (!container) return;
-                if (!data || data.length === 0) {
-                    container.innerHTML = `<div class="message">👤 لا يوجد موظفون مسجلون.</div>`;
-                    return;
-                }
-                let cards = '';
-                data.forEach(emp => {
-                    // تأكد من وجود عمود 'role' في جدول staff_profiles، إذا لم يكن موجوداً، قم بتعيين قيمة افتراضية
-                    const role = emp.role || emp.user_type || 'موظف';
-                    const statusClass = (emp.status === 'active' || emp.status === 'نشط') ? '' : 'inactive';
-                    const statusText = (emp.status === 'active' || emp.status === 'نشط') ? 'نشط' : 'غير نشط';
-                    cards += `
-                        <div class="employee-card">
-                            <div class="info">
-                                <strong>${emp.name || emp.full_name || 'بدون اسم'}</strong>
-                                <span>📧 ${emp.email}</span>
-                                <span>🔹 ${role}</span>
-                            </div>
-                            <span class="status-badge ${statusClass}">${statusText}</span>
-                        </div>
-                    `;
-                });
-                container.innerHTML = `
-                    <div style="margin-bottom:20px;">
-                        <button class="nav-btn" id="btnAddEmployee" style="background:#28a745; color:white;">➕ إضافة موظف جديد</button>
+    // ============================================================
+    // لا تغير أي شيء بعد هذا السطر
+    // ============================================================
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // دوال العرض
+    function renderConsultations(data) {
+        const container = document.getElementById('consultationsContainer');
+        if (!container) return;
+        if (!data || data.length === 0) {
+            container.innerHTML = `<div class="message">📭 لا توجد استشارات مسجلة.</div>`;
+            return;
+        }
+        const { nameCol, emailCol, phoneCol, statusCol, dateCol } = COLUMNS.consultations;
+        let rows = '';
+        data.forEach((item, idx) => {
+            rows += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${item[nameCol] || 'غير محدد'}</td>
+                    <td>${item[emailCol] || '—'}</td>
+                    <td>${item[phoneCol] || '—'}</td>
+                    <td>${item[statusCol] || 'جديد'}</td>
+                    <td>${item[dateCol] ? new Date(item[dateCol]).toLocaleDateString('ar-EG') : '—'}</td>
+                </tr>
+            `;
+        });
+        container.innerHTML = `
+            <table>
+                <thead><tr><th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الحالة</th><th>التاريخ</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
+    }
+
+    function renderEmployees(data) {
+        const container = document.getElementById('employeesContainer');
+        if (!container) return;
+        if (!data || data.length === 0) {
+            container.innerHTML = `<div class="message">👤 لا يوجد موظفون مسجلون.</div>`;
+            return;
+        }
+        const { nameCol, emailCol, roleCol, statusCol } = COLUMNS.employees;
+        let cards = '';
+        data.forEach(emp => {
+            const name = emp[nameCol] || 'بدون اسم';
+            const email = emp[emailCol] || '—';
+            const role = emp[roleCol] || 'موظف';
+            // is_active عمود منطقي (true/false)
+            const isActive = emp[statusCol] === true;
+            const statusClass = isActive ? '' : 'inactive';
+            const statusText = isActive ? 'نشط' : 'غير نشط';
+            cards += `
+                <div class="employee-card">
+                    <div class="info">
+                        <strong>${name}</strong>
+                        <span>📧 ${email}</span>
+                        <span>🔹 ${role}</span>
                     </div>
-                    ${cards}
-                `;
-                document.getElementById('btnAddEmployee')?.addEventListener('click', function() {
-                    alert('🚧 سيتم تفعيل إضافة الموظفين قريباً.');
-                });
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+            `;
+        });
+        container.innerHTML = `
+            <div style="margin-bottom:20px;">
+                <button class="nav-btn" id="btnAddEmployee" style="background:#28a745; color:white;">➕ إضافة موظف جديد</button>
+            </div>
+            ${cards}
+        `;
+        document.getElementById('btnAddEmployee')?.addEventListener('click', function() {
+            alert('🚧 سيتم تفعيل إضافة الموظفين قريباً.');
+        });
+    }
+
+    // دوال جلب البيانات
+    async function fetchConsultations() {
+        const container = document.getElementById('consultationsContainer');
+        if (container) container.innerHTML = `<div class="loading">⏳ جاري التحميل...</div>`;
+        try {
+            const { data, error } = await supabase
+                .from('consultation_requests')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) {
+                console.error('خطأ الاستشارات:', error);
+                if (container) container.innerHTML = `<div class="message error">❌ خطأ: ${error.message}</div>`;
+                return;
             }
+            renderConsultations(data);
+        } catch (err) {
+            console.error(err);
+            if (container) container.innerHTML = `<div class="message error">❌ خطأ غير متوقع: ${err.message}</div>`;
+        }
+    }
 
-            // ============================================================
-            // 3. دوال جلب البيانات (Fetch)
-            // ============================================================
-            async function fetchConsultations() {
-                const container = document.getElementById('consultationsContainer');
-                if (container) container.innerHTML = `<div class="loading">⏳ جاري التحميل...</div>`;
-                try {
-                    const { data, error } = await supabase
-                        .from('consultation_requests') // ✅ الاسم الصحيح من قاعدة البيانات
-                        .select('*')
-                        .order('created_at', { ascending: false });
-
-                    if (error) {
-                        console.error('خطأ الاستشارات:', error);
-                        if (container) container.innerHTML =
-                            `<div class="message error">❌ خطأ: ${error.message}</div>`;
-                        return;
-                    }
-                    renderConsultations(data);
-                } catch (err) {
-                    console.error(err);
-                    if (container) container.innerHTML =
-                        `<div class="message error">❌ خطأ غير متوقع: ${err.message}</div>`;
-                }
+    async function fetchEmployees() {
+        const container = document.getElementById('employeesContainer');
+        if (container) container.innerHTML = `<div class="loading">⏳ جاري التحميل...</div>`;
+        try {
+            const { data, error } = await supabase
+                .from('staff_profiles')
+                .select('*')
+                .order('full_name', { ascending: true });
+            if (error) {
+                console.error('خطأ الموظفين:', error);
+                if (container) container.innerHTML = `<div class="message error">❌ خطأ: ${error.message}</div>`;
+                return;
             }
+            renderEmployees(data);
+        } catch (err) {
+            console.error(err);
+            if (container) container.innerHTML = `<div class="message error">❌ خطأ غير متوقع: ${err.message}</div>`;
+        }
+    }
 
-            async function fetchEmployees() {
-                const container = document.getElementById('employeesContainer');
-                if (container) container.innerHTML = `<div class="loading">⏳ جاري التحميل...</div>`;
-                try {
-                    const { data, error } = await supabase
-                        .from('staff_profiles') // ✅ الاسم الصحيح من قاعدة البيانات
-                        .select('*')
-                        .order('full_name', { ascending: true });
+    // دوال التنقل والخروج
+    function showSection(sectionId) {
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById(sectionId);
+        if (target) target.classList.add('active');
+        if (sectionId === 'sectionConsultations') fetchConsultations();
+        else if (sectionId === 'sectionEmployees') fetchEmployees();
+    }
 
-                    if (error) {
-                        console.error('خطأ الموظفين:', error);
-                        if (container) container.innerHTML =
-                            `<div class="message error">❌ خطأ: ${error.message}</div>`;
-                        return;
-                    }
-                    renderEmployees(data);
-                } catch (err) {
-                    console.error(err);
-                    if (container) container.innerHTML =
-                        `<div class="message error">❌ خطأ غير متوقع: ${err.message}</div>`;
-                }
-            }
+    async function handleLogout() {
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) alert('❌ ' + error.message);
+            else window.location.href = 'login.html';
+        } catch (e) {
+            alert('❌ حدث خطأ');
+            console.error(e);
+        }
+    }
 
-            // ============================================================
-            // 4. التبديل بين الأقسام
-            // ============================================================
-            function showSection(sectionId) {
-                document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-                const target = document.getElementById(sectionId);
-                if (target) target.classList.add('active');
+    // ربط الأزرار
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
+        document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
+        document.getElementById('btnLogout').addEventListener('click', handleLogout);
+        showSection('sectionConsultations');
+    });
 
-                if (sectionId === 'sectionConsultations') fetchConsultations();
-                else if (sectionId === 'sectionEmployees') fetchEmployees();
-            }
-
-            // ============================================================
-            // 5. تسجيل الخروج
-            // ============================================================
-            async function handleLogout() {
-                try {
-                    const { error } = await supabase.auth.signOut();
-                    if (error) alert('❌ ' + error.message);
-                    else window.location.href = 'login.html';
-                } catch (e) {
-                    alert('❌ حدث خطأ');
-                    console.error(e);
-                }
-            }
-
-            // ============================================================
-            // 6. ربط الأزرار
-            // ============================================================
-            document.addEventListener('DOMContentLoaded', function() {
-                document.getElementById('btnShowConsultations').addEventListener('click', () => showSection(
-                    'sectionConsultations'));
-                document.getElementById('btnShowEmployees').addEventListener('click', () => showSection(
-                    'sectionEmployees'));
-                document.getElementById('btnLogout').addEventListener('click', handleLogout);
-
-                // تحميل القسم الافتراضي
-                showSection('sectionConsultations');
-            });
-
-        })();
-    </script>
-
+})();
+</script>
 </body>
 </html>
