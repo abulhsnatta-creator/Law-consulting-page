@@ -322,7 +322,7 @@
                     const { data, error } = await supabase
                         .from('staff_profiles') // ✅ الاسم الصحيح من قاعدة البيانات
                         .select('*')
-                        .order('name', { ascending: true });
+                        .order('full_name', { ascending: true });
 
                     if (error) {
                         console.error('خطأ الموظفين:', error);
