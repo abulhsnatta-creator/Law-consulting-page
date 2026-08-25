@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - لوحة المدير</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 { color: #1a2a3a; text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #1a2a3a; }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #dce1e8;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        input:focus { border-color: #2d7aff; outline: none; box-shadow: 0 0 0 3px rgba(45,122,255,0.1); }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #2d7aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover { background: #1a5cc4; transform: translateY(-2px); }
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .loading { text-align: center; color: #6c757d; }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h1>🔐 تسجيل الدخول</h1>
+    <div id="errorMessage" class="error-message"></div>
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="email">البريد الإلكتروني</label>
+            <input type="email" id="email" placeholder="example@domain.com" required>
+        </div>
+        <div class="form-group">
+            <label for="password">كلمة المرور</label>
+            <input type="password" id="password" placeholder="كلمة المرور" required>
+        </div>
+        <button type="submit" id="loginBtn">دخول</button>
+    </form>
+    <div id="loadingIndicator" class="loading" style="display:none;">⏳ جاري تسجيل الدخول...</div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // ============================================================
+        // 🔑 ضع المفتاح العام الصحيح هنا (من Settings → API → anon public)
+        // ============================================================
+        const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
+        const SUPABASE_ANON_KEY = 'EYJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBrZXoiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY5ODc5NTYzNSwiZXhwIjoyMDE0MzcxNjM1fQ.5dQx6pP0Xf0xX0xX0xX0xX0xX0xX0xX0xX0xX0xX0'; // ⚠️ استبدل بالمفتاح الحقيقي
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const form = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const errorDiv = document.getElementById('errorMessage');
+        const loginBtn = document.getElementById('loginBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        // التحقق من وجود جلسة مسبقة (إذا كان المستخدم مسجلاً بالفعل، نوجهه للوحة)
+        async function checkSession() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (session) {
+                window.location.href = 'dashboard-admin.html';
+            }
+        }
+        checkSession();
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!email || !password) {
+                showError('يرجى ملء جميع الحقول');
+                return;
+            }
+
+            // إظهار حالة التحميل
+            loginBtn.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            hideError();
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    showError('فشل تسجيل الدخول: ' + error.message);
+                    loginBtn.style.display = 'block';
+                    loadingIndicator.style.display = 'none';
+                    return;
+                }
+
+                if (data.session) {
+                    // نجاح الدخول → التوجيه إلى لوحة المدير
+                    window.location.href = 'dashboard-admin.html';
+                } else {
+                    showError('حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى');
+                    loginBtn.style.display = 'block';
+                    loadingIndicator.style.display = 'none';
+                }
+            } catch (err) {
+                showError('خطأ في الاتصال: ' + err.message);
+                loginBtn.style.display = 'block';
+                loadingIndicator.style.display = 'none';
+            }
+        });
+
+        function showError(msg) {
+            errorDiv.textContent = msg;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            errorDiv.style.display = 'none';
+        }
+    })();
+</script>
+</body>
+</html>
