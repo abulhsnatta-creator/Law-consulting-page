@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError || !session) {
-                container.innerHTML = `<div class="message error">❌ يرجى تسجيل الدخول أولاً. <a href="index.html">الذهاب إلى صفحة الدخول</a></div>`;
+                container.innerHTML = `<div class="message error">❌ يرجى تسجيل الدخول أولاً. <a href="login.html">الذهاب إلى صفحة الدخول</a></div>`;
                 return;
             }
             const { data, error } = await supabase
