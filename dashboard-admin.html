@@ -243,20 +243,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function handleLogout() {
-        try {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                alert('❌ فشل تسجيل الخروج: ' + error.message);
-            } else {
-                // ✅ التغيير المهم: التوجيه إلى الصفحة الرئيسية بدلاً من login.html
-                window.location.href = 'index.html';
-            }
-        } catch (e) {
-            alert('❌ حدث خطأ أثناء تسجيل الخروج');
-            console.error(e);
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            alert('❌ فشل تسجيل الخروج: ' + error.message);
+        } else {
+            // التوجيه إلى صفحة تسجيل الدخول
+            window.location.href = 'login.html';
         }
+    } catch (e) {
+        alert('❌ حدث خطأ أثناء تسجيل الخروج');
+        console.error(e);
     }
-
+}
     // ربط الأزرار
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
