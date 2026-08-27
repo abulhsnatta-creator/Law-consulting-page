@@ -398,7 +398,7 @@
                 const { data: followups, error: folError } = await supabase
                     .from('client_followups')
                     .select('*')
-                    .eq('consultation_id', consultationId)
+                    .eq(''request_id', currentRequestId)
                     .order('created_at', { ascending: false });
 
                 if (folError) console.warn('خطأ في جلب المتابعات:', folError);
