@@ -385,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const consultationData = {
 
-                full_name: fullName,
+                client_name: fullName,
 
                 phone: phone,
 
