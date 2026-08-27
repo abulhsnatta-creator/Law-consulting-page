@@ -395,14 +395,14 @@
                 }
 
                 // جلب المتابعات
-               const { data: followups, error: followError } = await supabase
-    .from('client_followups')  // اسم الجدول صحيح الآن
-    .select('*')
-    .eq('request_id', consultationId)  // 🔴 تم تصحيح العمود من consultation_id إلى request_id
-    .order('created_at', { ascending: false });
+              const { data: followups, error: followError } = await supabase
+             .from('client_followups')
+             .select('*')
+             .eq('request_id', consultationId)
+             .order('created_at', { ascending: false });
 
-                if (folError) console.warn('خطأ في جلب المتابعات:', folError);
-
+             // 🔴 هنا التعديل: يجب أن تكون followError وليس folError
+             if (followError) console.warn('فشل جلب المتابعات:', followError);
                 // جلب اسم الموظف المسند
                 let assignedName = 'غير محدد';
                 if (consultation.assigned_to) {
