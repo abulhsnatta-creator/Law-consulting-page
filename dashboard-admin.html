@@ -396,12 +396,12 @@
 
                 // جلب المتابعات
               const { data: followups, error: followError } = await supabase
-             .from('client_followups')
-             .select('*')
-             .eq('request_id', consultationId)
-             .order('created_at', { ascending: false });
+                 .from('client_followups')
+                 .select('*')
+                 .eq('request_id', consultationId)
+                 .order('created_at', { ascending: false });
 
-             // 🔴 هنا التعديل: يجب أن تكون followError وليس folError
+              // 🔴 هنا التعديل: يجب أن تكون followError وليس folError
              if (followError) console.warn('فشل جلب المتابعات:', followError);
                 // جلب اسم الموظف المسند
                 let assignedName = 'غير محدد';
@@ -431,15 +431,34 @@
                 html += `<div class="modal-section"><h3>📋 سجل المتابعات</h3>`;
                 if (followups && followups.length > 0) {
                     followups.forEach(f => {
-                        const date = f.created_at ? new Date(f.created_at).toLocaleString('ar-EG') : '—';
-                        html += `
-                            <div class="followup-item">
-                                <div class="date">${date}</div>
-                                <div class="note"><strong>${f.note || 'ملاحظة'}</strong></div>
-                                ${f.status ? `<div style="font-size:12px;color:#6c757d;">الحالة: ${f.status}</div>` : ''}
-                            </div>
-                        `;
-                    });
+                       followups.forEach(followup => {
+    // بناء تاريخ المتابعة بشكل مقروء
+    const date = new Date(followup.followup_date).toLocaleString('ar-EG');
+    // تحديد هوية من قام بإنشاء المتابعة (بناءً على created_by)
+    // (يمكنك لاحقاً ربط هذا بجدول staff_profiles لعرض اسم الشخص)
+
+    html += `
+        <div class="followup-item" style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <strong>طريقة التواصل: ${followup.contact_method}</strong>
+                <span style="color: gray; font-size: 0.9em;">${date}</span>
+            </div>
+            
+            <div style="margin-bottom: 5px;">
+                <strong>الإجراء:</strong> ${followup.action}
+            </div>
+            
+            <div style="margin-bottom: 5px;">
+                <strong>الملاحظات:</strong> ${followup.notes}
+            </div>
+
+            <div style="margin-top: 10px; font-size: 0.9em;">
+                <strong>حالة المتابعة:</strong> ${followup.followup_status} 
+                ${followup.next_followup ? `<span style="margin-left: 10px;"><strong>المتابعة القادمة:</strong> ${new Date(followup.next_followup).toLocaleString('ar-EG')}</span>` : ''}
+            </div>
+        </div>
+    `;
+});
                 } else {
                     html += `<div class="message">لا توجد متابعات مسجلة لهذا الطلب.</div>`;
                 }
