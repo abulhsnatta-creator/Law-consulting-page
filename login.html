@@ -88,25 +88,37 @@
                 handleRedirect(session.user);
             }
         }
+// دالة التوجيه الجديدة (تعتمد على قاعدة البيانات)
+async function handleRedirect(user) {
+    // 1. جلب بيانات الموظف من جدول staff_profiles
+    const { data: profile, error: profileError } = await supabase
+        .from('staff_profiles')
+        .select('role, must_change_password')
+        .eq('id', user.id)
+        .single();
 
-        // دالة توجيه المستخدم حسب الحالة
-        function handleRedirect(user) {
-            // 1. إذا كان يجب عليه تغيير كلمة المرور
-            if (user.user_metadata && user.user_metadata.must_change_password === true) {
-                loginSection.classList.add('hidden');
-                changePasswordSection.classList.remove('hidden');
-            } else {
-                // 2. التوجيه حسب الدور (Role) - عدّل الصفحات هنا حسب نظامك
-                // إذا كان مديراً، وجهه للوحة التحكم. إذا كان موظفاً، وجهه لصفحة الموظف
-                const role = user.user_metadata && user.user_metadata.role;
-                if (role === 'manager' || role === 'admin') {
-                    window.location.href = 'dashboard-admin.html';
-                } else {
-                    window.location.href = 'employee.html'; // اسم صفحة الموظف لديك
-                }
-            }
+    if (profileError) {
+        console.error("خطأ في جلب بيانات الموظف:", profileError);
+        // إذا لم يوجد في قاعدة البيانات، اعرض الصفحة الرئيسية كخيار افتراضي
+        window.location.href = 'dashboard-admin.html'; 
+        return;
+    }
+
+    // 2. فحص إذا كان يجب عليه تغيير كلمة المرور
+    if (profile.must_change_password === true) {
+        loginSection.classList.add('hidden');
+        changePasswordSection.classList.remove('hidden');
+    } else {
+        // 3. التوجيه حسب الدور
+        if (profile.role === 'manager' || profile.role === 'admin') {
+            window.location.href = 'dashboard-admin.html';
+        } else {
+            window.location.href = 'employee.html'; // تأكد من اسم صفحة الموظف
         }
+    }
+}
 
+// (تذكر: استبدل دالة handleRedirect القديمة بهذه)
         // معالجة تسجيل الدخول
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -151,46 +163,33 @@
                 loginBtn.disabled = false;
             }
         });
+window.updatePassword = async function() {
+    const newPass = document.getElementById('new-password').value;
+    const confirmPass = document.getElementById('confirm-password').value;
+    const changeError = document.getElementById('changeError');
+    
+    // ... (نفس التحقق من تطابق كلمة المرور) ...
 
-        // دالة تغيير كلمة المرور الجديدة
-        window.updatePassword = async function() {
-            const newPass = document.getElementById('new-password').value;
-            const confirmPass = document.getElementById('confirm-password').value;
-            const changeError = document.getElementById('changeError');
+    try {
+        // 1. تحديث كلمة المرور في نظام المصادقة
+        const { error } = await supabase.auth.updateUser({ password: newPass });
+        if (error) { showError(changeError, 'فشل تغيير كلمة المرور: ' + error.message); return; }
 
-            hideError(changeError);
+        // 2. تحديث حقل must_change_password في جدول قاعدة البيانات
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            await supabase
+                .from('staff_profiles')
+                .update({ must_change_password: false })
+                .eq('id', user.id);
+        }
 
-            if (newPass.length < 6) {
-                showError(changeError, 'كلمة المرور يجب أن تكون 6 خانات على الأقل');
-                return;
-            }
-
-            if (newPass !== confirmPass) {
-                showError(changeError, 'كلمتا المرور غير متطابقتين');
-                return;
-            }
-
-            try {
-                // تحديث كلمة المرور
-                const { error } = await supabase.auth.updateUser({ password: newPass });
-
-                if (error) {
-                    showError(changeError, 'فشل تغيير كلمة المرور: ' + error.message);
-                    return;
-                }
-
-                // إزالة علامة "يجب تغيير كلمة المرور" من البيانات الوصفية
-                await supabase.auth.updateUser({ data: { must_change_password: false } });
-
-                alert('تم تغيير كلمة المرور بنجاح!');
-
-                // أعد تحميل الصفحة لتوجيه المستخدم للصفحة المناسبة
-                window.location.reload();
-            } catch (err) {
-                showError(changeError, 'خطأ في الاتصال: ' + err.message);
-            }
-        };
-
+        alert('تم تغيير كلمة المرور بنجاح!');
+        window.location.reload(); // إعادة التحميل لتوجيه المستخدم
+    } catch (err) {
+        showError(changeError, 'خطأ في الاتصال: ' + err.message);
+    }
+};
         // بدء الفحص عند التحميل
         checkSession();
     })();
