@@ -428,6 +428,30 @@ async function openPreview(consultationId) {
         `;
 
         // سجل المتابعات
+		        // 🔴 جلب المقابلة الأولى (المدير) - بدون تعريف const، استخدم اسم الجدول مباشرة
+        const { data: initialConsultation, error: initError } = await supabase
+            .from('initial_consultations')
+            .select('*')
+            .eq('request_id', consultationId)
+            .limit(1)
+            .maybeSingle();
+
+        if (initError) console.warn('فشل جلب المقابلة الأولى:', initError);
+
+        // عرض المقابلة الأولى إذا كانت موجودة
+        if (initialConsultation) {
+            html += `
+                <div class="modal-section">
+                    <h3>📝 المقابلة الأولى مع المدير</h3>
+                    <div class="modal-detail-row"><span class="label">تاريخ المقابلة</span><span class="value">${initialConsultation.consultation_date ? new Date(initialConsultation.consultation_date).toLocaleString('ar-EG') : '—'}</span></div>
+                    <div class="modal-detail-row"><span class="label">طريقة التواصل</span><span class="value">${String(initialConsultation.contact_method || '-')}</span></div>
+                    <div class="modal-detail-row"><span class="label">ملخص المقابلة</span><span class="value">${String(initialConsultation.summary || '-')}</span></div>
+                    <div class="modal-detail-row"><span class="label">نتيجة المقابلة</span><span class="value">${String(initialConsultation.result || '-')}</span></div>
+                    <div class="modal-detail-row"><span class="label">ملاحظات المدير</span><span class="value">${String(initialConsultation.manager_notes || '-')}</span></div>
+                    <div class="modal-detail-row"><span class="label">التوصيات / تعليمات للقائم بالمتابعة</span><span class="value">${String(initialConsultation.instructions || '-')}</span></div>
+                </div>
+            `;
+        }
         html += `<div class="modal-section"><h3>📋 سجل المتابعات</h3>`;
 
         if (followups && followups.length > 0) {
