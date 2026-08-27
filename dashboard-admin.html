@@ -373,144 +373,156 @@
         // نافذة المعاينة الكاملة
         // ============================================================
 
-        async function openPreview(consultationId) {
-            const modal = document.getElementById('previewModal');
-            const body = document.getElementById('modalBody');
-            const title = document.getElementById('modalTitle');
+async function openPreview(consultationId) {
+    const modal = document.getElementById('previewModal');
+    const body = document.getElementById('modalBody');
+    const title = document.getElementById('modalTitle');
 
-            modal.classList.add('active');
-            body.innerHTML = `<div class="loading">⏳ جاري تحميل التفاصيل...</div>`;
+    modal.classList.add('active');
+    body.innerHTML = `<div class="loading">⏳ جاري تحميل التفاصيل...</div>`;
 
-            try {
-                // جلب بيانات الاستشارة
-                const { data: consultation, error: conError } = await supabase
-                    .from('consultation_requests')
-                    .select('*')
-                    .eq('id', consultationId)
-                    .single();
+    try {
+        // جلب بيانات الاستشارة
+        const { data: consultation, error: conError } = await supabase
+            .from('consultation_requests')
+            .select('*')
+            .eq('id', consultationId)
+            .single();
 
-                if (conError || !consultation) {
-                    body.innerHTML = `<div class="message error">❌ حدث خطأ في جلب البيانات: ${conError?.message}</div>`;
-                    return;
+        if (conError || !consultation) {
+            body.innerHTML = `<div class="message error">❌ حدث خطأ في جلب البيانات: ${conError?.message}</div>`;
+            return;
+        }
+
+        // جلب المتابعات
+        const { data: followups, error: followError } = await supabase
+            .from('client_followups')
+            .select('*')
+            .eq('request_id', consultationId) // ✅ التصحيح الأهم: request_id وليس consultation_id
+            .order('followup_date', { ascending: false });
+
+        if (followError) console.warn('فشل جلب المتابعات:', followError);
+
+        // جلب اسم الموظف المسند (للعرض في أعلى الصفحة)
+        let assignedName = 'غير محدد';
+        if (consultation.assigned_to) {
+            const { data: emp } = await supabase
+                .from('staff_profiles')
+                .select('full_name')
+                .eq('id', consultation.assigned_to)
+                .single();
+            if (emp) assignedName = emp.full_name;
+        }
+
+        let html = `
+            <div class="modal-section">
+                <h3>📌 معلومات العميل</h3>
+                <div class="modal-detail-row"><span class="label">الاسم</span><span class="value">${String(consultation.client_name || 'غير محدد')}</span></div>
+                <div class="modal-detail-row"><span class="label">البريد الإلكتروني</span><span class="value">${String(consultation.email || '—')}</span></div>
+                <div class="modal-detail-row"><span class="label">رقم الهاتف</span><span class="value">${String(consultation.phone || '—')}</span></div>
+                <div class="modal-detail-row"><span class="label">الحالة</span><span class="value">${String(consultation.status || 'جديد')}</span></div>
+                <div class="modal-detail-row"><span class="label">تاريخ الطلب</span><span class="value">${consultation.created_at ? new Date(consultation.created_at).toLocaleString('ar-EG') : '—'}</span></div>
+                <div class="modal-detail-row"><span class="label">الموظف المسند</span><span class="value">${assignedName}</span></div>
+                ${consultation.message ? `<div class="modal-detail-row"><span class="label">الرسالة</span><span class="value">${String(consultation.message)}</span></div>` : ''}
+            </div>
+        `;
+
+        // سجل المتابعات
+        html += `<div class="modal-section"><h3>📋 سجل المتابعات</h3>`;
+
+        if (followups && followups.length > 0) {
+            followups.forEach(f => {
+                // 🔴 معالجة القيمة الفارغة assigned_to: إذا كانت فارغة فهي متابعة المدير
+                let followerName = 'المدير';
+                if (f.assigned_to) {
+                    const emp = allEmployees.find(e => e.id === f.assigned_to);
+                    if (emp) followerName = emp.full_name;
                 }
 
-                // جلب المتابعات
-              const { data: followups, error: followError } = await supabase
-                 .from('client_followups')
-                 .select('*')
-                 .eq('request_id', consultationId)
-                 .order('created_at', { ascending: false });
+                const dateStr = f.followup_date ? new Date(f.followup_date).toLocaleString('ar-EG') : '—';
 
-              // 🔴 هنا التعديل: يجب أن تكون followError وليس folError
-             if (followError) console.warn('فشل جلب المتابعات:', followError);
-                // جلب اسم الموظف المسند
-                let assignedName = 'غير محدد';
-                if (consultation.assigned_to) {
-                    const { data: emp } = await supabase
-                        .from('staff_profiles')
-                        .select('full_name')
-                        .eq('id', consultation.assigned_to)
-                        .single();
-                    if (emp) assignedName = emp.full_name;
-                }
-
-                let html = `
-                    <div class="modal-section">
-                        <h3>📌 معلومات العميل</h3>
-                        <div class="modal-detail-row"><span class="label">الاسم</span><span class="value">${consultation.client_name || 'غير محدد'}</span></div>
-                        <div class="modal-detail-row"><span class="label">البريد الإلكتروني</span><span class="value">${consultation.email || '—'}</span></div>
-                        <div class="modal-detail-row"><span class="label">رقم الهاتف</span><span class="value">${consultation.phone || '—'}</span></div>
-                        <div class="modal-detail-row"><span class="label">الحالة</span><span class="value">${consultation.status || 'جديد'}</span></div>
-                        <div class="modal-detail-row"><span class="label">تاريخ الطلب</span><span class="value">${consultation.created_at ? new Date(consultation.created_at).toLocaleString('ar-EG') : '—'}</span></div>
-                        <div class="modal-detail-row"><span class="label">الموظف المسند</span><span class="value">${assignedName}</span></div>
-                        ${consultation.message ? `<div class="modal-detail-row"><span class="label">الرسالة</span><span class="value">${consultation.message}</span></div>` : ''}
-                    </div>
-                `;
-
-                // سجل المتابعات
-                html += `<div class="modal-section"><h3>📋 سجل المتابعات</h3>`;
-                if (followups && followups.length > 0) {
-                    followups.forEach(f => {
-                       followups.forEach(followup => {
-    // بناء تاريخ المتابعة بشكل مقروء
-    const date = new Date(followup.followup_date).toLocaleString('ar-EG');
-    // تحديد هوية من قام بإنشاء المتابعة (بناءً على created_by)
-    // (يمكنك لاحقاً ربط هذا بجدول staff_profiles لعرض اسم الشخص)
-
-    html += `
-        <div class="followup-item" style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                <strong>طريقة التواصل: ${followup.contact_method}</strong>
-                <span style="color: gray; font-size: 0.9em;">${date}</span>
-            </div>
-            
-            <div style="margin-bottom: 5px;">
-                <strong>الإجراء:</strong> ${followup.action}
-            </div>
-            
-            <div style="margin-bottom: 5px;">
-                <strong>الملاحظات:</strong> ${followup.notes}
-            </div>
-
-            <div style="margin-top: 10px; font-size: 0.9em;">
-                <strong>حالة المتابعة:</strong> ${followup.followup_status} 
-                ${followup.next_followup ? `<span style="margin-left: 10px;"><strong>المتابعة القادمة:</strong> ${new Date(followup.next_followup).toLocaleString('ar-EG')}</span>` : ''}
-            </div>
-        </div>
-    `;
-});
-                } else {
-                    html += `<div class="message">لا توجد متابعات مسجلة لهذا الطلب.</div>`;
-                }
-                html += `</div>`;
-
-                // نموذج إضافة متابعة (للجميع)
                 html += `
-                    <div class="modal-section">
-                        <h3>➕ إضافة متابعة جديدة</h3>
-                        <div class="add-followup-form">
-                            <input type="text" id="newFollowupNote" placeholder="ملاحظة المتابعة" style="flex:2;">
-                            <input type="text" id="newFollowupStatus" placeholder="الحالة (اختياري)" style="flex:1;">
-                            <button id="btnAddFollowup" data-id="${consultationId}">إضافة</button>
+                    <div class="followup-item" style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; flex-wrap: wrap;">
+                            <strong>القائم بالمتابعة: ${String(followerName)}</strong>
+                            <span style="color: gray; font-size: 0.9em;">${dateStr}</span>
+                        </div>
+                        
+                        <div style="margin-bottom: 5px;">
+                            <strong>طريقة التواصل:</strong> ${String(f.contact_method || '-')}
+                        </div>
+                        
+                        <div style="margin-bottom: 5px;">
+                            <strong>الإجراء:</strong> ${String(f.action || '-')}
+                        </div>
+                        
+                        <div style="margin-bottom: 5px;">
+                            <strong>الملاحظات:</strong> ${String(f.notes || '-')}
+                        </div>
+
+                        <div style="margin-top: 10px; font-size: 0.9em;">
+                            <strong>حالة المتابعة:</strong> ${String(f.followup_status || '-')} 
+                            ${f.next_followup ? `<span style="margin-left: 10px;"><strong>المتابعة القادمة:</strong> ${new Date(f.next_followup).toLocaleString('ar-EG')}</span>` : ''}
                         </div>
                     </div>
                 `;
+            });
+        } else {
+            html += `<div class="message">لا توجد متابعات مسجلة لهذا الطلب.</div>`;
+        }
+        html += `</div>`;
 
-                body.innerHTML = html;
+        // نموذج إضافة متابعة
+        html += `
+            <div class="modal-section">
+                <h3>➕ إضافة متابعة جديدة</h3>
+                <div class="add-followup-form">
+                    <input type="text" id="newFollowupNote" placeholder="ملاحظة المتابعة" style="flex:2;">
+                    <input type="text" id="newFollowupStatus" placeholder="الحالة (اختياري)" style="flex:1;">
+                    <button id="btnAddFollowup" data-id="${consultationId}">إضافة</button>
+                </div>
+            </div>
+        `;
 
-                // ربط زر إضافة المتابعة
-                document.getElementById('btnAddFollowup')?.addEventListener('click', async function() {
-                    const consId = this.dataset.id;
-                    const note = document.getElementById('newFollowupNote').value.trim();
-                    const status = document.getElementById('newFollowupStatus').value.trim() || null;
+        body.innerHTML = html;
 
-                    if (!note) {
-                        alert('يرجى كتابة ملاحظة المتابعة');
-                        return;
-                    }
+        // ربط زر إضافة المتابعة (تم تصحيح الخطأ هنا: request_id بدلاً من consultation_id)
+        document.getElementById('btnAddFollowup')?.addEventListener('click', async function() {
+            const consId = this.dataset.id;
+            const note = document.getElementById('newFollowupNote').value.trim();
+            const status = document.getElementById('newFollowupStatus').value.trim() || null;
 
-                    const { error } = await supabase
-                        .from('client_followups')
-                        .insert({
-                            consultation_id: consId,
-                            note: note,
-                            status: status,
-                            created_at: new Date().toISOString()
-                        });
+            if (!note) {
+                alert('يرجى كتابة ملاحظة المتابعة');
+                return;
+            }
 
-                    if (error) {
-                        alert('❌ فشل إضافة المتابعة: ' + error.message);
-                    } else {
-                        alert('✅ تم إضافة المتابعة بنجاح!');
-                        openPreview(consId);
-                    }
+            const { data: { user } } = await supabase.auth.getUser();
+
+            const { error } = await supabase
+                .from('client_followups')
+                .insert({
+                    request_id: consId,         // ✅ تم التصحيح هنا
+                    notes: note,                // ✅ اسم العمود notes وليس note
+                    followup_status: status,    // ✅ اسم العمود followup_status وليس status
+                    created_by: user?.id,       // ✅ تمت إضافة من قام بإنشائها
+                    contact_method: 'other',    // قيمة افتراضية
+                    action: 'متابعة',
+                    followup_date: new Date().toISOString()
                 });
 
-            } catch (err) {
-                body.innerHTML = `<div class="message error">❌ حدث خطأ غير متوقع: ${err.message}</div>`;
+            if (error) {
+                alert('❌ فشل إضافة المتابعة: ' + error.message);
+            } else {
+                alert('✅ تم إضافة المتابعة بنجاح!');
+                openPreview(consId);
             }
-        }
+        });
 
+    } catch (err) {
+        body.innerHTML = `<div class="message error">❌ حدث خطأ غير متوقع: ${err.message}</div>`;
+    }
+}
         // ============================================================
         // دوال إدارة الموظفين (للمدير فقط)
         // ============================================================
