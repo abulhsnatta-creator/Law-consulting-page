@@ -149,39 +149,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = messageInput ? messageInput.value.trim() : '';
 		// ... بعد التحقق من الحقول مباشرة ...
 
-// 🔴 1. فحص وجود طلب مكرر
-const { data: existingRequests } = await supabase
-    .from('consultation_requests')
-    .select('id, client_name, phone, service, created_at')
-    .eq('client_name', fullName)
-    .eq('phone', phone)
-    .eq('service', service)
-    .order('created_at', { ascending: false })
-    .limit(1);
+        // 🔴 فحص وجود طلب مكرر (مع إصلاح الأخطاء)
+        console.log('جاري فحص التكرار...');
+        const { data: existingRequests, error: checkError } = await supabase
+            .from('consultation_requests')
+            .select('id, client_name, phone, service, created_at')
+            .eq('client_name', fullName)
+            .eq('phone', phone)
+            .eq('service', service)
+            .order('created_at', { ascending: false })
+            .limit(1);
 
-if (existingRequests && existingRequests.length > 0) {
-    const lastRequest = existingRequests[0];
-    const lastDate = new Date(lastRequest.created_at);
-    const now = new Date();
-    const diffHours = (now - lastDate) / (1000 * 60 * 60);
-
-    // إذا كان الطلب السابق خلال آخر 24 ساعة
-    if (diffHours < 24) {
-        const userChoice = confirm(
-            `⚠️ يوجد طلب سابق بنفس البيانات (${fullName} - ${phone}) بتاريخ ${lastDate.toLocaleString('ar-EG')}.\n\n` +
-            `هل هذا الطلب مكرر؟\n` +
-            `اضغط "OK" إذا كان هذا هو نفس الطلب السابق (لن يتم الحفظ).\n` +
-            `اضغط "إلغاء" إذا كان هذا طلباً جديداً (سيتم الحفظ).`
-        );
-
-        if (userChoice) {
-            // المستخدم أكد أنه نفس الطلب، لا يتم الحفظ
-            showFormMessage('تم إلغاء الإرسال لأن هذا الطلب موجود مسبقاً.', 'error');
-            return;
+        if (checkError) {
+            console.error('خطأ في فحص التكرار:', checkError);
+        } else {
+            console.log('نتيجة الفحص:', existingRequests);
         }
-    }
-}
-        const privacyAccepted = privacyInput ? privacyInput.checked : false;
+
+        if (existingRequests && existingRequests.length > 0) {
+            const lastRequest = existingRequests[0];
+            const lastDate = new Date(lastRequest.created_at);
+            const now = new Date();
+            const diffHours = (now - lastDate) / (1000 * 60 * 60);
+
+            // إذا كان الطلب السابق خلال آخر 24 ساعة
+            if (diffHours < 24) {
+                const userChoice = confirm(
+                    `⚠️ يوجد طلب سابق بنفس البيانات (${fullName} - ${phone}) بتاريخ ${lastDate.toLocaleString('ar-EG')}.\n\n` +
+                    `اضغط "موافق" إذا كان هذا هو نفس الطلب (لن يتم الحفظ).\n` +
+                    `اضغط "إلغاء" إذا كان هذا طلباً جديداً (سيتم الحفظ).`
+                );
+
+                if (userChoice) {
+                    showFormMessage('تم إلغاء الإرسال لأن هذا الطلب موجود مسبقاً.', 'error');
+                    return; // إيقاف الإرسال نهائياً
+                }
+            }
+        }     
+        		const privacyAccepted = privacyInput ? privacyInput.checked : false;
 
         // التحقق من البيانات الأساسية
         if (!fullName) { showFormMessage('من فضلك أدخل الاسم.', 'error'); nameInput.focus(); return; }
