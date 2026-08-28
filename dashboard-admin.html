@@ -50,12 +50,6 @@
         .btn-save-assign:hover { background: #218838; }
         select.assigned-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 13px; width: 100%; max-width: 200px; }
 
-        /* ====== أزرار تعديل وحذف الطلبات (إضافة جديدة) ====== */
-        .btn-edit-cons { background: #ffc107; color: #000; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 0 4px; }
-        .btn-edit-cons:hover { background: #e0a800; }
-        .btn-delete-cons { background: #dc3545; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 0 4px; }
-        .btn-delete-cons:hover { background: #c82333; }
-
         /* ====== بطاقات الموظفين ====== */
         .employee-card { background: #f8faff; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-right: 5px solid #2d7aff; flex-wrap: wrap; gap: 10px; }
         .employee-card .info { display: flex; gap: 30px; flex-wrap: wrap; }
@@ -275,12 +269,7 @@
                         ` : `
                         <td>${assignedName}</td>
                         `}
-                        <!-- ====== تم إضافة الأزرار الجديدة هنا ====== -->
-                        <td>
-                            <button class="btn-preview" data-id="${item.id}">📄 معاينة</button>
-                            <button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button>
-                            <button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button>
-                        </td>
+                        <td><button class="btn-preview" data-id="${item.id}">📄 معاينة</button></td>
                     </tr>
                 `;
             });
@@ -329,34 +318,6 @@
                 btn.addEventListener('click', function() {
                     const id = this.dataset.id;
                     openPreview(id);
-                });
-            });
-
-            // ====== تم إضافة ربط الأزرار الجديدة هنا ======
-            // ربط أزرار التعديل
-            document.querySelectorAll('.btn-edit-cons').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const item = allConsultations.find(c => c.id === id);
-                    if (item) openEditConsultationModal(item);
-                });
-            });
-
-            // ربط أزرار الحذف
-            document.querySelectorAll('.btn-delete-cons').forEach(btn => {
-                btn.addEventListener('click', async function() {
-                    const id = this.dataset.id;
-                    if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
-                    const { error } = await supabase
-                        .from('consultation_requests')
-                        .delete()
-                        .eq('id', id);
-                    if (error) {
-                        alert('❌ فشل الحذف: ' + error.message);
-                    } else {
-                        alert('✅ تم حذف الطلب بنجاح');
-                        applyFilters();
-                    }
                 });
             });
 
@@ -621,33 +582,6 @@
                     await fetchEmployees();
                 }
             })();
-        }
-
-        // ============================================================
-        // دوال إدارة الطلبات (إضافة جديدة)
-        // ============================================================
-
-        async function openEditConsultationModal(item) {
-            const newName = prompt('تعديل اسم العميل:', item.client_name);
-            if (newName === null) return;
-
-            const newPhone = prompt('تعديل رقم الهاتف:', item.phone);
-            if (newPhone === null) return;
-
-            const newStatus = prompt('تعديل الحالة (new, contacted, in_progress, resolved):', item.status);
-            if (newStatus === null) return;
-
-            const { error } = await supabase
-                .from('consultation_requests')
-                .update({ client_name: newName, phone: newPhone, status: newStatus })
-                .eq('id', item.id);
-
-            if (error) {
-                alert('❌ فشل التعديل: ' + error.message);
-            } else {
-                alert('✅ تم تعديل الطلب بنجاح');
-                applyFilters();
-            }
         }
 
         // ============================================================
