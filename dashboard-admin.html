@@ -895,64 +895,6 @@ if (currentUser.role === 'manager') {
         // ============================================================
         // بدء التشغيل
         // ============================================================
-
-        document.addEventListener('DOMContentLoaded', initPage);
-async function addManualConsultation() {
-    const name = document.getElementById('manualName').value.trim();
-    const phone = document.getElementById('manualPhone').value.trim();
-    const email = document.getElementById('manualEmail').value.trim();
-    const company = document.getElementById('manualCompany').value.trim();
-    const service = document.getElementById('manualService').value;
-    const message = document.getElementById('manualMessage').value.trim();
-    const out = document.getElementById('manualMsg');
-    const btn = document.getElementById('btnAddManualConsultation');
-
-    if (!name || !phone || !service) {
-        out.textContent = 'يرجى ملء الحقول الإلزامية (الاسم، الهاتف، الخدمة).';
-        return;
-    }
-
-    btn.disabled = true;
-    out.textContent = 'جاري الحفظ...';
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { alert('يرجى تسجيل الدخول مجدداً.'); return; }
-
-    try {
-        const { error } = await supabase.from('consultation_requests').insert({
-            client_name: name,
-            phone: phone,
-            email: email || null,
-            company: company || null,
-            service: service || null,
-            message: message || null,
-            privacy_accepted: true,
-            status: 'new'
-        });
-
-        if (error) throw error;
-
-        // إرسال إشعار تليجرام (اختياري)
-        await fetch(`${SUPABASE_URL}/functions/v1/send-telegram`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ client_name: name, phone: phone, email: email || null, service: service || null, message: message || null })
-        }).catch(e => console.warn('تعذر إرسال التليجرام:', e));
-
-        out.textContent = '✅ تم حفظ الطلب بنجاح!';
-        document.getElementById('manualName').value = '';
-        document.getElementById('manualPhone').value = '';
-        document.getElementById('manualEmail').value = '';
-        document.getElementById('manualCompany').value = '';
-        document.getElementById('manualService').value = '';
-        document.getElementById('manualMessage').value = '';
-        await fetchConsultations(); // تحديث الجدول
-    } catch (err) {
-        out.textContent = '❌ فشل الحفظ: ' + err.message;
-    } finally {
-        btn.disabled = false;
-    }
-}
     })();
 </script>
 </body>
