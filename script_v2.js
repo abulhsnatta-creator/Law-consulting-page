@@ -1,15 +1,16 @@
-document.addEventListener('DOMContentLoaded', () => {
+// =========================================================
+// 1. تعريف المكتبة والمتغيرات (خارج أي دالة لضمان التوفر العام)
+// =========================================================
+const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w';
+const SUPABASE_TABLE = 'consultation_requests';
+const TELEGRAM_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-telegram`;
+const BUCKET_NAME = 'consultation-files'; // جاهز لخطوة المرفقات لاحقاً
 
-    // =========================================================
-    // إعدادات Supabase
-    // =========================================================
- 
-    const SUPABASE_TABLE = 'consultation_requests';
-    const TELEGRAM_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-telegram`; 
-    const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w';
-    const SUPABASE_TABLE = 'consultation_requests';
-    const TELEGRAM_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-telegram`; // تأكد من اسم الدالة (send-telegram أو أي اسم آخر)
+// 🔴 تعريف supabase هنا في النطاق العام (أهم سطر تم إصلاحه)
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================
     // تهيئة AOS
@@ -149,10 +150,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const company = companyInput ? companyInput.value.trim() : '';
         const service = serviceInput ? serviceInput.value.trim() : '';
         const message = messageInput ? messageInput.value.trim() : '';
-		// ... بعد التحقق من الحقول مباشرة ...
+        const privacyAccepted = privacyInput ? privacyInput.checked : false;
 
-        // 🔴 فحص وجود طلب مكرر (مع إصلاح الأخطاء)
-        console.log('جاري فحص التكرار...');
+        // التحقق من البيانات الأساسية
+        if (!fullName) { showFormMessage('من فضلك أدخل الاسم.', 'error'); nameInput.focus(); return; }
+        if (!phone) { showFormMessage('من فضلك أدخل رقم الهاتف.', 'error'); phoneInput.focus(); return; }
+        if (!service) { showFormMessage('من فضلك اختر نوع الخدمة المطلوبة.', 'error'); serviceInput.focus(); return; }
+        if (!privacyAccepted) { showFormMessage('يجب الموافقة على سياسة الخصوصية قبل إرسال الطلب.', 'error'); privacyInput.focus(); return; }
+
+        // منع الإرسال المزدوج
+        const submitButton = leadForm.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton ? submitButton.innerText : 'إرسال طلب الاستشارة';
+        if (submitButton) { submitButton.disabled = true; submitButton.innerText = 'جاري إرسال الطلب...'; }
+        showFormMessage('جاري إرسال طلب الاستشارة...', 'loading');
+
+        // 🔴 فحص التكرار
         const { data: existingRequests, error: checkError } = await supabase
             .from('consultation_requests')
             .select('id, client_name, phone, service, created_at')
@@ -164,8 +176,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (checkError) {
             console.error('خطأ في فحص التكرار:', checkError);
-        } else {
-            console.log('نتيجة الفحص:', existingRequests);
+            showFormMessage('تعذر التحقق من التكرار.', 'error');
+            if (submitButton) { submitButton.disabled = false; submitButton.innerText = originalButtonText; }
+            return;
         }
 
         if (existingRequests && existingRequests.length > 0) {
@@ -174,7 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const now = new Date();
             const diffHours = (now - lastDate) / (1000 * 60 * 60);
 
-            // إذا كان الطلب السابق خلال آخر 24 ساعة
             if (diffHours < 24) {
                 const userChoice = confirm(
                     `⚠️ يوجد طلب سابق بنفس البيانات (${fullName} - ${phone}) بتاريخ ${lastDate.toLocaleString('ar-EG')}.\n\n` +
@@ -184,22 +196,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (userChoice) {
                     showFormMessage('تم إلغاء الإرسال لأن هذا الطلب موجود مسبقاً.', 'error');
-                    return; // إيقاف الإرسال نهائياً
+                    if (submitButton) { submitButton.disabled = false; submitButton.innerText = originalButtonText; }
+                    return;
                 }
             }
-        }     
-        		const privacyAccepted = privacyInput ? privacyInput.checked : false;
-
-        // التحقق من البيانات الأساسية
-        if (!fullName) { showFormMessage('من فضلك أدخل الاسم.', 'error'); nameInput.focus(); return; }
-        if (!phone) { showFormMessage('من فضلك أدخل رقم الهاتف.', 'error'); phoneInput.focus(); return; }
-        if (!service) { showFormMessage('من فضلك اختر نوع الخدمة المطلوبة.', 'error'); serviceInput.focus(); return; }
-        if (!privacyAccepted) { showFormMessage('يجب الموافقة على سياسة الخصوصية قبل إرسال الطلب.', 'error'); privacyInput.focus(); return; }
-
-        const submitButton = leadForm.querySelector('button[type="submit"]');
-        const originalButtonText = submitButton ? submitButton.innerText : 'إرسال طلب الاستشارة';
-        if (submitButton) { submitButton.disabled = true; submitButton.innerText = 'جاري إرسال الطلب...'; }
-        showFormMessage('جاري إرسال طلب الاستشارة...', 'loading');
+        }
 
         try {
             // تجهيز البيانات
@@ -213,9 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 privacy_accepted: true
             };
 
-            console.log('إرسال البيانات إلى Supabase:', consultationData);
-
-            // 1. حفظ البيانات في قاعدة البيانات
+            // حفظ البيانات في قاعدة البيانات
             const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
                 method: 'POST',
                 headers: {
@@ -241,13 +240,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorMessage);
             }
 
-            // 2. إرسال إشعار التليجرام (تمرير نفس البيانات للدالة)
-            // ملاحظة: استبدل 'send-telegram' باسم الدالة الفعلي في Supabase إذا كان مختلفاً
+            // إرسال إشعار التليجرام
             await fetch(TELEGRAM_FUNCTION_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}` // غالباً تحتاج إلى تمرير التوكن
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'x-telegram-internal-secret': Deno.env.get('TELEGRAM_BOT_TOKEN') // إذا كان من المتصفح، لن يعمل! سنتركه لاحقاً
                 },
                 body: JSON.stringify(consultationData)
             });
