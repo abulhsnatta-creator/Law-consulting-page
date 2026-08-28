@@ -146,6 +146,7 @@
 <div class="container">
     <h1 id="pageTitle">🏛️ لوحة التحكم <span class="user-info" id="userNameDisplay"></span></h1>
     <div class="nav-bar">
+        <button class="nav-btn hidden" id="btnManualEntry">📝 إدخال طلب يدوي</button>	
         <button class="nav-btn" id="btnShowConsultations">📋 عرض الطلبات</button>
         <button class="nav-btn hidden" id="btnShowEmployees">👥 إدارة الموظفين</button>
         <button class="nav-btn logout" id="btnLogout">🚪 تسجيل الخروج</button>
@@ -172,6 +173,52 @@
     </div>
 
     <!-- ====== قسم إدارة الموظفين (للمدير فقط) ====== -->
+	<!-- قسم إدخال الطلبات اليدوية -->
+<div id="sectionManualEntry" class="section">
+    <h2>📝 إدخال طلب استشارة (يدوي)</h2>
+    <div class="add-employee-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label>اسم العميل *</label>
+                <input type="text" id="manualName" placeholder="الاسم الكامل">
+            </div>
+            <div class="form-group">
+                <label>رقم الهاتف *</label>
+                <input type="text" id="manualPhone" placeholder="01xxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <input type="email" id="manualEmail" placeholder="example@domain.com">
+            </div>
+            <div class="form-group">
+                <label>الشركة (اختياري)</label>
+                <input type="text" id="manualCompany" placeholder="اسم الشركة">
+            </div>
+            <div class="form-group">
+                <label>الخدمة المطلوبة</label>
+                <select id="manualService">
+                    <option value="">اختر الخدمة</option>
+                    <option value="corporate">استشارات الشركات</option>
+                    <option value="contracts">صياغة العقود</option>
+                    <option value="litigation">قضايا وتقاضي</option>
+                    <option value="arbitration">تحكيم وتسوية نزاعات</option>
+                    <option value="ip">حماية الملكية الفكرية</option>
+                    <option value="other">استشارة عامة</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row" style="margin-top: 10px;">
+            <div class="form-group" style="flex: 2;">
+                <label>تفاصيل الطلب</label>
+                <textarea id="manualMessage" rows="4" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;" placeholder="اكتب ملخص الطلب هنا..."></textarea>
+            </div>
+        </div>
+        <div class="form-group">
+            <button id="btnAddManualConsultation" class="primary" style="margin-top: 10px;">➕ حفظ الطلب</button>
+            <span id="manualMsg" class="staff-msg"></span>
+        </div>
+    </div>
+</div>
     <div id="sectionEmployees" class="section">
         <h2>👥 إدارة الموظفين</h2>
         <div class="add-employee-form" id="addEmployeeForm">
@@ -193,6 +240,7 @@
                     <label>الدور</label>
                     <select id="empRole">
                         <option value="followup_staff">موظف متابعة</option>
+						<option value="secretary">سكرتير</option>
                         <option value="manager">مدير</option>
                     </select>
                 </div>
@@ -605,7 +653,7 @@
             // نموذج تعديل بسيط (يمكن التوسع فيه)
             const newName = prompt('تعديل اسم الموظف:', emp.full_name);
             if (newName === null) return;
-            const newRole = prompt('تعديل الدور (manager / followup_staff):', emp.role);
+            const newRole = prompt('تعديل الدور (manager / followup_staff / secretary):', emp.role);
             if (newRole === null) return;
             const newStatus = confirm('هل الموظف نشط؟ اضغط OK لنشط، Cancel لغير نشط') ? true : false;
 
@@ -787,20 +835,32 @@
             };
 
             // 3. ضبط العنوان واسم المستخدم
-            document.getElementById('userNameDisplay').textContent = `👤 ${currentUser.full_name}`;
-            if (currentUser.role === 'manager') {
-                document.getElementById('pageTitle').innerHTML = `🏛️ لوحة تحكم المدير <span class="user-info">👤 ${currentUser.full_name}</span>`;
-                document.getElementById('btnShowEmployees').classList.remove('hidden');
-            } else {
-                document.getElementById('pageTitle').innerHTML = `📋 لوحة المتابعة <span class="user-info">👤 ${currentUser.full_name}</span>`;
-                document.getElementById('btnShowEmployees').classList.add('hidden');
-                // إخفاء زر إدارة الموظفين من الناف بار
-            }
+document.getElementById('userNameDisplay').textContent = `👤 ${currentUser.full_name}`;
 
+// 🔴 إضافة حالة السكرتير هنا
+if (currentUser.role === 'manager') {
+    document.getElementById('pageTitle').innerHTML = `🏛️ لوحة تحكم المدير <span class="user-info">👤 ${currentUser.full_name}</span>`;
+    document.getElementById('btnShowEmployees').classList.remove('hidden');
+    // إذا أردت إخفاء زر الإدخال اليدوي عن المدير، أضف السطر التالي:
+    document.getElementById('btnManualEntry').classList.add('hidden');
+} else if (currentUser.role === 'secretary') {
+    document.getElementById('pageTitle').innerHTML = `📝 لوحة إدخال الطلبات <span class="user-info">👤 ${currentUser.full_name}</span>`;
+    // يُظهر زر الإدخال اليدوي
+    document.getElementById('btnManualEntry').classList.remove('hidden');
+    // يخفي زر إدارة الموظفين لأنها صلاحية المدير فقط
+    document.getElementById('btnShowEmployees').classList.add('hidden');
+} else {
+    // للموظف العادي (followup_staff)
+    document.getElementById('pageTitle').innerHTML = `📋 لوحة المتابعة <span class="user-info">👤 ${currentUser.full_name}</span>`;
+    document.getElementById('btnShowEmployees').classList.add('hidden');
+    document.getElementById('btnManualEntry').classList.add('hidden');
+}
             // 4. ربط الأزرار
             document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
             document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
             document.getElementById('btnLogout').addEventListener('click', handleLogout);
+			document.getElementById('btnManualEntry').addEventListener('click', () => showSection('sectionManualEntry'));
+            document.getElementById('btnAddManualConsultation').addEventListener('click', addManualConsultation);
 
             document.getElementById('btnApplyFilters').addEventListener('click', applyFilters);
             document.getElementById('btnResetFilters').addEventListener('click', function() {
