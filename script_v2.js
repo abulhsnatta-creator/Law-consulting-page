@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w';
     const SUPABASE_TABLE = 'consultation_requests';
+    const TELEGRAM_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-telegram`; // تأكد من اسم الدالة (send-telegram أو أي اسم آخر)
 
     // =========================================================
     // تهيئة AOS
@@ -162,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // تجهيز البيانات
             const consultationData = {
-                client_name: fullName, // ✅ العمود الصحيح في قاعدة البيانات
+                client_name: fullName,
                 phone: phone,
                 email: email || null,
                 company: company || null,
@@ -173,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log('إرسال البيانات إلى Supabase:', consultationData);
 
-            // الاتصال بـ Supabase
+            // 1. حفظ البيانات في قاعدة البيانات
             const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
                 method: 'POST',
                 headers: {
@@ -198,6 +199,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 throw new Error(errorMessage);
             }
+
+            // 2. إرسال إشعار التليجرام (تمرير نفس البيانات للدالة)
+            // ملاحظة: استبدل 'send-telegram' باسم الدالة الفعلي في Supabase إذا كان مختلفاً
+            await fetch(TELEGRAM_FUNCTION_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}` // غالباً تحتاج إلى تمرير التوكن
+                },
+                body: JSON.stringify(consultationData)
+            });
 
             // نجاح الإرسال
             console.log('تم حفظ طلب الاستشارة بنجاح في Supabase.');
