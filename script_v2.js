@@ -147,6 +147,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const company = companyInput ? companyInput.value.trim() : '';
         const service = serviceInput ? serviceInput.value.trim() : '';
         const message = messageInput ? messageInput.value.trim() : '';
+		// ... بعد التحقق من الحقول مباشرة ...
+
+// 🔴 1. فحص وجود طلب مكرر
+const { data: existingRequests } = await supabase
+    .from('consultation_requests')
+    .select('id, client_name, phone, service, created_at')
+    .eq('client_name', fullName)
+    .eq('phone', phone)
+    .eq('service', service)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+if (existingRequests && existingRequests.length > 0) {
+    const lastRequest = existingRequests[0];
+    const lastDate = new Date(lastRequest.created_at);
+    const now = new Date();
+    const diffHours = (now - lastDate) / (1000 * 60 * 60);
+
+    // إذا كان الطلب السابق خلال آخر 24 ساعة
+    if (diffHours < 24) {
+        const userChoice = confirm(
+            `⚠️ يوجد طلب سابق بنفس البيانات (${fullName} - ${phone}) بتاريخ ${lastDate.toLocaleString('ar-EG')}.\n\n` +
+            `هل هذا الطلب مكرر؟\n` +
+            `اضغط "OK" إذا كان هذا هو نفس الطلب السابق (لن يتم الحفظ).\n` +
+            `اضغط "إلغاء" إذا كان هذا طلباً جديداً (سيتم الحفظ).`
+        );
+
+        if (userChoice) {
+            // المستخدم أكد أنه نفس الطلب، لا يتم الحفظ
+            showFormMessage('تم إلغاء الإرسال لأن هذا الطلب موجود مسبقاً.', 'error');
+            return;
+        }
+    }
+}
         const privacyAccepted = privacyInput ? privacyInput.checked : false;
 
         // التحقق من البيانات الأساسية
