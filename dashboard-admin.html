@@ -23,7 +23,6 @@
         .section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ====== الفلاتر ====== */
         .filters { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 25px; background: #f8faff; padding: 15px; border-radius: 12px; align-items: center; }
         .filters label { font-weight: 600; color: #1a2a3a; }
         .filters input, .filters select { padding: 8px 14px; border: 1px solid #dce1e8; border-radius: 8px; font-size: 14px; }
@@ -31,7 +30,6 @@
         .filters button:hover { background: #1a5cc4; }
         .filters button.reset { background: #6c757d; }
 
-        /* ====== الجداول ====== */
         .table-responsive { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
         th { background: #2d7aff; color: white; padding: 12px 10px; text-align: center; font-weight: 600; white-space: nowrap; }
@@ -49,14 +47,12 @@
         .btn-save-assign { background: #28a745; color: white; border: none; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
         .btn-save-assign:hover { background: #218838; }
         select.assigned-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 13px; width: 100%; max-width: 200px; }
-
-        /* ====== أزرار تعديل وحذف الطلبات (إضافة جديدة) ====== */
+        
         .btn-edit-cons { background: #ffc107; color: #000; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 0 4px; }
         .btn-edit-cons:hover { background: #e0a800; }
         .btn-delete-cons { background: #dc3545; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 0 4px; }
         .btn-delete-cons:hover { background: #c82333; }
 
-        /* ====== بطاقات الموظفين ====== */
         .employee-card { background: #f8faff; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-right: 5px solid #2d7aff; flex-wrap: wrap; gap: 10px; }
         .employee-card .info { display: flex; gap: 30px; flex-wrap: wrap; }
         .employee-card .info strong { color: #1a2a3a; }
@@ -74,47 +70,11 @@
         .message.error { background: #f8d7da; border-color: #dc3545; }
         .loading { text-align: center; padding: 40px; color: #6c757d; }
 
-        /* ====== نافذة المعاينة ====== */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            animation: fadeInModal 0.3s ease;
-        }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; animation: fadeInModal 0.3s ease; }
         .modal-overlay.active { display: flex; }
         @keyframes fadeInModal { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .modal-content {
-            background: white;
-            border-radius: 16px;
-            max-width: 800px;
-            width: 95%;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 25px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            position: relative;
-        }
-        .modal-close {
-            position: sticky;
-            top: 0;
-            float: left;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 34px;
-            height: 34px;
-            font-size: 20px;
-            cursor: pointer;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .modal-content { background: white; border-radius: 16px; max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative; }
+        .modal-close { position: sticky; top: 0; float: left; background: #dc3545; color: white; border: none; border-radius: 50%; width: 34px; height: 34px; font-size: 20px; cursor: pointer; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; }
         .modal-close:hover { background: #c82333; }
         .modal-title { font-size: 24px; color: #1a2a3a; border-bottom: 2px solid #2d7aff; padding-bottom: 12px; margin-bottom: 20px; }
         .modal-section { margin-bottom: 20px; }
@@ -129,7 +89,6 @@
         .add-followup-form input, .add-followup-form textarea { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid #dce1e8; border-radius: 6px; }
         .add-followup-form button { background: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; }
 
-        /* ====== نموذج إضافة موظف ====== */
         .add-employee-form { background: #f8faff; padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #e9edf4; }
         .add-employee-form .form-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: end; }
         .add-employee-form .form-group { flex: 1; min-width: 150px; }
@@ -146,13 +105,13 @@
 <div class="container">
     <h1 id="pageTitle">🏛️ لوحة التحكم <span class="user-info" id="userNameDisplay"></span></h1>
     <div class="nav-bar">
-        <button class="nav-btn hidden" id="btnManualEntry">📝 إدخال طلب يدوي</button>	
         <button class="nav-btn" id="btnShowConsultations">📋 عرض الطلبات</button>
+        <button class="nav-btn hidden" id="btnManualEntry">📝 إدخال طلب يدوي</button>
         <button class="nav-btn hidden" id="btnShowEmployees">👥 إدارة الموظفين</button>
         <button class="nav-btn logout" id="btnLogout">🚪 تسجيل الخروج</button>
     </div>
 
-    <!-- ====== قسم الاستشارات ====== -->
+    <!-- قسم الاستشارات -->
     <div id="sectionConsultations" class="section active">
         <h2>📋 قائمة الطلبات</h2>
         <div class="filters" id="filterContainer">
@@ -172,53 +131,54 @@
         <div id="consultationsContainer"><div class="loading">⏳ جاري التحميل...</div></div>
     </div>
 
-    <!-- ====== قسم إدارة الموظفين (للمدير فقط) ====== -->
-	<!-- قسم إدخال الطلبات اليدوية -->
-<div id="sectionManualEntry" class="section">
-    <h2>📝 إدخال طلب استشارة (يدوي)</h2>
-    <div class="add-employee-form">
-        <div class="form-row">
-            <div class="form-group">
-                <label>اسم العميل *</label>
-                <input type="text" id="manualName" placeholder="الاسم الكامل">
+    <!-- قسم إدخال الطلبات اليدوية -->
+    <div id="sectionManualEntry" class="section">
+        <h2>📝 إدخال طلب استشارة (يدوي)</h2>
+        <div class="add-employee-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>اسم العميل *</label>
+                    <input type="text" id="manualName" placeholder="الاسم الكامل">
+                </div>
+                <div class="form-group">
+                    <label>رقم الهاتف *</label>
+                    <input type="text" id="manualPhone" placeholder="01xxxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" id="manualEmail" placeholder="example@domain.com">
+                </div>
+                <div class="form-group">
+                    <label>الشركة (اختياري)</label>
+                    <input type="text" id="manualCompany" placeholder="اسم الشركة">
+                </div>
+                <div class="form-group">
+                    <label>الخدمة المطلوبة</label>
+                    <select id="manualService">
+                        <option value="">اختر الخدمة</option>
+                        <option value="corporate">استشارات الشركات</option>
+                        <option value="contracts">صياغة العقود</option>
+                        <option value="litigation">قضايا وتقاضي</option>
+                        <option value="arbitration">تحكيم وتسوية نزاعات</option>
+                        <option value="ip">حماية الملكية الفكرية</option>
+                        <option value="other">استشارة عامة</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row" style="margin-top: 10px;">
+                <div class="form-group" style="flex: 2;">
+                    <label>تفاصيل الطلب</label>
+                    <textarea id="manualMessage" rows="4" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;" placeholder="اكتب ملخص الطلب هنا..."></textarea>
+                </div>
             </div>
             <div class="form-group">
-                <label>رقم الهاتف *</label>
-                <input type="text" id="manualPhone" placeholder="01xxxxxxxxx">
+                <button id="btnAddManualConsultation" class="primary" style="margin-top: 10px;">➕ حفظ الطلب</button>
+                <span id="manualMsg" class="staff-msg"></span>
             </div>
-            <div class="form-group">
-                <label>البريد الإلكتروني</label>
-                <input type="email" id="manualEmail" placeholder="example@domain.com">
-            </div>
-            <div class="form-group">
-                <label>الشركة (اختياري)</label>
-                <input type="text" id="manualCompany" placeholder="اسم الشركة">
-            </div>
-            <div class="form-group">
-                <label>الخدمة المطلوبة</label>
-                <select id="manualService">
-                    <option value="">اختر الخدمة</option>
-                    <option value="corporate">استشارات الشركات</option>
-                    <option value="contracts">صياغة العقود</option>
-                    <option value="litigation">قضايا وتقاضي</option>
-                    <option value="arbitration">تحكيم وتسوية نزاعات</option>
-                    <option value="ip">حماية الملكية الفكرية</option>
-                    <option value="other">استشارة عامة</option>
-                </select>
-            </div>
-        </div>
-        <div class="form-row" style="margin-top: 10px;">
-            <div class="form-group" style="flex: 2;">
-                <label>تفاصيل الطلب</label>
-                <textarea id="manualMessage" rows="4" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;" placeholder="اكتب ملخص الطلب هنا..."></textarea>
-            </div>
-        </div>
-        <div class="form-group">
-            <button id="btnAddManualConsultation" class="primary" style="margin-top: 10px;">➕ حفظ الطلب</button>
-            <span id="manualMsg" class="staff-msg"></span>
         </div>
     </div>
-</div>
+
+    <!-- قسم إدارة الموظفين -->
     <div id="sectionEmployees" class="section">
         <h2>👥 إدارة الموظفين</h2>
         <div class="add-employee-form" id="addEmployeeForm">
@@ -240,8 +200,8 @@
                     <label>الدور</label>
                     <select id="empRole">
                         <option value="followup_staff">موظف متابعة</option>
-						<option value="secretary">سكرتير</option>
                         <option value="manager">مدير</option>
+                        <option value="secretary">سكرتير</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -258,7 +218,7 @@
     </div>
 </div>
 
-<!-- ====== نافذة المعاينة ====== -->
+<!-- نافذة المعاينة -->
 <div class="modal-overlay" id="previewModal">
     <div class="modal-content">
         <button class="modal-close" id="modalClose">✕</button>
@@ -271,25 +231,14 @@
     (function() {
         'use strict';
 
-        // ============================================================
-        // 🔑 إعدادات Supabase (ضع المفتاح العام الصحيح)
-        // ============================================================
         const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w';
 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ============================================================
-        // متغيرات عامة
-        // ============================================================
-        let currentUser = null;        // { id, role, full_name }
+        let currentUser = null;
         let allConsultations = [];
         let allEmployees = [];
-        let currentFilteredData = [];
-
-        // ============================================================
-        // دوال العرض
-        // ============================================================
 
         function renderConsultations(data, employees) {
             const container = document.getElementById('consultationsContainer');
@@ -323,7 +272,6 @@
                         ` : `
                         <td>${assignedName}</td>
                         `}
-                        <!-- ====== تم إضافة الأزرار الجديدة هنا ====== -->
                         <td>
                             <button class="btn-preview" data-id="${item.id}">📄 معاينة</button>
                             <button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button>
@@ -334,11 +282,7 @@
             });
 
             let headerCols = `<th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الحالة</th><th>التاريخ</th>`;
-            if (currentUser?.role === 'manager') {
-                headerCols += `<th>المتابع</th>`;
-            } else {
-                headerCols += `<th>المتابع</th>`;
-            }
+            headerCols += `<th>المتابع</th>`;
             headerCols += `<th>الإجراء</th>`;
 
             container.innerHTML = `
@@ -350,7 +294,6 @@
                 </div>
             `;
 
-            // ربط أزرار حفظ التعيين (للمدير فقط)
             if (currentUser?.role === 'manager') {
                 document.querySelectorAll('.btn-save-assign').forEach(btn => {
                     btn.addEventListener('click', async function() {
@@ -372,7 +315,6 @@
                 });
             }
 
-            // ربط أزرار المعاينة (للجميع)
             document.querySelectorAll('.btn-preview').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.dataset.id;
@@ -380,8 +322,6 @@
                 });
             });
 
-            // ====== تم إضافة ربط الأزرار الجديدة هنا ======
-            // ربط أزرار التعديل
             document.querySelectorAll('.btn-edit-cons').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.dataset.id;
@@ -390,7 +330,6 @@
                 });
             });
 
-            // ربط أزرار الحذف
             document.querySelectorAll('.btn-delete-cons').forEach(btn => {
                 btn.addEventListener('click', async function() {
                     const id = this.dataset.id;
@@ -440,7 +379,6 @@
             });
             container.innerHTML = cards;
 
-            // ربط أزرار التعديل والحذف
             document.querySelectorAll('.btn-edit-emp').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.dataset.id;
@@ -456,10 +394,6 @@
             });
         }
 
-        // ============================================================
-        // نافذة المعاينة الكاملة
-        // ============================================================
-
         async function openPreview(consultationId) {
             const modal = document.getElementById('previewModal');
             const body = document.getElementById('modalBody');
@@ -469,7 +403,6 @@
             body.innerHTML = `<div class="loading">⏳ جاري تحميل التفاصيل...</div>`;
 
             try {
-                // جلب بيانات الاستشارة
                 const { data: consultation, error: conError } = await supabase
                     .from('consultation_requests')
                     .select('*')
@@ -481,7 +414,6 @@
                     return;
                 }
 
-                // جلب المتابعات
                 const { data: followups, error: folError } = await supabase
                     .from('client_followups')
                     .select('*')
@@ -490,7 +422,6 @@
 
                 if (folError) console.warn('خطأ في جلب المتابعات:', folError);
 
-                // جلب اسم الموظف المسند
                 let assignedName = 'غير محدد';
                 if (consultation.assigned_to) {
                     const { data: emp } = await supabase
@@ -514,7 +445,6 @@
                     </div>
                 `;
 
-                // سجل المتابعات
                 html += `<div class="modal-section"><h3>📋 سجل المتابعات</h3>`;
                 if (followups && followups.length > 0) {
                     followups.forEach(f => {
@@ -532,7 +462,6 @@
                 }
                 html += `</div>`;
 
-                // نموذج إضافة متابعة (للجميع)
                 html += `
                     <div class="modal-section">
                         <h3>➕ إضافة متابعة جديدة</h3>
@@ -546,7 +475,6 @@
 
                 body.innerHTML = html;
 
-                // ربط زر إضافة المتابعة
                 document.getElementById('btnAddFollowup')?.addEventListener('click', async function() {
                     const consId = this.dataset.id;
                     const note = document.getElementById('newFollowupNote').value.trim();
@@ -579,64 +507,59 @@
             }
         }
 
-        // ============================================================
-        // دوال إدارة الموظفين (للمدير فقط)
-        // ============================================================
+        async function addEmployee() {
+            const name = document.getElementById('empName').value.trim();
+            const email = document.getElementById('empEmail').value.trim();
+            const password = document.getElementById('empPassword').value.trim();
+            const role = document.getElementById('empRole').value;
+            const status = document.getElementById('empStatus').value === 'true';
 
-       async function addEmployee() {
-    const name = document.getElementById('empName').value.trim();
-    const email = document.getElementById('empEmail').value.trim();
-    const password = document.getElementById('empPassword').value.trim();
-    const role = document.getElementById('empRole').value;
-    const status = document.getElementById('empStatus').value === 'true';
+            if (!name || !email || !password) {
+                alert('يرجى ملء جميع الحقول (الاسم، البريد، كلمة المرور)');
+                return;
+            }
 
-    if (!name || !email || !password) {
-        alert('يرجى ملء جميع الحقول (الاسم، البريد، كلمة المرور)');
-        return;
-    }
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                alert('يرجى تسجيل الدخول مرة أخرى');
+                return;
+            }
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        alert('يرجى تسجيل الدخول مرة أخرى');
-        return;
-    }
+            try {
+                const response = await fetch('https://wacvbnebicbutyzpnkez.supabase.co/functions/v1/add-employee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        password: password,
+                        role: role,
+                        status: status
+                    })
+                });
 
-    try {
-        const response = await fetch('https://wacvbnebicbutyzpnkez.supabase.co/functions/v1/add-employee', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({
-                name: name,
-                email: email,
-                password: password,
-                role: role,
-                status: status
-            })
-        });
-
-        const result = await response.json();
-        if (response.ok) {
-            alert('✅ تم إضافة الموظف بنجاح!');
-            await fetchEmployees();
-            document.getElementById('empName').value = '';
-            document.getElementById('empEmail').value = '';
-            document.getElementById('empPassword').value = '';
-        } else {
-            // عرض رسالة الخطأ التفصيلية من الدالة
-            alert('❌ فشلت الإضافة: ' + (result.error || 'خطأ غير معروف'));
-            console.error('تفاصيل الخطأ:', result);
+                const result = await response.json();
+                if (response.ok) {
+                    alert('✅ تم إضافة الموظف بنجاح!');
+                    await fetchEmployees();
+                    document.getElementById('empName').value = '';
+                    document.getElementById('empEmail').value = '';
+                    document.getElementById('empPassword').value = '';
+                } else {
+                    alert('❌ فشلت الإضافة: ' + (result.error || 'خطأ غير معروف'));
+                    console.error('تفاصيل الخطأ:', result);
+                }
+            } catch (err) {
+                alert('❌ حدث خطأ في الاتصال: ' + err.message);
+                console.error(err);
+            }
         }
-    } catch (err) {
-        alert('❌ حدث خطأ في الاتصال: ' + err.message);
-        console.error(err);
-    }
-}
+
         async function deleteEmployee(id) {
             if (!confirm('هل أنت متأكد من حذف هذا الموظف؟')) return;
-            // حذف من جدول staff_profiles فقط (ونترك حساب Auth)
             const { error } = await supabase
                 .from('staff_profiles')
                 .delete()
@@ -650,7 +573,6 @@
         }
 
         function openEditEmployeeModal(emp) {
-            // نموذج تعديل بسيط (يمكن التوسع فيه)
             const newName = prompt('تعديل اسم الموظف:', emp.full_name);
             if (newName === null) return;
             const newRole = prompt('تعديل الدور (manager / followup_staff / secretary):', emp.role);
@@ -670,10 +592,6 @@
                 }
             })();
         }
-
-        // ============================================================
-        // دوال إدارة الطلبات (إضافة جديدة)
-        // ============================================================
 
         async function openEditConsultationModal(item) {
             const newName = prompt('تعديل اسم العميل:', item.client_name);
@@ -698,10 +616,6 @@
             }
         }
 
-        // ============================================================
-        // دوال جلب البيانات
-        // ============================================================
-
         async function fetchEmployees() {
             try {
                 const { data, error } = await supabase
@@ -720,7 +634,6 @@
 
         async function fetchConsultations() {
             try {
-                // إذا كان المستخدم موظفاً، نضيف شرط assigned_to = his id
                 let query = supabase
                     .from('consultation_requests')
                     .select('*')
@@ -770,13 +683,8 @@
             }
             if (status) filtered = filtered.filter(item => item.status === status);
 
-            currentFilteredData = filtered;
             renderConsultations(filtered, allEmployees);
         }
-
-        // ============================================================
-        // دوال التنقل والخروج
-        // ============================================================
 
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
@@ -802,12 +710,7 @@
             }
         }
 
-        // ============================================================
-        // تهيئة الصفحة: تحديد دور المستخدم وعرض العناصر المناسبة
-        // ============================================================
-
         async function initPage() {
-            // 1. التحقق من الجلسة
             const { data: { session }, error } = await supabase.auth.getSession();
             if (error || !session) {
                 alert('يرجى تسجيل الدخول أولاً.');
@@ -815,7 +718,6 @@
                 return;
             }
 
-            // 2. جلب بيانات المستخدم من staff_profiles
             const { data: profile, error: profileError } = await supabase
                 .from('staff_profiles')
                 .select('*')
@@ -834,33 +736,22 @@
                 full_name: profile.full_name
             };
 
-            // 3. ضبط العنوان واسم المستخدم
-document.getElementById('userNameDisplay').textContent = `👤 ${currentUser.full_name}`;
+            document.getElementById('userNameDisplay').textContent = `👤 ${currentUser.full_name}`;
+            if (currentUser.role === 'manager' || currentUser.role === 'secretary') {
+                document.getElementById('pageTitle').innerHTML = `🏛️ لوحة تحكم المدير <span class="user-info">👤 ${currentUser.full_name}</span>`;
+                document.getElementById('btnManualEntry').classList.remove('hidden');
+            }
+            
+            if (currentUser.role === 'manager') {
+                document.getElementById('btnShowEmployees').classList.remove('hidden');
+            } else {
+                document.getElementById('btnShowEmployees').classList.add('hidden');
+            }
 
-// 🔴 إضافة حالة السكرتير هنا
-if (currentUser.role === 'manager') {
-    document.getElementById('pageTitle').innerHTML = `🏛️ لوحة تحكم المدير <span class="user-info">👤 ${currentUser.full_name}</span>`;
-    document.getElementById('btnShowEmployees').classList.remove('hidden');
-    // إذا أردت إخفاء زر الإدخال اليدوي عن المدير، أضف السطر التالي:
-    document.getElementById('btnManualEntry').classList.add('hidden');
-} else if (currentUser.role === 'secretary') {
-    document.getElementById('pageTitle').innerHTML = `📝 لوحة إدخال الطلبات <span class="user-info">👤 ${currentUser.full_name}</span>`;
-    // يُظهر زر الإدخال اليدوي
-    document.getElementById('btnManualEntry').classList.remove('hidden');
-    // يخفي زر إدارة الموظفين لأنها صلاحية المدير فقط
-    document.getElementById('btnShowEmployees').classList.add('hidden');
-} else {
-    // للموظف العادي (followup_staff)
-    document.getElementById('pageTitle').innerHTML = `📋 لوحة المتابعة <span class="user-info">👤 ${currentUser.full_name}</span>`;
-    document.getElementById('btnShowEmployees').classList.add('hidden');
-    document.getElementById('btnManualEntry').classList.add('hidden');
-}
-            // 4. ربط الأزرار
             document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
+            document.getElementById('btnManualEntry').addEventListener('click', () => showSection('sectionManualEntry'));
             document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
             document.getElementById('btnLogout').addEventListener('click', handleLogout);
-			document.getElementById('btnManualEntry').addEventListener('click', () => showSection('sectionManualEntry'));
-            document.getElementById('btnAddManualConsultation').addEventListener('click', addManualConsultation);
 
             document.getElementById('btnApplyFilters').addEventListener('click', applyFilters);
             document.getElementById('btnResetFilters').addEventListener('click', function() {
@@ -870,20 +761,83 @@ if (currentUser.role === 'manager') {
                 applyFilters();
             });
 
-            // 5. ربط زر إضافة موظف (للمدير فقط)
             document.getElementById('btnAddEmployee').addEventListener('click', addEmployee);
+            document.getElementById('btnAddManualConsultation').addEventListener('click', addManualConsultation);
 
-            // 6. جلب البيانات
             await fetchEmployees();
             await fetchConsultations();
 
-            // 7. عرض القسم الافتراضي
             showSection('sectionConsultations');
         }
 
-        // ============================================================
-        // إغلاق النافذة المنبثقة (المعالجة العامة)
-        // ============================================================
+        async function addManualConsultation() {
+            const name = document.getElementById('manualName').value.trim();
+            const phone = document.getElementById('manualPhone').value.trim();
+            const email = document.getElementById('manualEmail').value.trim();
+            const company = document.getElementById('manualCompany').value.trim();
+            const service = document.getElementById('manualService').value;
+            const message = document.getElementById('manualMessage').value.trim();
+            const out = document.getElementById('manualMsg');
+            const btn = document.getElementById('btnAddManualConsultation');
+
+            if (!name || !phone || !service) {
+                out.textContent = 'يرجى ملء الحقول الإلزامية (الاسم، الهاتف، الخدمة).';
+                return;
+            }
+
+            btn.disabled = true;
+            out.textContent = 'جاري الحفظ...';
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { 
+                alert('يرجى تسجيل الدخول مجدداً.'); 
+                return; 
+            }
+
+            try {
+                const { error } = await supabase.from('consultation_requests').insert({
+                    client_name: name,
+                    phone: phone,
+                    email: email || null,
+                    company: company || null,
+                    service: service || null,
+                    message: message || null,
+                    privacy_accepted: true,
+                    status: 'new'
+                });
+
+                if (error) throw error;
+
+                await fetch(`${SUPABASE_URL}/functions/v1/send-telegram`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}` 
+                    },
+                    body: JSON.stringify({ 
+                        client_name: name, 
+                        phone: phone, 
+                        email: email || null, 
+                        service: service || null, 
+                        message: message || null 
+                    })
+                }).catch(e => console.warn('تعذر إرسال التليجرام:', e));
+
+                out.textContent = '✅ تم حفظ الطلب بنجاح!';
+                document.getElementById('manualName').value = '';
+                document.getElementById('manualPhone').value = '';
+                document.getElementById('manualEmail').value = '';
+                document.getElementById('manualCompany').value = '';
+                document.getElementById('manualService').value = '';
+                document.getElementById('manualMessage').value = '';
+                
+                await fetchConsultations();
+            } catch (err) {
+                out.textContent = '❌ فشل الحفظ: ' + err.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
 
         document.getElementById('modalClose').addEventListener('click', function() {
             document.getElementById('previewModal').classList.remove('active');
@@ -892,79 +846,9 @@ if (currentUser.role === 'manager') {
             if (e.target === this) this.classList.remove('active');
         });
 
-        // ============================================================
-        // بدء التشغيل
-        // ============================================================
-       async function addManualConsultation() {
-    const name = document.getElementById('manualName').value.trim();
-    const phone = document.getElementById('manualPhone').value.trim();
-    const email = document.getElementById('manualEmail').value.trim();
-    const company = document.getElementById('manualCompany').value.trim();
-    const service = document.getElementById('manualService').value;
-    const message = document.getElementById('manualMessage').value.trim();
-    const out = document.getElementById('manualMsg');
-    const btn = document.getElementById('btnAddManualConsultation');
+        document.addEventListener('DOMContentLoaded', initPage);
 
-    if (!name || !phone || !service) {
-        out.textContent = 'يرجى ملء الحقول الإلزامية (الاسم، الهاتف، الخدمة).';
-        return;
-    }
-
-    btn.disabled = true;
-    out.textContent = 'جاري الحفظ...';
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { 
-        alert('يرجى تسجيل الدخول مجدداً.'); 
-        return; 
-    }
-
-    try {
-        const { error } = await supabase.from('consultation_requests').insert({
-            client_name: name,
-            phone: phone,
-            email: email || null,
-            company: company || null,
-            service: service || null,
-            message: message || null,
-            privacy_accepted: true,
-            status: 'new'
-        });
-
-        if (error) throw error;
-
-        // إرسال إشعار تليجرام (اختياري)
-        await fetch(`${SUPABASE_URL}/functions/v1/send-telegram`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}` 
-            },
-            body: JSON.stringify({ 
-                client_name: name, 
-                phone: phone, 
-                email: email || null, 
-                service: service || null, 
-                message: message || null 
-            })
-        }).catch(e => console.warn('تعذر إرسال التليجرام:', e));
-
-        out.textContent = '✅ تم حفظ الطلب بنجاح!';
-        document.getElementById('manualName').value = '';
-        document.getElementById('manualPhone').value = '';
-        document.getElementById('manualEmail').value = '';
-        document.getElementById('manualCompany').value = '';
-        document.getElementById('manualService').value = '';
-        document.getElementById('manualMessage').value = '';
-        
-        await fetchConsultations(); // تحديث الجدول
-    } catch (err) {
-        out.textContent = '❌ فشل الحفظ: ' + err.message;
-    } finally {
-        btn.disabled = false;
-    }
-}
-	})();
+    })();
 </script>
 </body>
 </html>
