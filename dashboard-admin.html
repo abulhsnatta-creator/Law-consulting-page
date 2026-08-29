@@ -825,16 +825,18 @@
             };
 
             // 3. ضبط العنوان واسم المستخدم
-            document.getElementById('userNameDisplay').textContent = `👤 ${currentUser.full_name}`;
-            if (currentUser.role === 'manager') {
-                document.getElementById('pageTitle').innerHTML = `🏛️ لوحة تحكم المدير <span class="user-info">👤 ${currentUser.full_name}</span>`;
-                document.getElementById('btnShowEmployees').classList.remove('hidden');
-            } else {
-                document.getElementById('pageTitle').innerHTML = `📋 لوحة المتابعة <span class="user-info">👤 ${currentUser.full_name}</span>`;
-                document.getElementById('btnShowEmployees').classList.add('hidden');
-                // إخفاء زر إدارة الموظفين من الناف بار
-            }
+if (currentUser.role === 'manager' || currentUser.role === 'secretary') {
+    document.getElementById('btnManualEntry').classList.remove('hidden');
+}
 
+if (currentUser.role === 'manager') {
+    document.getElementById('btnShowEmployees').classList.remove('hidden');
+    // المدير يستطيع رؤية زر عرض الطلبات
+} else if (currentUser.role === 'secretary') {
+    document.getElementById('btnShowEmployees').classList.add('hidden');
+    // السكرتير يرى فقط زر الإدخال اليدوي وزر عرض الطلبات (التي تخص موظفيه)
+    document.getElementById('btnShowConsultations').classList.remove('hidden');
+}
             // 4. ربط الأزرار
             document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
             document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
