@@ -490,18 +490,18 @@ let currentFilteredData = []; // 🔴 هذا هو السطر الناقص
         `;
 
 // ====== عرض المهام والمستندات المطلوبة (بناءً على التخصص) ======
-        const { data: requirementsData, error: requirementsError } = await supabase
+        const { data: serviceReqData, error: serviceReqError } = await supabase
             .from('service_requirements')
             .select('required_actions, required_documents')
             .eq('service_type', consultation.service)
             .maybeSingle();
 
-        if (requirementsError) console.warn('خطأ في جلب قائمة المتطلبات:', requirementsError);
+        if (serviceReqError) console.warn('خطأ في جلب قائمة المتطلبات:', serviceReqError);
 
-        const requiredActions = requirementsData?.required_actions || [];
-        const requiredDocuments = requirementsData?.required_documents || [];
+        const serviceActions = serviceReqData?.required_actions || [];
+        const serviceDocuments = serviceReqData?.required_documents || [];
 
-        if (requiredActions.length > 0 || requiredDocuments.length > 0) {
+        if (serviceActions.length > 0 || serviceDocuments.length > 0) {
             html += `
                 <div class="modal-section">
                     <h3>📋 المهام والمستندات المطلوبة (بناءً على التخصص: ${consultation.service || '-'})</h3>
@@ -509,7 +509,7 @@ let currentFilteredData = []; // 🔴 هذا هو السطر الناقص
                         <div style="margin-bottom: 10px;">
                             <strong style="color: #333;">الإجراءات المطلوبة:</strong>
                             <ul style="list-style: none; padding: 0; margin-top: 5px;">
-                                ${requiredActions.map((action, index) => `
+                                ${serviceActions.map((action, index) => `
                                     <li style="padding: 8px; border-bottom: 1px dashed #eee;">
                                         <input type="checkbox" id="action_${index}" class="task-checkbox" data-task-type="action" data-index="${index}"> 
                                         <label for="action_${index}">${action}</label>
@@ -520,7 +520,7 @@ let currentFilteredData = []; // 🔴 هذا هو السطر الناقص
                         <div style="margin-bottom: 10px;">
                             <strong style="color: #333;">المستندات المطلوبة:</strong>
                             <ul style="list-style: none; padding: 0; margin-top: 5px;">
-                                ${requiredDocuments.map((doc, index) => `
+                                ${serviceDocuments.map((doc, index) => `
                                     <li style="padding: 8px; border-bottom: 1px dashed #eee;">
                                         <input type="checkbox" id="doc_${index}" class="task-checkbox" data-task-type="document" data-index="${index}"> 
                                         <label for="doc_${index}">${doc}</label>
@@ -532,8 +532,7 @@ let currentFilteredData = []; // 🔴 هذا هو السطر الناقص
                     </div>
                 </div>
             `;
-        }  
-             // ====== عرض المقابلة الأولى مع المدير ======
+        }             // ====== عرض المقابلة الأولى مع المدير ======
         if (initialConsultation) {
             html += `
                 <div class="modal-section">
