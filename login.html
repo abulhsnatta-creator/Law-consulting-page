@@ -110,11 +110,13 @@ async function handleRedirect(user) {
         changePasswordSection.classList.remove('hidden');
     } else {
         // 3. التوجيه حسب الدور
-        if (profile.role === 'manager' || profile.role === 'admin') {
-            window.location.href = 'dashboard-admin.html';
-        } else {
-               window.location.href = 'dashboard-admin.html'; // أو أي اسم صفحة لديك
-        }
+       if (profile.role === 'manager') {
+    window.location.href = 'dashboard-admin.html'; // يذهب المدير للوحة الكاملة
+} else if (profile.role === 'secretary') {
+    window.location.href = 'dashboard-admin.html'; // يذهب السكرتير لنفس اللوحة، لكن بإعدادات مخفية
+} else {
+    window.location.href = 'employee.html'; // يذهب الموظف لصفحة الموظف
+}
     }
 }
 
