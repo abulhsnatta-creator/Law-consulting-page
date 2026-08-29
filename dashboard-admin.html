@@ -489,7 +489,18 @@ let currentFilteredData = []; // 🔴 هذا هو السطر الناقص
             </div>
         `;
 
-        // ====== عرض المهام والمستندات المطلوبة (بناءً على التخصص) ======
+      // ====== عرض المهام والمستندات المطلوبة (بناءً على التخصص) ======
+        const { data: reqData, error: reqError } = await supabase
+            .from('service_requirements')
+            .select('required_actions, required_documents')
+            .eq('service_type', consultation.service) // ✅ استخدام service وليس status
+            .maybeSingle();
+
+        if (reqError) console.warn('خطأ في جلب قائمة المتطلبات:', reqError);
+
+        const requiredActions = reqData?.required_actions || [];
+        const requiredDocuments = reqData?.required_documents || [];
+
         if (requiredActions.length > 0 || requiredDocuments.length > 0) {
             html += `
                 <div class="modal-section">
@@ -522,7 +533,6 @@ let currentFilteredData = []; // 🔴 هذا هو السطر الناقص
                 </div>
             `;
         }
-
         // ====== عرض المقابلة الأولى مع المدير ======
         if (initialConsultation) {
             html += `
