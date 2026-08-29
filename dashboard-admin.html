@@ -489,17 +489,17 @@ let currentFilteredData = []; // 🔴 هذا هو السطر الناقص
             </div>
         `;
 
-      // ====== عرض المهام والمستندات المطلوبة (بناءً على التخصص) ======
-        const { data: reqData, error: reqError } = await supabase
+// ====== عرض المهام والمستندات المطلوبة (بناءً على التخصص) ======
+        const { data: requirementsData, error: requirementsError } = await supabase
             .from('service_requirements')
             .select('required_actions, required_documents')
-            .eq('service_type', consultation.service) // ✅ استخدام service وليس status
+            .eq('service_type', consultation.service)
             .maybeSingle();
 
-        if (reqError) console.warn('خطأ في جلب قائمة المتطلبات:', reqError);
+        if (requirementsError) console.warn('خطأ في جلب قائمة المتطلبات:', requirementsError);
 
-        const requiredActions = reqData?.required_actions || [];
-        const requiredDocuments = reqData?.required_documents || [];
+        const requiredActions = requirementsData?.required_actions || [];
+        const requiredDocuments = requirementsData?.required_documents || [];
 
         if (requiredActions.length > 0 || requiredDocuments.length > 0) {
             html += `
@@ -532,8 +532,8 @@ let currentFilteredData = []; // 🔴 هذا هو السطر الناقص
                     </div>
                 </div>
             `;
-        }
-        // ====== عرض المقابلة الأولى مع المدير ======
+        }  
+             // ====== عرض المقابلة الأولى مع المدير ======
         if (initialConsultation) {
             html += `
                 <div class="modal-section">
