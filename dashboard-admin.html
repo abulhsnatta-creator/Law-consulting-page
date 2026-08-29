@@ -708,28 +708,32 @@
             }
         }
 
-        async function fetchConsultations() {
-            try {
-                // إذا كان المستخدم موظفاً، نضيف شرط assigned_to = his id
-                let query = supabase
-                    .from('consultation_requests')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+       async function fetchConsultations() {
+    try {
+        let query = supabase
+            .from('consultation_requests')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-                if (currentUser?.role === 'followup_staff') {
-                    query = query.eq('assigned_to', currentUser.id);
-                }
-
-                const { data, error } = await query;
-                if (error) throw error;
-                allConsultations = data || [];
-                applyFilters();
-            } catch (err) {
-                console.error(err);
-                document.getElementById('consultationsContainer').innerHTML = `<div class="message error">❌ ${err.message}</div>`;
-            }
+        // 🔴 إذا كان السكرتير: نعرض فقط الطلبات التي أدخلها هو
+        if (currentUser?.role === 'secretary') {
+            query = query.eq('created_by', currentUser.id);
+        } 
+        // 🔴 إذا كان الموظف: نعرض الطلبات المخصصة له (assigned_to)
+        else if (currentUser?.role === 'followup_staff') {
+            query = query.eq('assigned_to', currentUser.id);
         }
+        // المدير يرى كل شيء
 
+        const { data, error } = await query;
+        if (error) throw error;
+        allConsultations = data || [];
+        applyFilters();
+    } catch (err) {
+        console.error(err);
+        document.getElementById('consultationsContainer').innerHTML = `<div class="message error">❌ ${err.message}</div>`;
+    }
+}
         function populateEmployeeFilter(employees) {
             const filterSelect = document.getElementById('filterEmployee');
             if (!filterSelect) return;
