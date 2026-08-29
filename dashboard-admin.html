@@ -412,7 +412,7 @@
         // نافذة المعاينة الكاملة
         // ============================================================
 
-       async function openPreview(consultationId) {
+     async function openPreview(consultationId) {
     const modal = document.getElementById('previewModal');
     const body = document.getElementById('modalBody');
     const title = document.getElementById('modalTitle');
@@ -447,7 +447,7 @@
         const { data: followups, error: folError } = await supabase
             .from('client_followups')
             .select('*')
-            .eq('request_id', consultationId)
+            .eq('consultation_id', consultationId) // ✅ الآن نجح الاستعلام بسبب إضافة العمود
             .order('followup_date', { ascending: false });
 
         if (folError) console.warn('خطأ في جلب المتابعات:', folError);
@@ -496,7 +496,6 @@
         if (followups && followups.length > 0) {
             followups.forEach(f => {
                 const date = f.followup_date ? new Date(f.followup_date).toLocaleString('ar-EG') : '—';
-                // تحديد هوية من قام بالمتابعة (إذا كانت متابعة المدير يكون assigned_to فارغاً)
                 let followerName = 'المدير';
                 if (f.assigned_to) {
                     const emp = allEmployees.find(e => e.id === f.assigned_to);
