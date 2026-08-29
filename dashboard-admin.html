@@ -398,12 +398,12 @@
                 }
 
                 // جلب قائمة المتطلبات (الخدمة)
-                const { data: requirementsData, error: requirementsError } = await supabase
-                    .from('service_requirements')
-                    .select('required_actions, required_documents')
-                    .eq('service_type', consultation.service)
-                    .maybeSingle();
-
+// ====== عرض المهام والمستندات المطلوبة (بناءً على التخصص) ======
+        const { data: requirementsData, error: requirementsError } = await supabase
+            .from('service_requirements')
+            .select('required_actions, required_documents')
+            .eq('service_type', consultation.service || 'other') // ✅ هذا السطر سيعمل حتى لو كانت service فارغة
+            .maybeSingle();
                 if (requirementsError) console.warn('خطأ في جلب قائمة المتطلبات:', requirementsError);
 
                 const requiredActions = requirementsData?.required_actions || [];
