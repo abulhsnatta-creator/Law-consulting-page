@@ -781,27 +781,28 @@
             filterSelect.value = currentValue;
         }
 
-        function applyFilters() {
-            const dateFrom = document.getElementById('filterDateFrom')?.value || '';
-            const dateTo = document.getElementById('filterDateTo')?.value || '';
-            const status = document.getElementById('filterStatus')?.value || '';
+       function applyFilters() {
+    const dateFrom = document.getElementById('filterDateFrom')?.value || '';
+    const dateTo = document.getElementById('filterDateTo')?.value || '';
+    const service = document.getElementById('filterService')?.value || ''; // 🔴 بدلاً من filterStatus
 
-            let filtered = [...allConsultations];
+    let filtered = [...allConsultations];
 
-            if (dateFrom) {
-                const from = new Date(dateFrom); from.setHours(0,0,0,0);
-                filtered = filtered.filter(item => item.created_at && new Date(item.created_at) >= from);
-            }
-            if (dateTo) {
-                const to = new Date(dateTo); to.setHours(23,59,59,999);
-                filtered = filtered.filter(item => item.created_at && new Date(item.created_at) <= to);
-            }
-            if (status) filtered = filtered.filter(item => item.status === status);
+    if (dateFrom) {
+        const from = new Date(dateFrom); from.setHours(0,0,0,0);
+        filtered = filtered.filter(item => item.created_at && new Date(item.created_at) >= from);
+    }
+    if (dateTo) {
+        const to = new Date(dateTo); to.setHours(23,59,59,999);
+        filtered = filtered.filter(item => item.created_at && new Date(item.created_at) <= to);
+    }
+    if (service) {
+        filtered = filtered.filter(item => item.service === service); // 🔴 فلترة حسب الخدمة
+    }
 
-            currentFilteredData = filtered;
-            renderConsultations(filtered, allEmployees);
-        }
-
+    currentFilteredData = filtered;
+    renderConsultations(filtered, allEmployees);
+}
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
             const target = document.getElementById(sectionId);
