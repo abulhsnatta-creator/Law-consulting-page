@@ -395,7 +395,9 @@
             .select('required_actions, required_documents')
             .eq('service_type', consultation.service || 'other')
             .maybeSingle();
-
+const requiredActions = requirementsData?.required_actions || [];
+const requiredDocuments = requirementsData?.required_documents || [];
+        
         if (requirementsError) console.warn('خطأ في جلب قائمة المتطلبات:', requirementsError);
 
         const requiredActions = requirementsData?.required_actions || [];
