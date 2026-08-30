@@ -388,17 +388,18 @@
                     return;
                 }
 
-                const { data: requirementsData, error: requirementsError } = await supabase
-                    .from('service_requirements')
-                    .select('required_actions, required_documents')
-                    .eq('service_type', consultation.service || 'other')
-                    .maybeSingle();
+                // جلب قائمة المتطلبات من جدول service_requirements
+const { data: reqData, error: reqError } = await supabase
+    .from('service_requirements')
+    .select('required_actions, required_documents')
+    .eq('service_type', consultation.service || 'other')
+    .maybeSingle();
 
-                if (requirementsError) console.warn('خطأ في جلب قائمة المتطلبات:', requirementsError);
+if (reqError) console.warn('خطأ في جلب قائمة المتطلبات:', reqError);
 
-                const requiredActions = requirementsData?.required_actions || [];
-                const requiredDocuments = requirementsData?.required_documents || [];
-
+const requiredActions = reqData?.required_actions || [];
+const requiredDocuments = reqData?.required_documents || [];
+                
                 const { data: initialConsultation, error: initError } = await supabase
                     .from('initial_consultations')
                     .select('*')
