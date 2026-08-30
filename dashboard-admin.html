@@ -31,12 +31,6 @@
         th { background: #2d7aff; color: white; padding: 12px 10px; text-align: center; font-weight: 600; white-space: nowrap; }
         td { padding: 10px; border-bottom: 1px solid #e9edf4; text-align: center; vertical-align: middle; }
         tr:hover td { background: #f8faff; }
-        .status-badge { padding: 4px 14px; border-radius: 30px; font-size: 12px; font-weight: 600; display: inline-block; }
-        .status-new { background: #ffc107; color: #000; }
-        .status-in_progress { background: #17a2b8; color: #fff; }
-        .status-contacted { background: #28a745; color: #fff; }
-        .status-resolved { background: #6c757d; color: #fff; }
-        .status-default { background: #e9ecef; color: #000; }
         .btn-preview { background: #17a2b8; color: white; border: none; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
         .btn-preview:hover { background: #138496; }
         .btn-save-assign { background: #28a745; color: white; border: none; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
@@ -55,8 +49,6 @@
         .btn-edit-emp:hover { background: #e0a800; }
         .btn-delete-emp { background: #dc3545; color: white; }
         .btn-delete-emp:hover { background: #c82333; }
-        .status-badge { background: #28a745; color: white; padding: 4px 16px; border-radius: 30px; font-size: 13px; }
-        .status-badge.inactive { background: #dc3545; }
         .message { padding: 16px; background: #fff3cd; border-radius: 10px; border-right: 6px solid #ffc107; margin: 20px 0; }
         .message.error { background: #f8d7da; border-color: #dc3545; }
         .loading { text-align: center; padding: 40px; color: #6c757d; }
@@ -102,21 +94,22 @@
     <div id="sectionConsultations" class="section active">
         <h2>📋 قائمة الطلبات</h2>
         <div class="filters" id="filterContainer">
-    <label>📅 من:</label><input type="date" id="filterDateFrom">
-    <label>إلى:</label><input type="date" id="filterDateTo">
-    <label>📌 الخدمة:</label>
-    <select id="filterService">
-        <option value="">الكل</option>
-        <option value="corporate">استشارات الشركات</option>
-        <option value="contracts">صياغة العقود</option>
-        <option value="litigation">قضايا وتقاضي</option>
-        <option value="arbitration">تحكيم وتسوية نزاعات</option>
-        <option value="ip">حماية الملكية الفكرية</option>
-        <option value="other">استشارة عامة</option>
-    </select>
-    <button id="btnApplyFilters">🔍 تطبيق</button>
-    <button id="btnResetFilters" class="reset">↺ إعادة تعيين</button>
-</div>        <div id="consultationsContainer"><div class="loading">⏳ جاري التحميل...</div></div>
+            <label>📅 من:</label><input type="date" id="filterDateFrom">
+            <label>إلى:</label><input type="date" id="filterDateTo">
+            <label>📌 الخدمة:</label>
+            <select id="filterService">
+                <option value="">الكل</option>
+                <option value="corporate">استشارات الشركات</option>
+                <option value="contracts">صياغة العقود</option>
+                <option value="litigation">قضايا وتقاضي</option>
+                <option value="arbitration">تحكيم وتسوية نزاعات</option>
+                <option value="ip">حماية الملكية الفكرية</option>
+                <option value="other">استشارة عامة</option>
+            </select>
+            <button id="btnApplyFilters">🔍 تطبيق</button>
+            <button id="btnResetFilters" class="reset">↺ إعادة تعيين</button>
+        </div>
+        <div id="consultationsContainer"><div class="loading">⏳ جاري التحميل...</div></div>
     </div>
 
     <div id="sectionManualEntry" class="section">
@@ -235,18 +228,16 @@
 
             let rows = '';
             data.forEach((item, idx) => {
-                const statusClass = 'status-' + (item.status || 'new').replace('_', '');
-                const assignedName = employees ? employees.find(e => e.id === item.assigned_to)?.full_name || 'غير محدد' : 'غير محدد';
-
-             rows += `
-    <tr data-id="${item.id}">
-        <td>${idx + 1}</td>
-        <td>${item.client_name || 'غير محدد'}</td>
-        <td>${item.email || '—'}</td>
-        <td>${item.phone || '—'}</td>
-        <td>${item.service || '—'}</td> <!-- 🔴 الخدمة -->
-        <td><span class="status-badge ${statusClass}">${item.status || 'جديد'}</span></td> <!-- 🔴 الحالة -->
-        <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
+                rows += `
+                    <tr data-id="${item.id}">
+                        <td>${idx + 1}</td>
+                        <td>${item.client_name || 'غير محدد'}</td>
+                        <td>${item.email || '—'}</td>
+                        <td>${item.phone || '—'}</td>
+                        <td>${item.service || '—'}</td>
+                        <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
+                        ${currentUser?.role === 'manager' ? `
+                        <td>
                             <select class="assigned-select" data-id="${item.id}">
                                 <option value="">غير محدد</option>
                                 ${employees ? employees.map(emp => `<option value="${emp.id}" ${emp.id === item.assigned_to ? 'selected' : ''}>${emp.full_name}</option>`).join('') : ''}
@@ -255,7 +246,7 @@
                         </td>
                         ` : `
                         <td>${assignedName}</td>
-                    
+                        `}
                         <td>
                             <button class="btn-preview" data-id="${item.id}">📄 معاينة</button>
                             <button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button>
@@ -264,11 +255,11 @@
                     </tr>
                 `;
             });
-            
-            let headerCols = `<th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الخدمة</th><th>الحالة</th><th>التاريخ</th>`;
-headerCols += `<th>المتابع</th>`;
-headerCols += `<th>الإجراء</th>`;
-            
+
+            let headerCols = `<th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الخدمة</th><th>التاريخ</th>`;
+            headerCols += `<th>المتابع</th>`;
+            headerCols += `<th>الإجراء</th>`;
+
             container.innerHTML = `
                 <div class="table-responsive">
                     <table>
@@ -397,19 +388,17 @@ headerCols += `<th>الإجراء</th>`;
                     return;
                 }
 
-                // جلب قائمة المتطلبات (الخدمة)
-// ====== عرض المهام والمستندات المطلوبة (بناءً على التخصص) ======
-        const { data: requirementsData, error: requirementsError } = await supabase
-            .from('service_requirements')
-            .select('required_actions, required_documents')
-            .eq('service_type', consultation.service || 'other') // ✅ هذا السطر سيعمل حتى لو كانت service فارغة
-            .maybeSingle();
+                const { data: requirementsData, error: requirementsError } = await supabase
+                    .from('service_requirements')
+                    .select('required_actions, required_documents')
+                    .eq('service_type', consultation.service || 'other')
+                    .maybeSingle();
+
                 if (requirementsError) console.warn('خطأ في جلب قائمة المتطلبات:', requirementsError);
 
                 const requiredActions = requirementsData?.required_actions || [];
                 const requiredDocuments = requirementsData?.required_documents || [];
 
-                // جلب المقابلة الأولى
                 const { data: initialConsultation, error: initError } = await supabase
                     .from('initial_consultations')
                     .select('*')
@@ -419,7 +408,6 @@ headerCols += `<th>الإجراء</th>`;
 
                 if (initError) console.warn('خطأ في جلب المقابلة الأولى:', initError);
 
-                // جلب المتابعات
                 const { data: followups, error: folError } = await supabase
                     .from('client_followups')
                     .select('*')
@@ -451,7 +439,6 @@ headerCols += `<th>الإجراء</th>`;
                     </div>
                 `;
 
-                // عرض قائمة المهام
                 if (requiredActions.length > 0 || requiredDocuments.length > 0) {
                     html += `
                         <div class="modal-section">
@@ -485,7 +472,6 @@ headerCols += `<th>الإجراء</th>`;
                     `;
                 }
 
-                // عرض المقابلة الأولى
                 if (initialConsultation) {
                     html += `
                         <div class="modal-section">
@@ -500,7 +486,6 @@ headerCols += `<th>الإجراء</th>`;
                     `;
                 }
 
-                // عرض سجل المتابعات
                 html += `<div class="modal-section"><h3>📋 سجل المتابعات</h3>`;
                 if (followups && followups.length > 0) {
                     followups.forEach(f => {
@@ -527,7 +512,6 @@ headerCols += `<th>الإجراء</th>`;
                 }
                 html += `</div>`;
 
-                // نموذج إضافة متابعة
                 html += `
                     <div class="modal-section">
                         <h3>➕ إضافة متابعة جديدة</h3>
@@ -541,7 +525,6 @@ headerCols += `<th>الإجراء</th>`;
 
                 body.innerHTML = html;
 
-                // ربط زر حفظ المهام
                 const saveTasksBtn = document.getElementById('btnSaveTasks');
                 if (saveTasksBtn) {
                     saveTasksBtn.addEventListener('click', async function() {
@@ -581,7 +564,6 @@ headerCols += `<th>الإجراء</th>`;
                     });
                 }
 
-                // ربط زر إضافة المتابعة
                 document.getElementById('btnAddFollowup')?.addEventListener('click', async function() {
                     const consId = this.dataset.id;
                     const note = document.getElementById('newFollowupNote').value.trim();
@@ -780,28 +762,27 @@ headerCols += `<th>الإجراء</th>`;
             filterSelect.value = currentValue;
         }
 
-       function applyFilters() {
-    const dateFrom = document.getElementById('filterDateFrom')?.value || '';
-    const dateTo = document.getElementById('filterDateTo')?.value || '';
-    const service = document.getElementById('filterService')?.value || ''; // 🔴 بدلاً من filterStatus
+        function applyFilters() {
+            const dateFrom = document.getElementById('filterDateFrom')?.value || '';
+            const dateTo = document.getElementById('filterDateTo')?.value || '';
+            const service = document.getElementById('filterService')?.value || '';
 
-    let filtered = [...allConsultations];
+            let filtered = [...allConsultations];
 
-    if (dateFrom) {
-        const from = new Date(dateFrom); from.setHours(0,0,0,0);
-        filtered = filtered.filter(item => item.created_at && new Date(item.created_at) >= from);
-    }
-    if (dateTo) {
-        const to = new Date(dateTo); to.setHours(23,59,59,999);
-        filtered = filtered.filter(item => item.created_at && new Date(item.created_at) <= to);
-    }
-    if (service) {
-        filtered = filtered.filter(item => item.service === service); // 🔴 فلترة حسب الخدمة
-    }
+            if (dateFrom) {
+                const from = new Date(dateFrom); from.setHours(0,0,0,0);
+                filtered = filtered.filter(item => item.created_at && new Date(item.created_at) >= from);
+            }
+            if (dateTo) {
+                const to = new Date(dateTo); to.setHours(23,59,59,999);
+                filtered = filtered.filter(item => item.created_at && new Date(item.created_at) <= to);
+            }
+            if (service) filtered = filtered.filter(item => item.service === service);
 
-    currentFilteredData = filtered;
-    renderConsultations(filtered, allEmployees);
-}
+            currentFilteredData = filtered;
+            renderConsultations(filtered, allEmployees);
+        }
+
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
             const target = document.getElementById(sectionId);
@@ -876,13 +857,14 @@ headerCols += `<th>الإجراء</th>`;
             document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
             document.getElementById('btnLogout').addEventListener('click', handleLogout);
 
-           document.getElementById('btnApplyFilters').addEventListener('click', applyFilters);
-document.getElementById('btnResetFilters').addEventListener('click', function() {
-    document.getElementById('filterDateFrom').value = '';
-    document.getElementById('filterDateTo').value = '';
-    document.getElementById('filterService').value = '';
-    applyFilters();
-});
+            document.getElementById('btnApplyFilters').addEventListener('click', applyFilters);
+            document.getElementById('btnResetFilters').addEventListener('click', function() {
+                document.getElementById('filterDateFrom').value = '';
+                document.getElementById('filterDateTo').value = '';
+                document.getElementById('filterService').value = '';
+                applyFilters();
+            });
+
             document.getElementById('btnAddEmployee').addEventListener('click', addEmployee);
             document.getElementById('btnAddManualConsultation').addEventListener('click', addManualConsultation);
 
@@ -927,7 +909,7 @@ document.getElementById('btnResetFilters').addEventListener('click', function() 
                     message: message || null,
                     privacy_accepted: true,
                     status: 'new',
-                    created_by: session.user.id // معرف من قام بإنشاء الطلب
+                    created_by: session.user.id
                 });
 
                 if (error) throw error;
