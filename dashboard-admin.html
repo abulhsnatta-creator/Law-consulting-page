@@ -102,20 +102,21 @@
     <div id="sectionConsultations" class="section active">
         <h2>📋 قائمة الطلبات</h2>
         <div class="filters" id="filterContainer">
-            <label>📅 من:</label><input type="date" id="filterDateFrom">
-            <label>إلى:</label><input type="date" id="filterDateTo">
-            <label>📌 الحالة:</label>
-            <select id="filterStatus">
-                <option value="">الكل</option>
-                <option value="new">جديد</option>
-                <option value="in_progress">قيد المتابعة</option>
-                <option value="contacted">تم التواصل</option>
-                <option value="resolved">تم الحل</option>
-            </select>
-            <button id="btnApplyFilters">🔍 تطبيق</button>
-            <button id="btnResetFilters" class="reset">↺ إعادة تعيين</button>
-        </div>
-        <div id="consultationsContainer"><div class="loading">⏳ جاري التحميل...</div></div>
+    <label>📅 من:</label><input type="date" id="filterDateFrom">
+    <label>إلى:</label><input type="date" id="filterDateTo">
+    <label>📌 الخدمة:</label>
+    <select id="filterService">
+        <option value="">الكل</option>
+        <option value="corporate">استشارات الشركات</option>
+        <option value="contracts">صياغة العقود</option>
+        <option value="litigation">قضايا وتقاضي</option>
+        <option value="arbitration">تحكيم وتسوية نزاعات</option>
+        <option value="ip">حماية الملكية الفكرية</option>
+        <option value="other">استشارة عامة</option>
+    </select>
+    <button id="btnApplyFilters">🔍 تطبيق</button>
+    <button id="btnResetFilters" class="reset">↺ إعادة تعيين</button>
+</div>        <div id="consultationsContainer"><div class="loading">⏳ جاري التحميل...</div></div>
     </div>
 
     <div id="sectionManualEntry" class="section">
