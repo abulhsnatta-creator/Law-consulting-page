@@ -247,7 +247,6 @@
         <td>${item.service || '—'}</td> <!-- 🔴 الخدمة -->
         <td><span class="status-badge ${statusClass}">${item.status || 'جديد'}</span></td> <!-- 🔴 الحالة -->
         <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
-        ...
         <select class="assigned-select" data-id="${item.id}">
                                 <option value="">غير محدد</option>
                                 ${employees ? employees.map(emp => `<option value="${emp.id}" ${emp.id === item.assigned_to ? 'selected' : ''}>${emp.full_name}</option>`).join('') : ''}
