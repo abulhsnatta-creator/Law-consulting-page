@@ -238,7 +238,7 @@
                 const statusClass = 'status-' + (item.status || 'new').replace('_', '');
                 const assignedName = employees ? employees.find(e => e.id === item.assigned_to)?.full_name || 'غير محدد' : 'غير محدد';
 
-               rows += `
+             rows += `
     <tr data-id="${item.id}">
         <td>${idx + 1}</td>
         <td>${item.client_name || 'غير محدد'}</td>
@@ -247,13 +247,13 @@
         <td>${item.service || '—'}</td> <!-- 🔴 الخدمة -->
         <td><span class="status-badge ${statusClass}">${item.status || 'جديد'}</span></td> <!-- 🔴 الحالة -->
         <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
-        <select class="assigned-select" data-id="${item.id}">
+                            <select class="assigned-select" data-id="${item.id}">
                                 <option value="">غير محدد</option>
                                 ${employees ? employees.map(emp => `<option value="${emp.id}" ${emp.id === item.assigned_to ? 'selected' : ''}>${emp.full_name}</option>`).join('') : ''}
                             </select>
                             <button class="btn-save-assign" data-id="${item.id}">حفظ</button>
                         </td>
-                
+                        ` : `
                         <td>${assignedName}</td>
                         `}
                         <td>
@@ -264,7 +264,7 @@
                     </tr>
                 `;
             });
-
+            
             let headerCols = `<th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الخدمة</th><th>الحالة</th><th>التاريخ</th>`;
 headerCols += `<th>المتابع</th>`;
 headerCols += `<th>الإجراء</th>`;
