@@ -369,7 +369,7 @@
             });
         }
 
-       async function openPreview(consultationId) {
+      async function openPreview(consultationId) {
     const modal = document.getElementById('previewModal');
     const body = document.getElementById('modalBody');
 
@@ -389,19 +389,18 @@
             return;
         }
 
-        // 2. جلب قائمة المتطلبات (الخدمة)
-        const { data: requirementsData, error: requirementsError } = await supabase
+        // 2. جلب قائمة المتطلبات من جدول service_requirements
+        const { data: serviceData, error: serviceError } = await supabase
             .from('service_requirements')
             .select('required_actions, required_documents')
             .eq('service_type', consultation.service || 'other')
             .maybeSingle();
-const requiredActions = requirementsData?.required_actions || [];
-const requiredDocuments = requirementsData?.required_documents || [];
-        
-        if (requirementsError) console.warn('خطأ في جلب قائمة المتطلبات:', requirementsError);
 
-        const requiredActions = requirementsData?.required_actions || [];
-        const requiredDocuments = requirementsData?.required_documents || [];
+        if (serviceError) console.warn('خطأ في جلب قائمة المتطلبات:', serviceError);
+
+        // تعريف المتغيرات مرة واحدة فقط
+        const requirementsActionsList = serviceData?.required_actions || [];
+        const requirementsDocumentsList = serviceData?.required_documents || [];
 
         // 3. جلب المقابلة الأولى
         const { data: initialConsultation, error: initError } = await supabase
@@ -446,8 +445,8 @@ const requiredDocuments = requirementsData?.required_documents || [];
             </div>
         `;
 
-        // 6. عرض المهام والمستندات المطلوبة
-        if (requiredActions.length > 0 || requiredDocuments.length > 0) {
+        // 6. عرض المهام والمستندات (استخدام المتغيرات الجديدة)
+        if (requirementsActionsList.length > 0 || requirementsDocumentsList.length > 0) {
             html += `
                 <div class="modal-section">
                     <h3>📋 المهام والمستندات المطلوبة (بناءً على التخصص: ${consultation.service || '-'})</h3>
@@ -455,7 +454,7 @@ const requiredDocuments = requirementsData?.required_documents || [];
                         <div style="margin-bottom: 10px;">
                             <strong style="color: #333;">الإجراءات المطلوبة:</strong>
                             <ul style="list-style: none; padding: 0; margin-top: 5px;">
-                                ${requiredActions.map((action, index) => `
+                                ${requirementsActionsList.map((action, index) => `
                                     <li style="padding: 8px; border-bottom: 1px dashed #eee;">
                                         <input type="checkbox" id="action_${index}" class="task-checkbox" data-task-type="action" data-index="${index}"> 
                                         <label for="action_${index}">${action}</label>
@@ -466,7 +465,7 @@ const requiredDocuments = requirementsData?.required_documents || [];
                         <div style="margin-bottom: 10px;">
                             <strong style="color: #333;">المستندات المطلوبة:</strong>
                             <ul style="list-style: none; padding: 0; margin-top: 5px;">
-                                ${requiredDocuments.map((doc, index) => `
+                                ${requirementsDocumentsList.map((doc, index) => `
                                     <li style="padding: 8px; border-bottom: 1px dashed #eee;">
                                         <input type="checkbox" id="doc_${index}" class="task-checkbox" data-task-type="document" data-index="${index}"> 
                                         <label for="doc_${index}">${doc}</label>
@@ -536,7 +535,7 @@ const requiredDocuments = requirementsData?.required_documents || [];
 
         body.innerHTML = html;
 
-        // 10. ربط زر حفظ المهام (بعد أن يتم بناء HTML)
+        // 10. ربط زر حفظ المهام
         const saveTasksBtn = document.getElementById('btnSaveTasks');
         if (saveTasksBtn) {
             saveTasksBtn.addEventListener('click', async function() {
@@ -546,9 +545,9 @@ const requiredDocuments = requirementsData?.required_documents || [];
                 document.querySelectorAll('.task-checkbox').forEach(checkbox => {
                     if (checkbox.checked) {
                         if (checkbox.dataset.taskType === 'action') {
-                            checkedActions.push(requiredActions[checkbox.dataset.index]);
+                            checkedActions.push(requirementsActionsList[checkbox.dataset.index]);
                         } else if (checkbox.dataset.taskType === 'document') {
-                            checkedDocuments.push(requiredDocuments[checkbox.dataset.index]);
+                            checkedDocuments.push(requirementsDocumentsList[checkbox.dataset.index]);
                         }
                     }
                 });
