@@ -440,39 +440,38 @@ const requiredDocuments = reqData?.required_documents || [];
                     </div>
                 `;
 
-                if (requiredActions.length > 0 || requiredDocuments.length > 0) {
-                    html += `
-                        <div class="modal-section">
-                            <h3>📋 المهام والمستندات المطلوبة (بناءً على التخصص: ${consultation.service || '-'})</h3>
-                            <div class="tasks-container">
-                                <div style="margin-bottom: 10px;">
-                                    <strong style="color: #333;">الإجراءات المطلوبة:</strong>
-                                    <ul style="list-style: none; padding: 0; margin-top: 5px;">
-                                        ${requiredActions.map((action, index) => `
-                                            <li style="padding: 8px; border-bottom: 1px dashed #eee;">
-                                                <input type="checkbox" id="action_${index}" class="task-checkbox" data-task-type="action" data-index="${index}"> 
-                                                <label for="action_${index}">${action}</label>
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                                <div style="margin-bottom: 10px;">
-                                    <strong style="color: #333;">المستندات المطلوبة:</strong>
-                                    <ul style="list-style: none; padding: 0; margin-top: 5px;">
-                                        ${requiredDocuments.map((doc, index) => `
-                                            <li style="padding: 8px; border-bottom: 1px dashed #eee;">
-                                                <input type="checkbox" id="doc_${index}" class="task-checkbox" data-task-type="document" data-index="${index}"> 
-                                                <label for="doc_${index}">${doc}</label>
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                                <button id="btnSaveTasks" class="primary" style="margin-top: 10px;">✅ حفظ حالة المهام</button>
-                            </div>
-                        </div>
-                    `;
-                }
-
+               if (requiredActions.length > 0 || requiredDocuments.length > 0) {
+    html += `
+        <div class="modal-section">
+            <h3>📋 المهام والمستندات المطلوبة (بناءً على التخصص: ${consultation.service || '-'})</h3>
+            <div class="tasks-container">
+                <div style="margin-bottom: 10px;">
+                    <strong style="color: #333;">الإجراءات المطلوبة:</strong>
+                    <ul style="list-style: none; padding: 0; margin-top: 5px;">
+                        ${requiredActions.map((action, index) => `
+                            <li style="padding: 8px; border-bottom: 1px dashed #eee;">
+                                <input type="checkbox" id="action_${index}" class="task-checkbox" data-task-type="action" data-index="${index}"> 
+                                <label for="action_${index}">${action}</label>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong style="color: #333;">المستندات المطلوبة:</strong>
+                    <ul style="list-style: none; padding: 0; margin-top: 5px;">
+                        ${requiredDocuments.map((doc, index) => `
+                            <li style="padding: 8px; border-bottom: 1px dashed #eee;">
+                                <input type="checkbox" id="doc_${index}" class="task-checkbox" data-task-type="document" data-index="${index}"> 
+                                <label for="doc_${index}">${doc}</label>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                <button id="btnSaveTasks" class="primary" style="margin-top: 10px;">✅ حفظ حالة المهام</button>
+            </div>
+        </div>
+    `;
+}
                 if (initialConsultation) {
                     html += `
                         <div class="modal-section">
