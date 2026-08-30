@@ -877,14 +877,13 @@
             document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
             document.getElementById('btnLogout').addEventListener('click', handleLogout);
 
-            document.getElementById('btnApplyFilters').addEventListener('click', applyFilters);
-            document.getElementById('btnResetFilters').addEventListener('click', function() {
-                document.getElementById('filterDateFrom').value = '';
-                document.getElementById('filterDateTo').value = '';
-                document.getElementById('filterStatus').value = '';
-                applyFilters();
-            });
-
+           document.getElementById('btnApplyFilters').addEventListener('click', applyFilters);
+document.getElementById('btnResetFilters').addEventListener('click', function() {
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value = '';
+    document.getElementById('filterService').value = '';
+    applyFilters();
+});
             document.getElementById('btnAddEmployee').addEventListener('click', addEmployee);
             document.getElementById('btnAddManualConsultation').addEventListener('click', addManualConsultation);
 
