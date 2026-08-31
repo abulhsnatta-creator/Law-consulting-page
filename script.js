@@ -65,6 +65,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalButtonText = submitButton ? submitButton.innerText : 'إرسال طلب الاستشارة';
         if (submitButton) { submitButton.disabled = true; submitButton.innerText = 'جاري إرسال الطلب...'; }
         showFormMessage('جاري إرسال طلب الاستشارة...', 'loading');
+        // 🔴 رفع الملف المرفق (إذا وُجد)
+const attachmentInput = document.getElementById('attachment');
+const file = attachmentInput ? attachmentInput.files[0] : null;
+let attachmentPath = null;
+
+if (file) {
+    const filePath = `${Date.now()}_${file.name}`;
+    const { error: uploadError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, file);
+
+    if (uploadError) {
+        alert('❌ حدث خطأ أثناء رفع الملف المرفق: ' + uploadError.message);
+        return;
+    }
+
+    // الحصول على الرابط العام للملف
+    const { data: urlData } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(filePath);
+    
+    attachmentPath = urlData.publicUrl;
+}
 
         // 🔴 فحص التكرار
         try {
