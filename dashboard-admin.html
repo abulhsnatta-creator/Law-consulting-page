@@ -238,24 +238,24 @@ data.forEach((item, idx) => {
         <td>${item.service || '—'}</td>
         <td>${item.attachment_path ? `<a href="${item.attachment_path}" target="_blank" style="color: #2d7aff;">📎 ملف</a>` : '—'}</td>
         <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
-                                <select class="assigned-select" data-id="${item.id}">
-                                <option value="">غير محدد</option>
-                                ${employees ? employees.map(emp => `<option value="${emp.id}" ${emp.id === item.assigned_to ? 'selected' : ''}>${emp.full_name}</option>`).join('') : ''}
-                            </select>
-                            <button class="btn-save-assign" data-id="${item.id}">حفظ</button>
-                        </td>
-        
-                        <td>${assignedName}</td>
-                        `}
-                        <td>
-                            <button class="btn-preview" data-id="${item.id}">📄 معاينة</button>
-                            <button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button>
-                            <button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button>
-                        </td>
-                    </tr>
-                `;
-            });
-
+        ${currentUser?.role === 'manager' ? `
+        <td>
+            <select class="assigned-select" data-id="${item.id}">
+                <option value="">غير محدد</option>
+                ${employees ? employees.map(emp => `<option value="${emp.id}" ${emp.id === item.assigned_to ? 'selected' : ''}>${emp.full_name}</option>`).join('') : ''}
+            </select>
+            <button class="btn-save-assign" data-id="${item.id}">حفظ</button>
+        </td>
+        ` : `
+        <td>${assignedName}</td>
+        `}
+        <td>
+            <button class="btn-preview" data-id="${item.id}">📄 معاينة</button>
+            <button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button>
+            <button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button>
+        </td>
+    </tr>
+`;
            let headerCols = `<th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الخدمة</th><th>المرفقات</th><th>التاريخ</th>`;
 headerCols += `<th>المتابع</th>`;
 headerCols += `<th>الإجراء</th>`;
