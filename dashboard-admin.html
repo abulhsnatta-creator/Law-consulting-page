@@ -727,29 +727,32 @@
             }
         }
 
-        async function fetchConsultations() {
-            try {
-                let query = supabase
-                    .from('consultation_requests')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+       async function fetchConsultations() {
+    try {
+        let query = supabase
+            .from('consultation_requests')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-                if (currentUser?.role === 'secretary') {
-                    query = query.eq('created_by', currentUser.id);
-                } else if (currentUser?.role === 'followup_staff') {
-                    query = query.eq('assigned_to', currentUser.id);
-                }
-
-                const { data, error } = await query;
-                if (error) throw error;
-                allConsultations = data || [];
-                applyFilters();
-            } catch (err) {
-                console.error(err);
-                document.getElementById('consultationsContainer').innerHTML = `<div class="message error">❌ ${err.message}</div>`;
-            }
+        // 🔴 فلترة الطلبات حسب الدور:
+        // 1. المدير (manager): يرى كل شيء
+        // 2. السكرتير (secretary): يرى الطلبات التي أنشأها بنفسه (created_by)
+        // 3. الموظف (followup_staff): يرى الطلبات المخصصة له فقط (assigned_to)
+        if (currentUser?.role === 'secretary') {
+            query = query.eq('created_by', currentUser.id);
+        } else if (currentUser?.role === 'followup_staff') {
+            query = query.eq('assigned_to', currentUser.id);
         }
 
+        const { data, error } = await query;
+        if (error) throw error;
+        allConsultations = data || [];
+        applyFilters();
+    } catch (err) {
+        console.error(err);
+        document.getElementById('consultationsContainer').innerHTML = `<div class="message error">❌ ${err.message}</div>`;
+    }
+}
         function populateEmployeeFilter(employees) {
             const filterSelect = document.getElementById('filterEmployee');
             if (!filterSelect) return;
