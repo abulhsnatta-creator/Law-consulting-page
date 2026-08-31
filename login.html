@@ -81,13 +81,33 @@
         }
 
         // فحص الجلسة عند فتح الصفحة
-        async function checkSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                handleRedirect(session.user);
-            }
+       // فحص الجلسة عند فتح الصفحة
+async function checkSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        // 🔴 التحقق من وجود المستخدم في جدول الموظفين
+        const { data: profile, error } = await supabase
+            .from('staff_profiles')
+            .select('id')
+            .eq('id', session.user.id)
+            .single();
+
+        // إذا كان المستخدم غير موجود في الجدول أو حدث خطأ، قم بتسجيل الخروج وإظهار شاشة الدخول
+        if (error || !profile) {
+            await supabase.auth.signOut();
+            loginSection.classList.remove('hidden');
+            changePasswordSection.classList.add('hidden');
+            showError(errorDiv, 'هذا الحساب لم يعد متاحاً. يرجى التواصل مع الإدارة أو تسجيل الدخول بحساب آخر.');
+            return;
         }
 
+        // إذا كان المستخدم موجوداً، توجيهه حسب دوره
+        handleRedirect(session.user);
+    } else {
+        // لا توجد جلسة، اعرض شاشة الدخول
+        loginSection.classList.remove('hidden');
+    }
+}
         async function handleRedirect(user) {
             const { data: profile, error: profileError } = await supabase
                 .from('staff_profiles')
