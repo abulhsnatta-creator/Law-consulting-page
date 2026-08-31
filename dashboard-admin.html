@@ -218,119 +218,121 @@
         let allEmployees = [];
         let currentFilteredData = [];
 
-        function renderConsultations(data, employees) {
-            const container = document.getElementById('consultationsContainer');
-            if (!container) return;
-            if (!data || data.length === 0) {
-                container.innerHTML = `<div class="message">📭 لا توجد طلبات تطابق الفلتر.</div>`;
-                return;
+       function renderConsultations(data, employees) {
+    const container = document.getElementById('consultationsContainer');
+    if (!container) return;
+    if (!data || data.length === 0) {
+        container.innerHTML = `<div class="message">📭 لا توجد طلبات تطابق الفلتر.</div>`;
+        return;
+    }
+
+    let rows = '';
+    data.forEach((item, idx) => {
+        // حساب اسم الموظف المسند
+        const assignedEmp = employees ? employees.find(e => e.id === item.assigned_to) : null;
+        const assignedName = assignedEmp ? assignedEmp.full_name : 'غير محدد';
+
+        rows += `
+            <tr data-id="${item.id}">
+                <td>${idx + 1}</td>
+                <td>${item.client_name || 'غير محدد'}</td>
+                <td>${item.email || '—'}</td>
+                <td>${item.phone || '—'}</td>
+                <td>${item.service || '—'}</td>
+                <td>${item.attachment_path ? `<a href="${item.attachment_path}" target="_blank" style="color: #2d7aff;">📎 ملف</a>` : '—'}</td>
+                <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
+                
+                <!-- 🔴 للمدير فقط: قائمة تعيين الموظف -->
+                ${currentUser?.role === 'manager' ? `
+                <td>
+                    <select class="assigned-select" data-id="${item.id}">
+                        <option value="">غير محدد</option>
+                        ${employees ? employees.map(emp => `<option value="${emp.id}" ${emp.id === item.assigned_to ? 'selected' : ''}>${emp.full_name}</option>`).join('') : ''}
+                    </select>
+                    <button class="btn-save-assign" data-id="${item.id}">حفظ</button>
+                </td>
+                ` : `
+                <!-- 🔴 للموظف والسكرتير: عرض اسم الموظف فقط -->
+                <td>${assignedName}</td>
+                `}
+                
+                <td>
+                    <button class="btn-preview" data-id="${item.id}">📄 معاينة</button>
+                    <button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button>
+                    <button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    let headerCols = `<th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الخدمة</th><th>المرفقات</th><th>التاريخ</th>`;
+    headerCols += `<th>المتابع</th>`;
+    headerCols += `<th>الإجراء</th>`;
+
+    container.innerHTML = `
+        <div class="table-responsive">
+            <table>
+                <thead><tr>${headerCols}</tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
+
+    if (currentUser?.role === 'manager') {
+        document.querySelectorAll('.btn-save-assign').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const consultationId = this.dataset.id;
+                const select = document.querySelector(`.assigned-select[data-id="${consultationId}"]`);
+                const assignedTo = select.value || null;
+                if (!assignedTo && !confirm('هل أنت متأكد من إزالة التعيين؟')) return;
+                const { error } = await supabase
+                    .from('consultation_requests')
+                    .update({ assigned_to: assignedTo })
+                    .eq('id', consultationId);
+                if (error) {
+                    alert('❌ فشل حفظ التعيين: ' + error.message);
+                } else {
+                    alert('✅ تم حفظ التعيين بنجاح!');
+                    applyFilters();
+                }
+            });
+        });
+    }
+
+    document.querySelectorAll('.btn-preview').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            openPreview(id);
+        });
+    });
+
+    document.querySelectorAll('.btn-edit-cons').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const item = allConsultations.find(c => c.id === id);
+            if (item) openEditConsultationModal(item);
+        });
+    });
+
+    document.querySelectorAll('.btn-delete-cons').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
+            const { error } = await supabase
+                .from('consultation_requests')
+                .delete()
+                .eq('id', id);
+            if (error) {
+                alert('❌ فشل الحذف: ' + error.message);
+            } else {
+                alert('✅ تم حذف الطلب بنجاح');
+                applyFilters();
             }
+        });
+    });
 
-            let assignedName = ''; // 🔴 أضفنا هذا السطر لتعريف المتغير
-            let rows = '';
-            data.forEach((item, idx) => {
-                // حساب اسم الموظف المسند (لتظهر في الجدول)
-                const assignedEmp = employees ? employees.find(e => e.id === item.assigned_to) : null;
-                assignedName = assignedEmp ? assignedEmp.full_name : 'غير محدد';
-
-                rows += `
-                    <tr data-id="${item.id}">
-                        <td>${idx + 1}</td>
-                        <td>${item.client_name || 'غير محدد'}</td>
-                        <td>${item.email || '—'}</td>
-                        <td>${item.phone || '—'}</td>
-                        <td>${item.service || '—'}</td>
-                        <td>${item.attachment_path ? `<a href="${item.attachment_path}" target="_blank" style="color: #2d7aff;">📎 ملف</a>` : '—'}</td>
-                        <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
-                        ${currentUser?.role === 'manager' ? `
-                        <td>
-                            <select class="assigned-select" data-id="${item.id}">
-                                <option value="">غير محدد</option>
-                                ${employees ? employees.map(emp => `<option value="${emp.id}" ${emp.id === item.assigned_to ? 'selected' : ''}>${emp.full_name}</option>`).join('') : ''}
-                            </select>
-                            <button class="btn-save-assign" data-id="${item.id}">حفظ</button>
-                        </td>
-                        ` : `
-                        <td>${assignedName}</td>
-                        `}
-                        <td>
-                            <button class="btn-preview" data-id="${item.id}">📄 معاينة</button>
-                            <button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button>
-                            <button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            let headerCols = `<th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الخدمة</th><th>المرفقات</th><th>التاريخ</th>`;
-            headerCols += `<th>المتابع</th>`;
-            headerCols += `<th>الإجراء</th>`;
-
-            container.innerHTML = `
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr>${headerCols}</tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>
-            `;
-
-            if (currentUser?.role === 'manager') {
-                document.querySelectorAll('.btn-save-assign').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const consultationId = this.dataset.id;
-                        const select = document.querySelector(`.assigned-select[data-id="${consultationId}"]`);
-                        const assignedTo = select.value || null;
-                        if (!assignedTo && !confirm('هل أنت متأكد من إزالة التعيين؟')) return;
-                        const { error } = await supabase
-                            .from('consultation_requests')
-                            .update({ assigned_to: assignedTo })
-                            .eq('id', consultationId);
-                        if (error) {
-                            alert('❌ فشل حفظ التعيين: ' + error.message);
-                        } else {
-                            alert('✅ تم حفظ التعيين بنجاح!');
-                            applyFilters();
-                        }
-                    });
-                });
-            }
-
-            document.querySelectorAll('.btn-preview').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    openPreview(id);
-                });
-            });
-
-            document.querySelectorAll('.btn-edit-cons').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const item = allConsultations.find(c => c.id === id);
-                    if (item) openEditConsultationModal(item);
-                });
-            });
-
-            document.querySelectorAll('.btn-delete-cons').forEach(btn => {
-                btn.addEventListener('click', async function() {
-                    const id = this.dataset.id;
-                    if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
-                    const { error } = await supabase
-                        .from('consultation_requests')
-                        .delete()
-                        .eq('id', id);
-                    if (error) {
-                        alert('❌ فشل الحذف: ' + error.message);
-                    } else {
-                        alert('✅ تم حذف الطلب بنجاح');
-                        applyFilters();
-                    }
-                });
-            });
-
-            populateEmployeeFilter(employees);
-        }
-
+    populateEmployeeFilter(employees);
+}
         function renderEmployees(data) {
             const container = document.getElementById('employeesContainer');
             if (!container) return;
