@@ -815,31 +815,35 @@
         }
 
         async function initPage() {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error || !session) {
-                alert('يرجى تسجيل الدخول أولاً.');
-                window.location.href = 'login.html';
-                return;
-            }
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session) {
+        alert('يرجى تسجيل الدخول أولاً.');
+        window.location.href = 'login.html';
+        return;
+    }
 
-            const { data: profile, error: profileError } = await supabase
-                .from('staff_profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
+    // 🔴 التحقق من وجود المستخدم في جدول الموظفين
+    const { data: profile, error: profileError } = await supabase
+        .from('staff_profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
 
-            if (profileError || !profile) {
-                alert('لا توجد صلاحيات لهذا المستخدم. يرجى التواصل مع المدير.');
-                window.location.href = 'login.html';
-                return;
-            }
+    if (profileError || !profile) {
+        // 🔴 المستخدم غير موجود → تسجيل خروج تلقائي وعرض رسالة
+        await supabase.auth.signOut();
+        alert('لا توجد صلاحيات لهذا المستخدم، أو تم حذف الحساب. سيتم تسجيل خروجك الآن.');
+        window.location.href = 'login.html';
+        return;
+    }
 
-            currentUser = {
-                id: profile.id,
-                role: profile.role,
-                full_name: profile.full_name
-            };
-
+    currentUser = {
+        id: profile.id,
+        role: profile.role,
+        full_name: profile.full_name
+    };
+    // ... (باقي الكود كما هو) ...
+}
             document.getElementById('userNameDisplay').textContent = `👤 ${currentUser.full_name}`;
 
             if (currentUser.role === 'manager') {
