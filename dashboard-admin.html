@@ -811,24 +811,25 @@
             }
         }
 
-       async function initPage() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session) {
-        alert('يرجى تسجيل الدخول أولاً.');
-        window.location.href = 'login.html';
-        return;
-    }
+    // ... (داخل initPage) ...
 
-    // ✅ الجديد: نكتفي باستخدام الـ ID و الـ Email من الجلسة، ولا نجلب البيانات الكاملة من staff_profiles
-    currentUser = {
-        id: session.user.id,
-        role: 'manager', // تعيين دور افتراضي (أو يمكنك استخدام profile.role إذا لم يكن هناك مشكلة)
-        full_name: session.user.email
-    };
+const { data: profile, error: profileError } = await supabase
+    .from('staff_profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
 
-    // ✅ إذا كنا لا نستطيع جلب البيانات من staff_profiles بسبب RLS، فسنكتفي بالجلسة
-    // (ولكن يجب التأكد من فتح الصلاحيات كما فعلنا في الخطوة 1)
+if (profileError || !profile) {
+    alert('لا توجد صلاحيات لهذا المستخدم. يرجى التواصل مع المدير.');
+    window.location.href = 'login.html';
+    return;
+}
 
+currentUser = {
+    id: profile.id,
+    role: profile.role,
+    full_name: profile.full_name
+};
     document.getElementById('userNameDisplay').textContent = `👤 ${currentUser.full_name}`;
 
     if (currentUser.role === 'manager') {
