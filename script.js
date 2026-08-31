@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
 
         // قراءة البيانات
+        const BUCKET_NAME = 'consultation-files';
         const nameInput = document.getElementById('name');
         const phoneInput = document.getElementById('phone');
         const emailInput = document.getElementById('email');
