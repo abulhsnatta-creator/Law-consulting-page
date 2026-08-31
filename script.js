@@ -143,6 +143,7 @@ if (file) {
                 service: service || null,
                 message: message || null,
                 privacy_accepted: true
+                attachment_path: attachmentPath // 🔴 أضف هذا السطر
             };
 
             // حفظ البيانات في قاعدة البيانات
