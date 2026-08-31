@@ -229,7 +229,7 @@
            let assignedName = ''; // 🔴 أضف هذا السطر هنا
 let rows = '';
 data.forEach((item, idx) => {              
-    rows += `
+rows += `
     <tr data-id="${item.id}">
         <td>${idx + 1}</td>
         <td>${item.client_name || 'غير محدد'}</td>
@@ -246,14 +246,17 @@ data.forEach((item, idx) => {
             </select>
             <button class="btn-save-assign" data-id="${item.id}">حفظ</button>
         </td>
+        ` : `
         <td>${assignedName}</td>
+        `}
         <td>
             <button class="btn-preview" data-id="${item.id}">📄 معاينة</button>
             <button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button>
             <button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button>
         </td>
     </tr>
-           let headerCols = `<th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الخدمة</th><th>المرفقات</th><th>التاريخ</th>`;
+`;
+    let headerCols = `<th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الخدمة</th><th>المرفقات</th><th>التاريخ</th>`;
 headerCols += `<th>المتابع</th>`;
 headerCols += `<th>الإجراء</th>`;
             container.innerHTML = `
