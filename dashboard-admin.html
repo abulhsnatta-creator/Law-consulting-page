@@ -226,10 +226,9 @@ function renderConsultations(data, employees) {
         return;
     }
 
-    let assignedName = ''; // 🔴 أضف هذا السطر هنا
+        let assignedName = ''; // 🔴 أضف هذا السطر هنا (هو السطر الناقص)
     let rows = '';
-    data.forEach((item, idx) => {
-        // حساب اسم الموظف المسند (لأن assignedName أصبح معرفاً)
+    data.forEach((item, idx) => {        // حساب اسم الموظف المسند (لأن assignedName أصبح معرفاً)
         const assignedEmp = employees ? employees.find(e => e.id === item.assigned_to) : null;
         assignedName = assignedEmp ? assignedEmp.full_name : 'غير محدد';
 
