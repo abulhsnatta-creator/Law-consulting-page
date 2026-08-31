@@ -226,10 +226,9 @@
                 return;
             }
 
-           let assignedName = ''; // 🔴 أضف هذا السطر هنا
-let rows = '';
-data.forEach((item, idx) => {              
-    rows += `
+            let rows = '';
+            data.forEach((item, idx) => {
+                rows += `
                     <tr data-id="${item.id}">
                         <td>${idx + 1}</td>
                         <td>${item.client_name || 'غير محدد'}</td>
