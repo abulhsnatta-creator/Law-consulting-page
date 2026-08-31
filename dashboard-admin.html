@@ -230,16 +230,15 @@
 let rows = '';
 data.forEach((item, idx) => {              
     rows += `
-                    <tr data-id="${item.id}">
-                        <td>${idx + 1}</td>
-                        <td>${item.client_name || 'غير محدد'}</td>
-                        <td>${item.email || '—'}</td>
-                        <td>${item.phone || '—'}</td>
-                        <td>${item.service || '—'}</td>
-                        <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
-                        ${currentUser?.role === 'manager' ? `
-                        <td>
-                            <select class="assigned-select" data-id="${item.id}">
+    <tr data-id="${item.id}">
+        <td>${idx + 1}</td>
+        <td>${item.client_name || 'غير محدد'}</td>
+        <td>${item.email || '—'}</td>
+        <td>${item.phone || '—'}</td>
+        <td>${item.service || '—'}</td>
+        <td>${item.attachment_path ? `<a href="${item.attachment_path}" target="_blank" style="color: #2d7aff;">📎 ملف</a>` : '—'}</td>
+        <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
+                                <select class="assigned-select" data-id="${item.id}">
                                 <option value="">غير محدد</option>
                                 ${employees ? employees.map(emp => `<option value="${emp.id}" ${emp.id === item.assigned_to ? 'selected' : ''}>${emp.full_name}</option>`).join('') : ''}
                             </select>
