@@ -561,8 +561,8 @@ if (followupAttachments && followupAttachments.length > 0) {
 }
 
                 body.innerHTML = html;
-                // ربط زر إضافة المرفق أثناء المتابعة
-// ربط زر إضافة المرفق أثناء المتابعة
+    
+// 🔴 ربط زر إضافة المرفق أثناء المتابعة (بعد بناء HTML)
 document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', async function() {
     const consId = this.dataset.id;
     const file = document.getElementById('newFollowupAttachment').files[0];
@@ -588,20 +588,21 @@ document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', a
 
     const attachmentUrl = urlData.publicUrl;
 
-    // إضافة المرفق إلى جدول المتابعات (client_followups) كملاحظة إضافية
+    // 🔴 إضافة المرفق إلى جدول المتابعات كـ "مرفق فقط"
     const { data: { user } } = await supabase.auth.getUser();
 
     const { error } = await supabase
         .from('client_followups')
         .insert({
             request_id: consId,
-            notes: `📎 مرفق إضافي: ${file.name}`,
+            notes: '',
             followup_status: 'new',
             created_by: user?.id,
             contact_method: 'other',
-            action: 'إضافة مرفق',
+            action: '',
             followup_date: new Date().toISOString(),
-            attachment_path: attachmentUrl
+            attachment_path: attachmentUrl,
+            is_attachment_only: true // 🔴 هذا السطر سيجعل المرفق يظهر في قسم "المرفقات الإضافية" فقط
         });
 
     if (error) {
@@ -610,7 +611,7 @@ document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', a
         alert('✅ تم إضافة المرفق بنجاح!');
         openPreview(consId);
     }
-});
+});               
                 const saveTasksBtn = document.getElementById('btnSaveTasks');
                 if (saveTasksBtn) {
                     saveTasksBtn.addEventListener('click', async function() {
