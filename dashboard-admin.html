@@ -532,6 +532,55 @@
                 `;
 
                 body.innerHTML = html;
+                // ربط زر إضافة المرفق أثناء المتابعة
+document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', async function() {
+    const consId = this.dataset.id;
+    const file = document.getElementById('newFollowupAttachment').files[0];
+
+    if (!file) {
+        alert('يرجى اختيار ملف أولاً');
+        return;
+    }
+
+    const filePath = `${Date.now()}_${file.name}`;
+    const { error: uploadError } = await supabase.storage
+        .from('consultation-files')
+        .upload(filePath, file);
+
+    if (uploadError) {
+        alert('❌ فشل رفع المرفق: ' + uploadError.message);
+        return;
+    }
+
+    const { data: urlData } = supabase.storage
+        .from('consultation-files')
+        .getPublicUrl(filePath);
+
+    const attachmentUrl = urlData.publicUrl;
+
+    // إضافة المرفق إلى جدول المتابعات (client_followups) كملاحظة إضافية
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+        .from('client_followups')
+        .insert({
+            request_id: consId,
+            notes: `📎 مرفق إضافي: ${file.name}`,
+            followup_status: 'new',
+            created_by: user?.id,
+            contact_method: 'other',
+            action: 'إضافة مرفق',
+            followup_date: new Date().toISOString(),
+            attachment_path: attachmentUrl
+        });
+
+    if (error) {
+        alert('❌ فشل إضافة المرفق: ' + error.message);
+    } else {
+        alert('✅ تم إضافة المرفق بنجاح!');
+        openPreview(consId);
+    }
+});
 
                 const saveTasksBtn = document.getElementById('btnSaveTasks');
                 if (saveTasksBtn) {
