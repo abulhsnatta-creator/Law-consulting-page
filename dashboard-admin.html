@@ -522,6 +522,15 @@
 
                 html += `
                     <div class="modal-section">
+                    <!-- 📎 المرفقات الإضافية -->
+<div class="modal-section">
+    <h3>📎 المرفقات الإضافية</h3>
+    <div id="attachmentsList"></div>
+    <div class="add-followup-form">
+        <input type="file" id="newFollowupAttachment" accept="image/*,.pdf" style="flex:2;">
+        <button id="btnAddFollowupAttachment" data-id="${consultationId}">إضافة مرفق</button>
+    </div>
+</div>
                         <h3>➕ إضافة متابعة جديدة</h3>
                         <div class="add-followup-form">
                             <input type="text" id="newFollowupNote" placeholder="ملاحظة المتابعة" style="flex:2;">
