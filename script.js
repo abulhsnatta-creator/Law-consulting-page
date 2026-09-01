@@ -21,7 +21,46 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof AOS !== 'undefined') {
         AOS.init({ duration: 800, once: true, offset: 100 });
     }
+// =========================================================
+// العدادات (Counters)
+// =========================================================
+const counters = document.querySelectorAll('.counter');
+let countersAnimated = false;
 
+function startCounters() {
+    counters.forEach(counter => {
+        const target = Number(counter.getAttribute('data-target'));
+        const duration = 2000;
+        const startTime = performance.now();
+
+        function updateCounter(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const currentValue = Math.floor(progress * target);
+            counter.innerText = currentValue;
+
+            if (progress < 1) {
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.innerText = target;
+            }
+        }
+
+        requestAnimationFrame(updateCounter);
+    });
+}
+
+// تشغيل العداد عند التمرير إلى قسم الإحصائيات
+window.addEventListener('scroll', () => {
+    const statsSection = document.querySelector('.stats');
+    if (statsSection && !countersAnimated) {
+        const sectionPosition = statsSection.getBoundingClientRect().top;
+        if (sectionPosition < window.innerHeight) {
+            startCounters();
+            countersAnimated = true;
+        }
+    }
+});
     // =========================================================
     // نموذج الاستشارة القانونية
     // =========================================================
