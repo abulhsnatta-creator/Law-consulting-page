@@ -702,9 +702,6 @@ document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', a
 if (openPreviewTimer) {
     clearTimeout(openPreviewTimer);
 }
-openPreviewTimer = setTimeout(() => {
-    openPreview(consultationId);
-}, 500);
             } catch (err) {
                 body.innerHTML = `<div class="message error">❌ حدث خطأ غير متوقع: ${err.message}</div>`;
             }
