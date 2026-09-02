@@ -565,7 +565,38 @@ if (document.getElementById('attachmentsList')) {
     // إعادة تعيين قسم المرفقات الإضافية
     document.getElementById('attachmentsList').innerHTML = attachmentsHtml;
 }
-   
+   // 🔴 جلب المرفقات الإضافية من جدول المتابعات (client_followups)
+const { data: followupAttachments, error: faError } = await supabase
+    .from('client_followups')
+    .select('attachment_path, notes, followup_date')
+    .eq('request_id', consultationId)
+    .order('followup_date', { ascending: false });
+
+if (faError) console.warn('خطأ في جلب المرفقات الإضافية:', faError);
+
+let attachmentsHtml = '';
+if (followupAttachments && followupAttachments.length > 0) {
+    followupAttachments.forEach(fa => {
+        if (fa.attachment_path) {
+            const date = fa.followup_date ? new Date(fa.followup_date).toLocaleString('ar-EG') : '—';
+            attachmentsHtml += `<div class="attachment-item"><a href="${fa.attachment_path}" target="_blank">📎 مرفق بتاريخ: ${date}</a></div>`;
+        }
+    });
+} else {
+    attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
+}
+
+// 👇 إضافة العرض في HTML (ضعها قبل نموذج إضافة المتابعة)
+html += `
+    <div class="modal-section">
+        <h3>📎 المرفقات الإضافية</h3>
+        <div id="attachmentsList">${attachmentsHtml}</div>
+        <div class="add-followup-form">
+            <input type="file" id="newFollowupAttachment" accept="image/*,.pdf" style="flex:2;">
+            <button id="btnAddFollowupAttachment" data-id="${consultationId}">إضافة مرفق</button>
+        </div>
+    </div>
+`;
                 body.innerHTML = html;
     
 // 🔴 ربط زر إضافة المرفق أثناء المتابعة (بعد بناء HTML)
