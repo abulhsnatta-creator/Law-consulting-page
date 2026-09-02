@@ -561,6 +561,15 @@ if (followupAttachments && followupAttachments.length > 0) {
     attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
 }
 
+html += `
+    <div class="modal-section">
+        <h3>📎 المرفقات الإضافية</h3>
+        <div id="attachmentsList">${attachmentsHtml}</div>
+        <div class="add-followup-form">
+            <input type="file" id="newFollowupAttachment" accept="image/*,.pdf" style="flex:2;">
+            <button id="btnAddFollowupAttachment" data-id="${consultationId}">إضافة مرفق</button>
+        </div>
+    </div>
 
                 body.innerHTML = html;
     
