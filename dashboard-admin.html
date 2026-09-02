@@ -560,7 +560,11 @@ if (followupAttachments && followupAttachments.length > 0) {
 } else {
     attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
 }
-
+// 🔴 حذف أي مرفقات إضافية مكررة من الواجهة بعد بناء HTML
+if (document.getElementById('attachmentsList')) {
+    // إعادة تعيين قسم المرفقات الإضافية
+    document.getElementById('attachmentsList').innerHTML = attachmentsHtml;
+}
 // 👇 إضافة العرض في HTML (ضعها قبل نموذج إضافة المتابعة)
 html += `
     <div class="modal-section">
