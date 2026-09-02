@@ -375,7 +375,7 @@
                 });
             });
         }
-
+    let openPreviewTimer;
         async function openPreview(consultationId) {
             const modal = document.getElementById('previewModal');
             const body = document.getElementById('modalBody');
@@ -694,7 +694,13 @@ document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', a
                         openPreview(consId);
                     }
                 });
-
+       // 🔴 هذا هو السطر الذي يمنع التكرار
+if (openPreviewTimer) {
+    clearTimeout(openPreviewTimer);
+}
+openPreviewTimer = setTimeout(() => {
+    openPreview(consultationId);
+}, 500);
             } catch (err) {
                 body.innerHTML = `<div class="message error">❌ حدث خطأ غير متوقع: ${err.message}</div>`;
             }
