@@ -996,84 +996,90 @@
             showSection('sectionConsultations');
         }
 
-        async function addManualConsultation() {
-            const name = document.getElementById('manualName').value.trim();
-            const phone = document.getElementById('manualPhone').value.trim();
-            const email = document.getElementById('manualEmail').value.trim();
-            const company = document.getElementById('manualCompany').value.trim();
-            const service = document.getElementById('manualService').value;
-            const message = document.getElementById('manualMessage').value.trim();
-            const out = document.getElementById('manualMsg');
-            const btn = document.getElementById('btnAddManualConsultation');
-            const attachmentInput = document.getElementById('manualAttachment');
-const file = attachmentInput ? attachmentInput.files[0] : null;
-let attachmentPath = null;
+      async function addManualConsultation() {
+    const name = document.getElementById('manualName').value.trim();
+    const phone = document.getElementById('manualPhone').value.trim();
+    const email = document.getElementById('manualEmail').value.trim();
+    const company = document.getElementById('manualCompany').value.trim();
+    const service = document.getElementById('manualService').value;
+    const message = document.getElementById('manualMessage').value.trim();
+    const out = document.getElementById('manualMsg');
+    const btn = document.getElementById('btnAddManualConsultation');
 
-            if (!name || !phone || !service) {
-                out.textContent = 'يرجى ملء الحقول الإلزامية (الاسم، الهاتف، الخدمة).';
-                return;
-            }
+    // 🔴 التعرف على الملف المرفق
+    const attachmentInput = document.getElementById('manualAttachment');
+    const file = attachmentInput ? attachmentInput.files[0] : null;
+    let attachmentPath = null;
 
-            btn.disabled = true;
-            out.textContent = 'جاري الحفظ...';
-
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) { 
-                alert('يرجى تسجيل الدخول مجدداً.'); 
-                return; 
-            }
-// 🔴 رفع الملف المرفق (إذا وُجد)
-if (file) {
-    const filePath = `${Date.now()}_${file.name}`;
-    const { error: uploadError } = await supabase.storage
-        .from('consultation-files')
-        .upload(filePath, file);
-
-    if (uploadError) {
-        alert('❌ حدث خطأ أثناء رفع الملف المرفق: ' + uploadError.message);
-        if (btn) { btn.disabled = false; }
+    if (!name || !phone || !service) {
+        out.textContent = 'يرجى ملء الحقول الإلزامية (الاسم، الهاتف، الخدمة).';
         return;
     }
 
-    const { data: urlData } = supabase.storage
-        .from('consultation-files')
-        .getPublicUrl(filePath);
-    
-    attachmentPath = urlData.publicUrl;
-}
-            try {
-                const { error } = await supabase.from('consultation_requests').insert({
-                    client_name: name,
-                    full_name: name,
-                    phone: phone,
-                    email: email || null,
-                    company: company || null,
-                    service: service || null,
-                    message: message || null,
-                    privacy_accepted: true,
-                    status: 'new',
-                    created_by: session.user.id
-                    attachment_path: attachmentPath // 🔴 جديد: حفظ رابط المرفق
-                });
+    btn.disabled = true;
+    out.textContent = 'جاري الحفظ...';
 
-                if (error) throw error;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { 
+        alert('يرجى تسجيل الدخول مجدداً.'); 
+        return; 
+    }
 
-                out.textContent = '✅ تم حفظ الطلب بنجاح!';
-                document.getElementById('manualName').value = '';
-                document.getElementById('manualPhone').value = '';
-                document.getElementById('manualEmail').value = '';
-                document.getElementById('manualCompany').value = '';
-                document.getElementById('manualService').value = '';
-                document.getElementById('manualMessage').value = '';
-                
-                await fetchConsultations();
-            } catch (err) {
-                out.textContent = '❌ فشل الحفظ: ' + err.message;
-            } finally {
-                btn.disabled = false;
-            }
+    // 🔴 رفع الملف المرفق (إذا وُجد)
+    if (file) {
+        const filePath = `${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('consultation-files')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            alert('❌ حدث خطأ أثناء رفع الملف المرفق: ' + uploadError.message);
+            if (btn) { btn.disabled = false; }
+            return;
         }
 
+        const { data: urlData } = supabase.storage
+            .from('consultation-files')
+            .getPublicUrl(filePath);
+        
+        attachmentPath = urlData.publicUrl;
+    }
+
+    try {
+        const { error } = await supabase.from('consultation_requests').insert({
+            client_name: name,
+            full_name: name,
+            phone: phone,
+            email: email || null,
+            company: company || null,
+            service: service || null,
+            message: message || null,
+            privacy_accepted: true,
+            status: 'new',
+            created_by: session.user.id, // 🔴 أضف هذه الفاصلة
+            attachment_path: attachmentPath // 🔴 جديد: حفظ رابط المرفق
+        });
+
+        if (error) throw error;
+
+        out.textContent = '✅ تم حفظ الطلب بنجاح!';
+        document.getElementById('manualName').value = '';
+        document.getElementById('manualPhone').value = '';
+        document.getElementById('manualEmail').value = '';
+        document.getElementById('manualCompany').value = '';
+        document.getElementById('manualService').value = '';
+        document.getElementById('manualMessage').value = '';
+        
+        // 🔴 مسح حقل المرفق
+        document.getElementById('manualAttachment').value = '';
+        
+        await fetchConsultations();
+    } catch (err) {
+        out.textContent = '❌ فشل الحفظ: ' + err.message;
+    } finally {
+        btn.disabled = false;
+    }
+}
         document.getElementById('modalClose').addEventListener('click', function() {
             document.getElementById('previewModal').classList.remove('active');
         });
