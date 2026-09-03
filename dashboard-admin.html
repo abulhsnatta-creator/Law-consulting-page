@@ -1022,7 +1022,25 @@ let attachmentPath = null;
                 alert('يرجى تسجيل الدخول مجدداً.'); 
                 return; 
             }
+// 🔴 رفع الملف المرفق (إذا وُجد)
+if (file) {
+    const filePath = `${Date.now()}_${file.name}`;
+    const { error: uploadError } = await supabase.storage
+        .from('consultation-files')
+        .upload(filePath, file);
 
+    if (uploadError) {
+        alert('❌ حدث خطأ أثناء رفع الملف المرفق: ' + uploadError.message);
+        if (btn) { btn.disabled = false; }
+        return;
+    }
+
+    const { data: urlData } = supabase.storage
+        .from('consultation-files')
+        .getPublicUrl(filePath);
+    
+    attachmentPath = urlData.publicUrl;
+}
             try {
                 const { error } = await supabase.from('consultation_requests').insert({
                     client_name: name,
