@@ -665,29 +665,7 @@ document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', a
                             }
                         });
 
-                        const { data: { user } } = await supabase.auth.getUser();
-
-                        const { error } = await supabase
-                            .from('client_followups')
-                            .insert({
-                                request_id: consultationId,
-                                notes: `تم إنجاز: ${checkedActions.join(', ') || 'لا شيء'} — المستندات: ${checkedDocuments.join(', ') || 'لا شيء'}`,
-                                followup_status: 'completed',
-                                created_by: user?.id,
-                                contact_method: 'other',
-                                action: 'تحديث حالة المهام',
-                                followup_date: new Date().toISOString()
-                            });
-
-                        if (error) {
-                            alert('❌ فشل حفظ المهام: ' + error.message);
-                        } else {
-                            alert('✅ تم حفظ حالة المهام بنجاح، وسيظهر ذلك في سجل المتابعات!');
-                            openPreview(consultationId);
-                        }
-                    });
-                }
-
+                       
                 document.getElementById('btnAddFollowup')?.addEventListener('click', async function() {
                     const consId = this.dataset.id;
                     const note = document.getElementById('newFollowupNote').value.trim();
