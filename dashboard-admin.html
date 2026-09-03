@@ -1053,6 +1053,7 @@ if (file) {
                     privacy_accepted: true,
                     status: 'new',
                     created_by: session.user.id
+                    attachment_path: attachmentPath // 🔴 جديد: حفظ رابط المرفق
                 });
 
                 if (error) throw error;
