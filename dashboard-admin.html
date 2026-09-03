@@ -425,27 +425,29 @@
 
                 if (folError) console.warn('خطأ في جلب المتابعات:', folError);
 
-                // 4. جلب المرفقات الإضافية (فقط المرفقات الإضافية)
-                const { data: attachmentsData, error: attachmentsError } = await supabase
-                    .from('client_followups')
-                    .select('attachment_path, followup_date')
-                    .eq('request_id', consultationId)
-                    .eq('is_attachment_only', true)
-                    .order('followup_date', { ascending: false });
+                      // 4. جلب المرفقات الإضافية (فقط المرفقات الإضافية)
+        const { data: attachmentsData, error: attachmentsError } = await supabase
+            .from('client_followups')
+            .select('id, attachment_path, followup_date')
+            .eq('request_id', consultationId)
+            .eq('is_attachment_only', true)
+            .order('followup_date', { ascending: false });
 
-                if (attachmentsError) console.warn('خطأ في جلب المرفقات الإضافية:', attachmentsError);
-                let attachmentsHtml = '';
-                if (attachmentsData && attachmentsData.length > 0) {
-                    attachmentsData.forEach(att => {
-                        if (att.attachment_path) {
-                            const date = att.followup_date ? new Date(att.followup_date).toLocaleString('ar-EG') : '—';
-                            attachmentsHtml += `<div class="attachment-item"><a href="${att.attachment_path}" target="_blank">📎 مرفق بتاريخ: ${date}</a></div>`;
-                        }
-                    });
-                } else {
-                    attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
+        if (attachmentsError) console.warn('خطأ في جلب المرفقات الإضافية:', attachmentsError);
+        let attachmentsHtml = '';
+        if (attachmentsData && attachmentsData.length > 0) {
+            attachmentsData.forEach(att => {
+                if (att.attachment_path) {
+                    const date = att.followup_date ? new Date(att.followup_date).toLocaleString('ar-EG') : '—';
+                    attachmentsHtml += `<div class="attachment-item">
+                        <a href="${att.attachment_path}" target="_blank">📎 مرفق بتاريخ: ${date}</a>
+                        <button id="btnDeleteAttachment_${att.id}" class="btn-delete-attachment" data-id="${att.id}">🗑️ حذف</button>
+                    </div>`;
                 }
-
+            });
+        } else {
+            attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
+        }
                 // 5. جلب اسم الموظف المسند
                 let assignedName = 'غير محدد';
                 if (consultation.assigned_to) {
@@ -662,7 +664,25 @@
                         openPreview(consId);
                     }
                 });
+        // 🔴 ربط أزرار حذف المرفقات الإضافية
+        document.querySelectorAll('.btn-delete-attachment').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const attachmentId = this.dataset.id;
+                if (!confirm('هل أنت متأكد من حذف هذا المرفق؟')) return;
 
+                const { error } = await supabase
+                    .from('client_followups')
+                    .delete()
+                    .eq('id', attachmentId);
+
+                if (error) {
+                    alert('❌ فشل حذف المرفق: ' + error.message);
+                } else {
+                    alert('✅ تم حذف المرفق بنجاح!');
+                    openPreview(consultationId);
+                }
+            });
+        });
                 // ربط زر إضافة المتابعة
                 document.getElementById('btnAddFollowup')?.addEventListener('click', async function() {
                     const consId = this.dataset.id;
