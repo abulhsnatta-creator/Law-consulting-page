@@ -376,7 +376,7 @@
             });
         }
     let openPreviewTimer;
-        async function openPreview(consultationId) {
+               async function openPreview(consultationId) {
             const modal = document.getElementById('previewModal');
             const body = document.getElementById('modalBody');
 
@@ -395,6 +395,7 @@
                     return;
                 }
 
+                // 1. جلب المهام والمستندات (حسب نوع الخدمة)
                 const { data: serviceReq, error: serviceReqError } = await supabase
                     .from('service_requirements')
                     .select('required_actions, required_documents')
@@ -402,10 +403,10 @@
                     .maybeSingle();
 
                 if (serviceReqError) console.warn('خطأ في جلب قائمة المتطلبات:', serviceReqError);
-
                 const requiredActions = serviceReq?.required_actions || [];
                 const requiredDocuments = serviceReq?.required_documents || [];
 
+                // 2. جلب المقابلة الأولى
                 const { data: initialConsultation, error: initError } = await supabase
                     .from('initial_consultations')
                     .select('*')
@@ -415,6 +416,7 @@
 
                 if (initError) console.warn('خطأ في جلب المقابلة الأولى:', initError);
 
+                // 3. جلب المتابعات
                 const { data: followups, error: folError } = await supabase
                     .from('client_followups')
                     .select('*')
@@ -423,6 +425,28 @@
 
                 if (folError) console.warn('خطأ في جلب المتابعات:', folError);
 
+                // 4. جلب المرفقات الإضافية (فقط المرفقات الإضافية)
+                const { data: attachmentsData, error: attachmentsError } = await supabase
+                    .from('client_followups')
+                    .select('attachment_path, followup_date')
+                    .eq('request_id', consultationId)
+                    .eq('is_attachment_only', true)
+                    .order('followup_date', { ascending: false });
+
+                if (attachmentsError) console.warn('خطأ في جلب المرفقات الإضافية:', attachmentsError);
+                let attachmentsHtml = '';
+                if (attachmentsData && attachmentsData.length > 0) {
+                    attachmentsData.forEach(att => {
+                        if (att.attachment_path) {
+                            const date = att.followup_date ? new Date(att.followup_date).toLocaleString('ar-EG') : '—';
+                            attachmentsHtml += `<div class="attachment-item"><a href="${att.attachment_path}" target="_blank">📎 مرفق بتاريخ: ${date}</a></div>`;
+                        }
+                    });
+                } else {
+                    attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
+                }
+
+                // 5. جلب اسم الموظف المسند
                 let assignedName = 'غير محدد';
                 if (consultation.assigned_to) {
                     const { data: emp } = await supabase
@@ -433,6 +457,7 @@
                     if (emp) assignedName = emp.full_name;
                 }
 
+                // ====== بناء HTML ======
                 let html = `
                     <div class="modal-section">
                         <h3>📌 معلومات العميل</h3>
@@ -447,6 +472,7 @@
                     </div>
                 `;
 
+                // عرض المهام والمستندات المطلوبة
                 if (requiredActions.length > 0 || requiredDocuments.length > 0) {
                     html += `
                         <div class="modal-section">
@@ -480,6 +506,7 @@
                     `;
                 }
 
+                // عرض المقابلة الأولى
                 if (initialConsultation) {
                     html += `
                         <div class="modal-section">
@@ -494,6 +521,7 @@
                     `;
                 }
 
+                // عرض سجل المتابعات
                 html += `<div class="modal-section"><h3>📋 سجل المتابعات</h3>`;
                 if (followups && followups.length > 0) {
                     followups.forEach(f => {
@@ -520,17 +548,21 @@
                 }
                 html += `</div>`;
 
+                // عرض قسم المرفقات الإضافية
                 html += `
                     <div class="modal-section">
-                    <!-- 📎 المرفقات الإضافية -->
-<div class="modal-section">
-    <h3>📎 المرفقات الإضافية</h3>
-    <div id="attachmentsList"></div>
-    <div class="add-followup-form">
-        <input type="file" id="newFollowupAttachment" accept="image/*,.pdf" style="flex:2;">
-        <button id="btnAddFollowupAttachment" data-id="${consultationId}">إضافة مرفق</button>
-    </div>
-</div>
+                        <h3>📎 المرفقات الإضافية</h3>
+                        <div id="attachmentsList">${attachmentsHtml}</div>
+                        <div class="add-followup-form">
+                            <input type="file" id="newFollowupAttachment" accept="image/*,.pdf" style="flex:2;">
+                            <button id="btnAddFollowupAttachment" data-id="${consultationId}">إضافة مرفق</button>
+                        </div>
+                    </div>
+                `;
+
+                // عرض نموذج إضافة المتابعة
+                html += `
+                    <div class="modal-section">
                         <h3>➕ إضافة متابعة جديدة</h3>
                         <div class="add-followup-form">
                             <input type="text" id="newFollowupNote" placeholder="ملاحظة المتابعة" style="flex:2;">
@@ -539,117 +571,13 @@
                         </div>
                     </div>
                 `;
-// 🔴 جلب المرفقات الإضافية من جدول المتابعات (فلترة حسب is_attachment_only = true)
-const { data: followupAttachments, error: faError } = await supabase
-    .from('client_followups')
-    .select('attachment_path, notes, followup_date, is_attachment_only')
-    .eq('request_id', consultationId)
-    .eq('is_attachment_only', true) // 🔴 فلترة المرفقات الإضافية فقط
-    .order('followup_date', { ascending: false });
 
-if (faError) console.warn('خطأ في جلب المرفقات الإضافية:', faError);
-
-let attachmentsHtml = '';
-if (followupAttachments && followupAttachments.length > 0) {
-    followupAttachments.forEach(fa => {
-        if (fa.attachment_path) {
-            const date = fa.followup_date ? new Date(fa.followup_date).toLocaleString('ar-EG') : '—';
-            attachmentsHtml += `<div class="attachment-item"><a href="${fa.attachment_path}" target="_blank">📎 مرفق بتاريخ: ${date}</a></div>`;
-        }
-    });
-} else {
-    attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
-}
-// 🔴 حذف أي مرفقات إضافية مكررة من الواجهة بعد بناء HTML
-if (document.getElementById('attachmentsList')) {
-    // إعادة تعيين قسم المرفقات الإضافية
-    document.getElementById('attachmentsList').innerHTML = attachmentsHtml;
-}
-   // 🔴 جلب المرفقات الإضافية من جدول المتابعات (client_followups)
-const { data: followupAttachments, error: faError } = await supabase
-    .from('client_followups')
-    .select('attachment_path, notes, followup_date')
-    .eq('request_id', consultationId)
-    .order('followup_date', { ascending: false });
-
-if (faError) console.warn('خطأ في جلب المرفقات الإضافية:', faError);
-
-let attachmentsHtml = '';
-if (followupAttachments && followupAttachments.length > 0) {
-    followupAttachments.forEach(fa => {
-        if (fa.attachment_path) {
-            const date = fa.followup_date ? new Date(fa.followup_date).toLocaleString('ar-EG') : '—';
-            attachmentsHtml += `<div class="attachment-item"><a href="${fa.attachment_path}" target="_blank">📎 مرفق بتاريخ: ${date}</a></div>`;
-        }
-    });
-} else {
-    attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
-}
-
-// 👇 إضافة العرض في HTML (ضعها قبل نموذج إضافة المتابعة)
-html += `
-    <div class="modal-section">
-        <h3>📎 المرفقات الإضافية</h3>
-        <div id="attachmentsList">${attachmentsHtml}</div>
-        <div class="add-followup-form">
-            <input type="file" id="newFollowupAttachment" accept="image/*,.pdf" style="flex:2;">
-            <button id="btnAddFollowupAttachment" data-id="${consultationId}">إضافة مرفق</button>
-        </div>
-    </div>
-`;
                 body.innerHTML = html;
-    
-// 🔴 ربط زر إضافة المرفق أثناء المتابعة (بعد بناء HTML)
-document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', async function() {
-    const consId = this.dataset.id;
-    const file = document.getElementById('newFollowupAttachment').files[0];
 
-    if (!file) {
-        alert('يرجى اختيار ملف أولاً');
-        return;
-    }
+                // ====== ربط الأزرار ======
 
-    const filePath = `${Date.now()}_${file.name}`;
-    const { error: uploadError } = await supabase.storage
-        .from('consultation-files')
-        .upload(filePath, file);
-
-    if (uploadError) {
-        alert('❌ فشل رفع المرفق: ' + uploadError.message);
-        return;
-    }
-
-    const { data: urlData } = supabase.storage
-        .from('consultation-files')
-        .getPublicUrl(filePath);
-
-    const attachmentUrl = urlData.publicUrl;
-
-    // 🔴 إضافة المرفق إلى جدول المتابعات كـ "مرفق فقط"
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const { error } = await supabase
-        .from('client_followups')
-        .insert({
-            request_id: consId,
-            notes: '',
-            followup_status: 'new',
-            created_by: user?.id,
-            contact_method: 'other',
-            action: '',
-            followup_date: new Date().toISOString(),
-            attachment_path: attachmentUrl,
-            is_attachment_only: true // 🔴 هذا السطر سيجعل المرفق يظهر في قسم "المرفقات الإضافية" فقط
-        });
-
-    if (error) {
-        alert('❌ فشل إضافة المرفق: ' + error.message);
-    } else {
-        alert('✅ تم إضافة المرفق بنجاح!');
-        openPreview(consId);
-    }
-});
-    const saveTasksBtn = document.getElementById('btnSaveTasks');
+                // ربط زر حفظ المهام
+                const saveTasksBtn = document.getElementById('btnSaveTasks');
                 if (saveTasksBtn) {
                     saveTasksBtn.addEventListener('click', async function() {
                         const checkedActions = [];
@@ -665,7 +593,77 @@ document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', a
                             }
                         });
 
-                       
+                        const { data: { user } } = await supabase.auth.getUser();
+                        const { error } = await supabase
+                            .from('client_followups')
+                            .insert({
+                                request_id: consultationId,
+                                notes: `تم إنجاز: ${checkedActions.join(', ') || 'لا شيء'} — المستندات: ${checkedDocuments.join(', ') || 'لا شيء'}`,
+                                followup_status: 'completed',
+                                created_by: user?.id,
+                                contact_method: 'other',
+                                action: 'تحديث حالة المهام',
+                                followup_date: new Date().toISOString()
+                            });
+                        if (error) {
+                            alert('❌ فشل حفظ المهام: ' + error.message);
+                        } else {
+                            alert('✅ تم حفظ حالة المهام بنجاح، وسيظهر ذلك في سجل المتابعات!');
+                            openPreview(consultationId);
+                        }
+                    });
+                }
+
+                // ربط زر إضافة المرفق
+                document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', async function() {
+                    const consId = this.dataset.id;
+                    const file = document.getElementById('newFollowupAttachment').files[0];
+
+                    if (!file) {
+                        alert('يرجى اختيار ملف أولاً');
+                        return;
+                    }
+
+                    const filePath = `${Date.now()}_${file.name}`;
+                    const { error: uploadError } = await supabase.storage
+                        .from('consultation-files')
+                        .upload(filePath, file);
+
+                    if (uploadError) {
+                        alert('❌ فشل رفع المرفق: ' + uploadError.message);
+                        return;
+                    }
+
+                    const { data: urlData } = supabase.storage
+                        .from('consultation-files')
+                        .getPublicUrl(filePath);
+
+                    const attachmentUrl = urlData.publicUrl;
+
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const { error } = await supabase
+                        .from('client_followups')
+                        .insert({
+                            request_id: consId,
+                            notes: '',
+                            followup_status: 'new',
+                            created_by: user?.id,
+                            contact_method: 'other',
+                            action: '',
+                            followup_date: new Date().toISOString(),
+                            attachment_path: attachmentUrl,
+                            is_attachment_only: true
+                        });
+
+                    if (error) {
+                        alert('❌ فشل إضافة المرفق: ' + error.message);
+                    } else {
+                        alert('✅ تم إضافة المرفق بنجاح!');
+                        openPreview(consId);
+                    }
+                });
+
+                // ربط زر إضافة المتابعة
                 document.getElementById('btnAddFollowup')?.addEventListener('click', async function() {
                     const consId = this.dataset.id;
                     const note = document.getElementById('newFollowupNote').value.trim();
@@ -677,7 +675,6 @@ document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', a
                     }
 
                     const { data: { user } } = await supabase.auth.getUser();
-
                     const { error } = await supabase
                         .from('client_followups')
                         .insert({
@@ -702,7 +699,6 @@ document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', a
                 body.innerHTML = `<div class="message error">❌ حدث خطأ غير متوقع: ${err.message}</div>`;
             }
         }
-
         async function addEmployee() {
             const name = document.getElementById('empName').value.trim();
             const email = document.getElementById('empEmail').value.trim();
