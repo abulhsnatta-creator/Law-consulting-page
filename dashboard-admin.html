@@ -1005,6 +1005,9 @@
             const message = document.getElementById('manualMessage').value.trim();
             const out = document.getElementById('manualMsg');
             const btn = document.getElementById('btnAddManualConsultation');
+            const attachmentInput = document.getElementById('manualAttachment');
+const file = attachmentInput ? attachmentInput.files[0] : null;
+let attachmentPath = null;
 
             if (!name || !phone || !service) {
                 out.textContent = 'يرجى ملء الحقول الإلزامية (الاسم، الهاتف، الخدمة).';
