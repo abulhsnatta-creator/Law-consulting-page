@@ -78,6 +78,182 @@
         .add-employee-form button { background: #28a745; color: white; border: none; padding: 8px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .add-employee-form button:hover { background: #218838; }
         @media (max-width: 700px) { .nav-bar { flex-direction: column; } .nav-btn { width: 100%; text-align: center; } .filters { flex-direction: column; align-items: stretch; } .employee-card { flex-direction: column; align-items: flex-start; } .add-employee-form .form-row { flex-direction: column; } .modal-content { padding: 15px; } .modal-detail-row { flex-direction: column; } .modal-detail-row .label { width: 100%; } }
+  /* ====== تصميم الكاش بورد (بطاقات) ====== */
+.dashboard-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e9edf4;
+}
+
+.dashboard-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.dashboard-card-header h3 {
+    font-size: 18px;
+    color: #1a2a3a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dashboard-card-header .icon-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f0f5ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #2d7aff;
+}
+
+.dashboard-card-body {
+    padding-top: 10px;
+}
+
+/* ====== عناصر البطاقة ====== */
+.dashboard-detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f2f5;
+    align-items: center;
+}
+
+.dashboard-detail-row:last-child {
+    border-bottom: none;
+}
+
+.dashboard-detail-label {
+    font-weight: 600;
+    color: #6c757d;
+    width: 140px;
+    font-size: 14px;
+}
+
+.dashboard-detail-value {
+    flex: 1;
+    color: #263043;
+    font-size: 14px;
+    text-align: left;
+}
+
+/* ====== أزرار داخل البطاقة ====== */
+.dashboard-btn {
+    background: #2d7aff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.dashboard-btn:hover {
+    background: #1a5cc4;
+}
+
+/* ====== عناصر المهام ====== */
+.dashboard-checkbox-item {
+    padding: 8px;
+    border-bottom: 1px dashed #eee;
+}
+
+.dashboard-checkbox-item input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.dashboard-checkbox-item label {
+    font-size: 14px;
+    color: #333;
+}
+
+/* ====== عناصر المتابعات ====== */
+.dashboard-followup-item {
+    padding: 12px;
+    border-radius: 8px;
+    background: #f8faff;
+    margin-bottom: 10px;
+}
+
+.dashboard-followup-item .date {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 6px;
+}
+
+.dashboard-followup-item .note {
+    font-size: 14px;
+    color: #333;
+}
+
+/* ====== عناصر المرفقات ====== */
+.dashboard-attachment-item {
+    padding: 8px;
+    border-radius: 8px;
+    background: #f8faff;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.dashboard-attachment-item a {
+    color: #2d7aff;
+    text-decoration: none;
+}
+
+.dashboard-attachment-item .btn-delete-attachment {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+/* ====== عناصر نموذج المتابعة ====== */
+.dashboard-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.dashboard-form-grid input,
+.dashboard-form-grid textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #dce1e8;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+@media (max-width: 700px) {
+    .dashboard-form-grid {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .dashboard-detail-label {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}
     </style>
 </head>
 <body>
