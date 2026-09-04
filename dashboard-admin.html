@@ -430,9 +430,6 @@
         const body = document.getElementById('modalBody');
 
         modal.classList.add('active');
-// 🔴 هذا السطر يجعل النافذة ملء الشاشة
-modal.style.width = '100vw';
-modal.style.height = '100vh';
 body.innerHTML = `<div class="loading">⏳ جاري تحميل التفاصيل...</div>`;
         try {
             // 1. جلب بيانات الاستشارة
