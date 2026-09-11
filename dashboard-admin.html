@@ -575,32 +575,54 @@
                     `;
                 }
 
-                let followupsCard = `
+                               let followupsCard = `
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
-                            <h3><span class="icon-circle">📊</span> سجل المتابعات</h3>
+                            <h3><span class="icon-circle">📊</span> ${currentUser?.role === 'manager' ? 'المهام التي تم إنجازها' : 'سجل المتابعات'}</h3>
                         </div>
                         <div class="dashboard-card-body">
-                            ${followups && followups.length > 0 ? followups.map(f => {
-                                const date = f.followup_date ? new Date(f.followup_date).toLocaleString('ar-EG') : '—';
-                                let followerName = 'المدير';
-                                if (f.assigned_to) {
-                                    const emp = allEmployees.find(e => e.id === f.assigned_to);
-                                    if (emp) followerName = emp.full_name;
+                            ${(() => {
+                                // 🔴 للمدير: عرض فقط المتابعات التي تم إنجازها (تحتوي على "تم إنجاز")
+                                let displayFollowups = followups || [];
+                                if (currentUser?.role === 'manager') {
+                                    displayFollowups = displayFollowups.filter(f => f.notes && f.notes.includes('تم إنجاز'));
                                 }
-                                return `<div class="dashboard-followup-item">
-                                    <div class="date"><strong>القائم بالمتابعة:</strong> ${followerName} | <strong>التاريخ:</strong> ${date}</div>
-                                    <div class="note"><strong>طريقة التواصل:</strong> ${f.contact_method || '-'}</div>
-                                    <div class="note"><strong>الإجراء:</strong> ${f.action || '-'}</div>
-                                    <div class="note"><strong>الملاحظات:</strong> ${f.notes || '-'}</div>
-                                    <div class="note"><strong>حالة المتابعة:</strong> ${f.followup_status || '-'}</div>
-                                    ${f.next_followup ? `<div class="note"><strong>المتابعة القادمة:</strong> ${new Date(f.next_followup).toLocaleString('ar-EG')}</div>` : ''}
-                                </div>`;
-                            }).join('') : '<div class="message">لا توجد متابعات مسجلة لهذا الطلب.</div>'}
+                                
+                                if (displayFollowups.length === 0) {
+                                    return '<div class="message">لا توجد مهام تم إنجازها بعد.</div>';
+                                }
+
+                                return displayFollowups.map(f => {
+                                    const date = f.followup_date ? new Date(f.followup_date).toLocaleString('ar-EG') : '—';
+                                    let followerName = 'المدير';
+                                    if (f.assigned_to) {
+                                        const emp = allEmployees.find(e => e.id === f.assigned_to);
+                                        if (emp) followerName = emp.full_name;
+                                    }
+                                    // عرض حالة المهمة
+                                    const statusLabels = {
+                                        pending: { text: '⏳ بانتظار التنفيذ', color: '#ffc107' },
+                                        in_progress: { text: '🔄 قيد التنفيذ', color: '#17a2b8' },
+                                        completed: { text: '✅ تم التنفيذ', color: '#28a745' },
+                                        failed: { text: '❌ تعذر التنفيذ', color: '#dc3545' }
+                                    };
+                                    const status = statusLabels[f.followup_status] || { text: f.followup_status || 'غير محدد', color: '#6c757d' };
+
+                                    return `<div class="dashboard-followup-item" style="border-right-color: ${status.color};">
+                                        <div class="date">
+                                            <strong>الموظف:</strong> ${followerName} | 
+                                            <strong>التاريخ:</strong> ${date} | 
+                                            <span style="background: ${status.color}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px;">${status.text}</span>
+                                        </div>
+                                        <div class="note"><strong>المطلوب:</strong> ${f.action || '-'}</div>
+                                        ${f.notes && f.notes.includes('تم إنجاز') ? `<div class="note" style="background: #e7f3ff; padding: 6px; border-radius: 4px; margin-top: 5px;"><strong>✅ ما تم إنجازه:</strong> ${f.notes.replace('تم إنجاز: ', '').replace(' — المستندات: ', ' | المستندات: ')}</div>` : `<div class="note"><strong>تعليمات المدير:</strong> ${f.notes || '-'}</div>`}
+                                        ${f.next_followup ? `<div class="note"><strong>موعد التنفيذ:</strong> ${new Date(f.next_followup).toLocaleString('ar-EG')}</div>` : ''}
+                                    </div>`;
+                                }).join('');
+                            })()}
                         </div>
                     </div>
                 `;
-
                 let attachmentsCard = `
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
