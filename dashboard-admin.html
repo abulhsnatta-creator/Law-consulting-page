@@ -725,8 +725,7 @@ if (currentUser?.role === 'followup_staff') {
                             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
                                 ${docItems.map((doc, i) => `
                                     <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
-                                        <input type="checkbox" class="employee-task-doc" data-task-id="${task.id}" value="${doc}" ${task.followup_status === 'completed' ? 'checked disabled' : ''}> ${doc}
-                                    </label>
+                                       <input type="checkbox" class="employee-task-action" data-task-id="${task.id}" value="${action}">                                    </label>
                                 `).join('')}
                             </div>
                         </div>
