@@ -668,10 +668,8 @@ if (currentUser?.role === 'manager') {
     `;
 }
 // 🔴 بطاقة المتابعات المكلف بها (للموظف فقط)
-// 🔴 بطاقة المتابعات المكلف بها (للموظف فقط) - بنفس تصميم شاشة المدير
 let assignedTasksCard = '';
 if (currentUser?.role === 'followup_staff') {
-    // جلب المهام المكلف بها الموظف الحالي
     const { data: myTasks, error: myTasksError } = await supabase
         .from('client_followups')
         .select('*')
@@ -684,7 +682,7 @@ if (currentUser?.role === 'followup_staff') {
 
     let tasksHtml = '';
     if (myTasks && myTasks.length > 0) {
-        myTasks.forEach((task, taskIndex) => {
+        myTasks.forEach((task) => {
             const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : 'غير محدد';
             const statusLabels = {
                 pending: { text: '⏳ بانتظار التنفيذ', color: '#ffc107' },
@@ -694,38 +692,43 @@ if (currentUser?.role === 'followup_staff') {
             };
             const status = statusLabels[task.followup_status] || { text: task.followup_status || 'غير محدد', color: '#6c757d' };
 
-            // 🔴 تقسيم المهمة إلى أجزاء (إجراءات ومستندات)
-            const actionParts = (task.action || '').split('|').map(p => p.trim()).filter(p => p);
-            const actionItems = actionParts[0]?.replace('الإجراءات:', '').trim().split(',').map(i => i.trim()).filter(i => i) || [];
-            const docItems = actionParts[1]?.replace('المستندات:', '').trim().split(',').map(i => i.trim()).filter(i => i) || [];
+            // استخراج الإجراءات والمستندات بأمان
+            const actionText = task.action || '';
+            const actionParts = actionText.split('|');
+            const actionsList = actionParts[0] ? actionParts[0].replace('الإجراءات:', '').trim() : '';
+            const docsList = actionParts[1] ? actionParts[1].replace('المستندات:', '').trim() : '';
+            
+            const actionsArray = actionsList ? actionsList.split(',').map(i => i.trim()).filter(i => i) : [];
+            const docsArray = docsList ? docsList.split(',').map(i => i.trim()).filter(i => i) : [];
 
             tasksHtml += `
-                <div class="dashboard-assigned-task" style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #f8faff; border-right: 4px solid ${status.color};">
+                <div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #f8faff; border-right: 4px solid ${status.color};">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <strong style="color: #1a2a3a;">📋 مهمة #${task.id.slice(0, 8)}</strong>
                         <span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">${status.text}</span>
                     </div>
                     
-                    ${actionItems.length > 0 ? `
+                    ${actionsArray.length > 0 ? `
                         <div style="margin-bottom: 10px;">
                             <strong style="color: #333; font-size: 13px;">الإجراءات المطلوبة:</strong>
                             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
-                                ${actionItems.map((action, i) => `
+                                ${actionsArray.map((act) => `
                                     <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
-                                        <input type="checkbox" class="employee-task-action" data-task-id="${task.id}" value="${action}" ${task.followup_status === 'completed' ? 'checked disabled' : ''}> ${action}
+                                        <input type="checkbox" class="employee-task-action" data-task-id="${task.id}" value="${act}"> ${act}
                                     </label>
                                 `).join('')}
                             </div>
                         </div>
                     ` : ''}
                     
-                    ${docItems.length > 0 ? `
+                    ${docsArray.length > 0 ? `
                         <div style="margin-bottom: 10px;">
                             <strong style="color: #333; font-size: 13px;">المستندات المطلوبة:</strong>
                             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
-                                ${docItems.map((doc, i) => `
+                                ${docsArray.map((doc) => `
                                     <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
-                                       <input type="checkbox" class="employee-task-action" data-task-id="${task.id}" value="${action}">                                    </label>
+                                        <input type="checkbox" class="employee-task-doc" data-task-id="${task.id}" value="${doc}"> ${doc}
+                                    </label>
                                 `).join('')}
                             </div>
                         </div>
@@ -761,7 +764,7 @@ if (currentUser?.role === 'followup_staff') {
             </div>
         </div>
     `;
-}
+}			
 				let addFollowupCard = `
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
