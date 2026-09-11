@@ -668,6 +668,7 @@ if (currentUser?.role === 'manager') {
     `;
 }
 // 🔴 بطاقة المتابعات المكلف بها (للموظف فقط)
+// 🔴 بطاقة المتابعات المكلف بها (للموظف فقط) - بنفس تصميم شاشة المدير
 let assignedTasksCard = '';
 if (currentUser?.role === 'followup_staff') {
     // جلب المهام المكلف بها الموظف الحالي
@@ -683,7 +684,7 @@ if (currentUser?.role === 'followup_staff') {
 
     let tasksHtml = '';
     if (myTasks && myTasks.length > 0) {
-        myTasks.forEach(task => {
+        myTasks.forEach((task, taskIndex) => {
             const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : 'غير محدد';
             const statusLabels = {
                 pending: { text: '⏳ بانتظار التنفيذ', color: '#ffc107' },
@@ -693,30 +694,55 @@ if (currentUser?.role === 'followup_staff') {
             };
             const status = statusLabels[task.followup_status] || { text: task.followup_status || 'غير محدد', color: '#6c757d' };
 
+            // 🔴 تقسيم المهمة إلى أجزاء (إجراءات ومستندات)
+            const actionParts = (task.action || '').split('|').map(p => p.trim()).filter(p => p);
+            const actionItems = actionParts[0]?.replace('الإجراءات:', '').trim().split(',').map(i => i.trim()).filter(i => i) || [];
+            const docItems = actionParts[1]?.replace('المستندات:', '').trim().split(',').map(i => i.trim()).filter(i => i) || [];
+
             tasksHtml += `
-                <div class="dashboard-assigned-task" style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 10px; background: #f8faff; border-right: 4px solid ${status.color};">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="dashboard-assigned-task" style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #f8faff; border-right: 4px solid ${status.color};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <strong style="color: #1a2a3a;">📋 مهمة #${task.id.slice(0, 8)}</strong>
                         <span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">${status.text}</span>
                     </div>
-                    <div style="font-size: 13px; color: #555; margin-bottom: 6px;">
-                        <strong>المطلوب:</strong> ${task.action || 'لا يوجد'}
-                    </div>
-                    ${task.notes ? `<div style="font-size: 13px; color: #555; margin-bottom: 6px;"><strong>تعليمات المدير:</strong> ${task.notes}</div>` : ''}
-                    <div style="font-size: 13px; color: #555; margin-bottom: 8px;">
-                        <strong>موعد التنفيذ:</strong> ${dueDate}
-                    </div>
-                    ${task.followup_status === 'pending' ? `
-                        <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button class="btn-start-task" data-id="${task.id}" style="background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">🟢 بدء التنفيذ</button>
-                            <button class="btn-complete-task" data-id="${task.id}" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">🟡 تم التنفيذ</button>
-                            <button class="btn-fail-task" data-id="${task.id}" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">🔴 تعذر التنفيذ</button>
+                    
+                    ${actionItems.length > 0 ? `
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #333; font-size: 13px;">الإجراءات المطلوبة:</strong>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
+                                ${actionItems.map((action, i) => `
+                                    <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
+                                        <input type="checkbox" class="employee-task-action" data-task-id="${task.id}" value="${action}" ${task.followup_status === 'completed' ? 'checked disabled' : ''}> ${action}
+                                    </label>
+                                `).join('')}
+                            </div>
                         </div>
                     ` : ''}
-                    ${task.followup_status === 'in_progress' ? `
+                    
+                    ${docItems.length > 0 ? `
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #333; font-size: 13px;">المستندات المطلوبة:</strong>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
+                                ${docItems.map((doc, i) => `
+                                    <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
+                                        <input type="checkbox" class="employee-task-doc" data-task-id="${task.id}" value="${doc}" ${task.followup_status === 'completed' ? 'checked disabled' : ''}> ${doc}
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.notes ? `<div style="font-size: 12px; color: #555; margin-bottom: 8px; background: #fff9e6; padding: 8px; border-radius: 6px; border-right: 3px solid #ffc107;"><strong>📝 تعليمات المدير:</strong> ${task.notes}</div>` : ''}
+                    
+                    <div style="font-size: 12px; color: #555; margin-bottom: 10px;">
+                        <strong>📅 موعد التنفيذ:</strong> ${dueDate}
+                    </div>
+                    
+                    ${task.followup_status !== 'completed' && task.followup_status !== 'failed' ? `
                         <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button class="btn-complete-task" data-id="${task.id}" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">🟡 تم التنفيذ</button>
-                            <button class="btn-fail-task" data-id="${task.id}" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">🔴 تعذر التنفيذ</button>
+                            <button class="btn-start-task" data-id="${task.id}" style="background: #17a2b8; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🟢 بدء التنفيذ</button>
+                            <button class="btn-complete-task" data-id="${task.id}" style="background: #28a745; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🟡 تم التنفيذ</button>
+                            <button class="btn-fail-task" data-id="${task.id}" style="background: #dc3545; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🔴 تعذر التنفيذ</button>
                         </div>
                     ` : ''}
                 </div>
@@ -737,7 +763,7 @@ if (currentUser?.role === 'followup_staff') {
         </div>
     `;
 }
-let addFollowupCard = `
+				let addFollowupCard = `
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
                             <h3><span class="icon-circle">➕</span> إضافة متابعة جديدة</h3>
