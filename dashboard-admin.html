@@ -533,7 +533,7 @@
                                     <ul style="list-style: none; padding: 0; margin-top: 5px;">
                                         ${requiredActions.map((action, index) => `
                                             <li class="dashboard-checkbox-item">
-                                                <input type="checkbox" id="action_${index}" class="task-checkbox" data-task-type="action" data-index="${index}"> 
+                                                <input type="checkbox" id="action_${index}" class="manager-task-action" data-task-type="action" data-index="${index}"> 
                                                 <label for="action_${index}">${action}</label>
                                             </li>
                                         `).join('')}
@@ -544,7 +544,7 @@
                                     <ul style="list-style: none; padding: 0; margin-top: 5px;">
                                         ${requiredDocuments.map((doc, index) => `
                                             <li class="dashboard-checkbox-item">
-                                                <input type="checkbox" id="doc_${index}" class="task-checkbox" data-task-type="document" data-index="${index}"> 
+                                                <input type="checkbox" id="doc_${index}" class="manager-task-doc" data-task-type="document" data-index="${index}"> 
                                                 <label for="doc_${index}">${doc}</label>
                                             </li>
                                         `).join('')}
