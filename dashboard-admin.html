@@ -801,7 +801,7 @@ if (currentUser?.role === 'followup_staff') {
                     </div>
                 `;
 
-body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${initialCard}${followupsCard}${attachmentsCard}${assignedTasksCard}${assignTaskCard}${addFollowupCard}</div>`;              
+body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${initialCard}${assignedTasksCard}${assignTaskCard}${followupsCard}${attachmentsCard}${addFollowupCard}</div>`;            
 			  const saveTasksBtn = document.getElementById('btnSaveTasks');
                 if (saveTasksBtn) {
                     saveTasksBtn.addEventListener('click', async function() {
