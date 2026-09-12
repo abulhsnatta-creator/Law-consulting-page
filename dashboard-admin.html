@@ -641,7 +641,7 @@ if (currentUser?.role === 'manager') {
                         <label style="font-weight: 600; display: block; margin-bottom: 5px;">الموظف المكلف:</label>
                         <select id="assigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
                             <option value="">اختر الموظف</option>
-                            ${allEmployees.filter(e => e.role === 'followup_staff').map(emp => `<option value="${emp.id}">${emp.full_name}</option>`).join('')}
+                            ${allEmployees.filter(e => e.role === 'followup_staff' || e.role === 'secretary').map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.role === 'secretary' ? 'سكرتير' : 'موظف'})</option>`).join('')}
                         </select>
                     </div>
                     <div>
