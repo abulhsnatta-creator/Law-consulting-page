@@ -807,7 +807,7 @@ body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${
                     saveTasksBtn.addEventListener('click', async function() {
                         const checkedActions = [];
                         const checkedDocuments = [];
-                        document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+                        document.querySelectorAll('.manager-task-action, .manager-task-doc').forEach(checkbox => {
                             if (checkbox.checked) {
                                 if (checkbox.dataset.taskType === 'action') {
                                     checkedActions.push(requiredActions[checkbox.dataset.index]);
