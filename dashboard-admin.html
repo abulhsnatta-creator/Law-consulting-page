@@ -925,7 +925,7 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
                         openPreview(consId);
                     }
                 });
-				// 🔴 ربط زر إنشاء المتابعة وتكليف الموظف (للمدير فقط)
+		// 🔴 ربط زر إنشاء المتابعة وتكليف الموظف (للمدير فقط)
 document.getElementById('btnCreateTask')?.addEventListener('click', async function() {
     const assigneeId = document.getElementById('assigneeSelect').value;
     const dueDate = document.getElementById('followupDueDate').value;
@@ -936,10 +936,8 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
         return;
     }
 
-    // جمع الإجراءات والمستندات المحددة
     const selectedActions = [];
     const selectedDocs = [];
-    
     document.querySelectorAll('.task-action-checkbox:checked').forEach(cb => selectedActions.push(cb.value));
     document.querySelectorAll('.task-doc-checkbox:checked').forEach(cb => selectedDocs.push(cb.value));
 
@@ -948,7 +946,6 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
         return;
     }
 
-    // تجهيز بيانات المتابعة
     const taskData = {
         request_id: consultationId,
         followup_date: new Date().toISOString(),
@@ -969,7 +966,18 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
     if (error) {
         alert('❌ فشل إنشاء المتابعة: ' + error.message);
     } else {
-        alert('✅ تم إنشاء المتابعة وتكليف الموظف بنجاح!');
+        // ✅ تحديث حقل assigned_to في consultation_requests
+        const { error: updateError } = await supabase
+            .from('consultation_requests')
+            .update({ assigned_to: assigneeId })
+            .eq('id', consultationId);
+
+        if (updateError) {
+            console.error('خطأ في تحديث assigned_to:', updateError);
+            alert('⚠️ تم إنشاء المتابعة، لكن تعذّر تحديث بيانات الطلب.');
+        } else {
+            alert('✅ تم إنشاء المتابعة وتكليف الموظف بنجاح!');
+        }
         openPreview(consultationId);
     }
 });
