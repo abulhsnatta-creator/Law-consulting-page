@@ -764,7 +764,7 @@ if (currentUser?.role === 'followup_staff') {
                     
            ${task.followup_status !== 'completed' && task.followup_status !== 'failed' ? `
     <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-        <button class="btn-save-employee-tasks" data-task-id="${task.id}" style="background: #2d7aff; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">💾 حفظ حالة المهام</button>
+       <button class="btn-save-employee-tasks" data-id="${task.id}" style="background: #2d7aff; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">💾 حفظ حالة المهام</button>
         <button class="btn-fail-task" data-id="${task.id}" style="background: #dc3545; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🔴 تعذر التنفيذ</button>
     </div>
 ` : ''}
