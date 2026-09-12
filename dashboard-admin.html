@@ -925,7 +925,7 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
                         openPreview(consId);
                     }
                 });
-		// 🔴 ربط زر إنشاء المتابعة وتكليف الموظف (للمدير فقط)
+	// 🔴 ربط زر إنشاء المتابعة وتكليف الموظف (للمدير فقط)
 document.getElementById('btnCreateTask')?.addEventListener('click', async function() {
     const assigneeId = document.getElementById('assigneeSelect').value;
     const dueDate = document.getElementById('followupDueDate').value;
@@ -946,11 +946,23 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
         return;
     }
 
+    // 🔴 التحقق من وجود مهمة سابقة لنفس الطلب ونفس الموظف
+    const { data: existingTasks, error: checkError } = await supabase
+        .from('client_followups')
+        .select('id, action, followup_status')
+        .eq('request_id', consultationId)
+        .eq('assigned_to', assigneeId)
+        .eq('is_attachment_only', false)
+        .in('followup_status', ['pending', 'in_progress']); // فقط المهام النشطة
+
+    if (checkError) console.warn('خطأ في فحص المهام السابقة:', checkError);
+
+    const actionText = `الإجراءات: ${selectedActions.join(', ') || 'لا يوجد'} | المستندات: ${selectedDocs.join(', ') || 'لا يوجد'}`;
     const taskData = {
         request_id: consultationId,
         followup_date: new Date().toISOString(),
         contact_method: 'other',
-        action: `الإجراءات: ${selectedActions.join(', ') || 'لا يوجد'} | المستندات: ${selectedDocs.join(', ') || 'لا يوجد'}`,
+        action: actionText,
         notes: notes,
         next_followup: dueDate ? new Date(dueDate).toISOString() : null,
         followup_status: 'pending',
@@ -959,6 +971,48 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
         is_attachment_only: false
     };
 
+    // 🔴 إذا كانت هناك مهمة سابقة لنفس الموظف
+    if (existingTasks && existingTasks.length > 0) {
+        const existing = existingTasks[0];
+        const userChoice = confirm(
+            `⚠️ يوجد مهمة سابقة لهذا الموظف على نفس الطلب:\n\n` +
+            `المهمة الحالية: ${existing.action || 'لا يوجد'}\n\n` +
+            `هل تريد تحديث المهمة الحالية بالمعلومات الجديدة؟\n` +
+            `اضغط "موافق" لتحديثها.\n` +
+            `اضغط "إلغاء" لإنشاء مهمة جديدة منفصلة.`
+        );
+
+        if (userChoice) {
+            // 🔴 تحديث المهمة الحالية
+            const { error: updateError } = await supabase
+                .from('client_followups')
+                .update({
+                    action: actionText,
+                    notes: notes,
+                    next_followup: taskData.next_followup,
+                    followup_status: 'pending',
+                    followup_date: new Date().toISOString()
+                })
+                .eq('id', existing.id);
+
+            if (updateError) {
+                alert('❌ فشل تحديث المهمة: ' + updateError.message);
+            } else {
+                // تحديث assigned_to في consultation_requests
+                await supabase
+                    .from('consultation_requests')
+                    .update({ assigned_to: assigneeId })
+                    .eq('id', consultationId);
+
+                alert('✅ تم تحديث المهمة بنجاح!');
+                openPreview(consultationId);
+            }
+            return;
+        }
+        // إذا اختار "إلغاء"، يكمل الكود لإنشاء مهمة جديدة
+    }
+
+    // 🔴 إنشاء مهمة جديدة
     const { error } = await supabase
         .from('client_followups')
         .insert(taskData);
@@ -966,18 +1020,13 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
     if (error) {
         alert('❌ فشل إنشاء المتابعة: ' + error.message);
     } else {
-        // ✅ تحديث حقل assigned_to في consultation_requests
-        const { error: updateError } = await supabase
+        // تحديث assigned_to في consultation_requests
+        await supabase
             .from('consultation_requests')
             .update({ assigned_to: assigneeId })
             .eq('id', consultationId);
 
-        if (updateError) {
-            console.error('خطأ في تحديث assigned_to:', updateError);
-            alert('⚠️ تم إنشاء المتابعة، لكن تعذّر تحديث بيانات الطلب.');
-        } else {
-            alert('✅ تم إنشاء المتابعة وتكليف الموظف بنجاح!');
-        }
+        alert('✅ تم إنشاء المتابعة وتكليف الموظف بنجاح!');
         openPreview(consultationId);
     }
 });
