@@ -607,7 +607,7 @@
                     </div>
                 `;
 
-// 🔴 بطاقة تكليف الموظف بمتابعة (للمدير فقط)
+// 🔴 بطاقة تكليف الموظف بمتابعة (للمدير فقط) - مع زرين منفصلين
 let assignTaskCard = '';
 if (currentUser?.role === 'manager') {
     assignTaskCard = `
@@ -636,14 +636,8 @@ if (currentUser?.role === 'manager') {
                         `).join('')}
                     </div>
                 </div>
+
                 <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">الموظف المكلف:</label>
-                        <select id="assigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
-                            <option value="">اختر الموظف</option>
-                            ${allEmployees.filter(e => e.role === 'followup_staff' || e.role === 'secretary').map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.role === 'secretary' ? 'سكرتير' : 'موظف'})</option>`).join('')}
-                        </select>
-                    </div>
                     <div>
                         <label style="font-weight: 600; display: block; margin-bottom: 5px;">موعد التنفيذ:</label>
                         <input type="date" id="followupDueDate" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
@@ -653,12 +647,31 @@ if (currentUser?.role === 'manager') {
                     <label style="font-weight: 600; display: block; margin-bottom: 5px;">ملاحظات المدير:</label>
                     <textarea id="managerNotes" rows="3" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;" placeholder="تعليمات للموظف..."></textarea>
                 </div>
-                <button id="btnCreateTask" class="dashboard-btn" style="margin-top: 15px; background: #28a745;">🟢 إنشاء المتابعة وتكليف الموظف</button>
+
+                <hr style="margin: 15px 0; border: none; border-top: 1px solid #e9edf4;">
+
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">🟢 تكليف موظف متابعة:</label>
+                    <select id="assigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+                        <option value="">اختر الموظف</option>
+                        ${allEmployees.filter(e => e.role === 'followup_staff').map(emp => `<option value="${emp.id}">${emp.full_name}</option>`).join('')}
+                    </select>
+                    <button id="btnCreateTask" class="dashboard-btn" style="margin-top: 8px; background: #28a745; width: 100%;">🟢 تكليف الموظف بمتابعة</button>
+                </div>
+
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #dce1e8;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">📋 إضافة إلى قائمة السكرتير:</label>
+                    <select id="secretarySelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+                        <option value="">اختر السكرتير</option>
+                        ${allEmployees.filter(e => e.role === 'secretary').map(emp => `<option value="${emp.id}">${emp.full_name}</option>`).join('')}
+                    </select>
+                    <button id="btnAddToSecretary" class="dashboard-btn" style="margin-top: 8px; background: #2d7aff; width: 100%;">📋 إضافة إلى قائمة السكرتير</button>
+                </div>
             </div>
         </div>
     `;
 }
-// 🔴 بطاقة المتابعات المكلف بها (للموظف فقط)
+				// 🔴 بطاقة المتابعات المكلف بها (للموظف فقط)
 let assignedTasksCard = '';
 if (currentUser?.role === 'followup_staff') {
     const { data: myTasks, error: myTasksError } = await supabase
