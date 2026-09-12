@@ -944,35 +944,6 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
     }
 });
 // 🔴 ربط أزرار المهام (للموظف فقط)
-document.querySelectorAll('.btn-start-task').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        const taskId = this.dataset.id;
-        const { error } = await supabase
-            .from('client_followups')
-            .update({ followup_status: 'in_progress' })
-            .eq('id', taskId);
-        if (error) alert('❌ فشل تحديث الحالة: ' + error.message);
-        else {
-            alert('✅ تم بدء التنفيذ!');
-            openPreview(consultationId);
-        }
-    });
-});
-
-document.querySelectorAll('.btn-complete-task').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        const taskId = this.dataset.id;
-        const { error } = await supabase
-            .from('client_followups')
-            .update({ followup_status: 'completed' })
-            .eq('id', taskId);
-        if (error) alert('❌ فشل تحديث الحالة: ' + error.message);
-        else {
-            alert('✅ تم إنجاز المهمة!');
-            openPreview(consultationId);
-        }
-    });
-});
 
 document.querySelectorAll('.btn-fail-task').forEach(btn => {
     btn.addEventListener('click', async function() {
