@@ -835,18 +835,25 @@ body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${
                     });
                 }
 // 🔴 زر حفظ حالة المهام (للموظف)
+// 🔴 زر حفظ حالة المهام (للموظف)
 document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
     btn.addEventListener('click', async function() {
-        const taskId = this.dataset.id; // استخدام data-id
+        const taskId = this.dataset.id; // 🔴 تأكد من data-id في الزر
+
+        // جمع العناصر المحددة
         const checkedActions = [];
         const checkedDocs = [];
-        
+
         document.querySelectorAll(`.employee-task-action[data-task-id="${taskId}"]:checked`).forEach(cb => {
             checkedActions.push(cb.value);
         });
         document.querySelectorAll(`.employee-task-doc[data-task-id="${taskId}"]:checked`).forEach(cb => {
             checkedDocs.push(cb.value);
         });
+
+        console.log('taskId:', taskId);
+        console.log('checkedActions:', checkedActions);
+        console.log('checkedDocs:', checkedDocs);
 
         if (checkedActions.length === 0 && checkedDocs.length === 0) {
             alert('يرجى تحديد عنصر واحد على الأقل قبل الحفظ.');
@@ -871,7 +878,6 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
         }
     });
 });
-
 // 🔴 زر تعذر التنفيذ (للموظف)
 document.querySelectorAll('.btn-fail-task').forEach(btn => {
     btn.addEventListener('click', async function() {
