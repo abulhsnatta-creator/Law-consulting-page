@@ -1443,7 +1443,7 @@ async function loadSmartAlerts() {
             }
         }
 
-        // 🎨 بناء التنبيهات
+               // 🎨 بناء التنبيهات
         if (alerts.length === 0) {
             container.innerHTML = `
                 <div style="background: #e7f9ef; border-radius: 8px; padding: 10px 15px; font-size: 13px; color: #28a745; display: flex; align-items: center; gap: 8px;">
@@ -1452,18 +1452,236 @@ async function loadSmartAlerts() {
             `;
         } else {
             container.innerHTML = alerts.map(alert => `
-                <div style="background: white; border-radius: 8px; padding: 10px 15px; font-size: 13px; color: #333; display: flex; align-items: center; gap: 8px; border-right: 4px solid ${alert.color}; box-shadow: 0 2px 6px rgba(0,0,0,0.05); min-width: 200px;">
+                <div class="smart-alert" data-type="${alert.type}" style="background: white; border-radius: 8px; padding: 10px 15px; font-size: 13px; color: #333; display: flex; align-items: center; gap: 8px; border-right: 4px solid ${alert.color}; box-shadow: 0 2px 6px rgba(0,0,0,0.05); min-width: 200px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.05)'">
                     <span style="font-size: 18px;">${alert.icon}</span>
                     <span>${alert.text}</span>
+                    <span style="margin-right: auto; font-size: 11px; color: #2d7aff;">👁️ اضغط للتفاصيل</span>
                 </div>
             `).join('');
         }
 
+        // 🔴 إضافة حدث الضغط على كل تنبيه
+        document.querySelectorAll('.smart-alert').forEach(alertEl => {
+            alertEl.addEventListener('click', function() {
+                const alertType = this.dataset.type;
+                showAlertDetails(alertType);
+            });
+        });
     } catch (err) {
         console.error('خطأ في تحميل التنبيهات:', err);
         container.innerHTML = `<div style="color: #dc3545; font-size: 13px;">❌ تعذر تحميل التنبيهات.</div>`;
     }
 }
+// ============================================================
+// 🔴 عرض تفاصيل التنبيه
+// ============================================================
+async function showAlertDetails(alertType) {
+    // إنشاء Modal
+    const modalHtml = `
+        <div id="alertDetailsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;">
+            <div style="background: white; border-radius: 16px; padding: 25px; width: 90%; max-width: 900px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #2d7aff; padding-bottom: 12px;">
+                    <h2 id="alertModalTitle" style="color: #1a2a3a; margin: 0;">📋 تفاصيل التنبيه</h2>
+                    <button id="closeAlertModal" style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; font-size: 18px; cursor: pointer;">✕</button>
+                </div>
+                <div id="alertModalBody">
+                    <div style="text-align: center; color: #6c757d;">⏳ جاري التحميل...</div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // إغلاق Modal
+    document.getElementById('closeAlertModal').addEventListener('click', function() {
+        document.getElementById('alertDetailsModal').remove();
+    });
+    document.getElementById('alertDetailsModal').addEventListener('click', function(e) {
+        if (e.target === this) this.remove();
+    });
+
+    const body = document.getElementById('alertModalBody');
+    const title = document.getElementById('alertModalTitle');
+
+    try {
+        let tasks = [];
+        let titleText = '';
+
+        // ⏰ المهام المتأخرة
+        if (alertType === 'overdue') {
+            titleText = '⚠️ المهام المتأخرة';
+            const today = new Date().toISOString().split('T')[0];
+            let query = supabase
+                .from('client_followups')
+                .select('*, consultation_requests!inner(client_name, phone, service)')
+                .eq('is_attachment_only', false)
+                .in('followup_status', ['pending', 'in_progress'])
+                .lt('next_followup', today);
+
+            if (currentUser?.role === 'followup_staff') {
+                query = query.eq('assigned_to', currentUser.id);
+            }
+            const { data } = await query;
+            tasks = data || [];
+        }
+
+        // 📋 المهام بانتظار التنفيذ
+        if (alertType === 'pending_tasks' || alertType === 'new_tasks') {
+            titleText = '📋 المهام بانتظار التنفيذ';
+            let query = supabase
+                .from('client_followups')
+                .select('*, consultation_requests!inner(client_name, phone, service)')
+                .eq('is_attachment_only', false)
+                .eq('followup_status', 'pending');
+
+            if (currentUser?.role === 'followup_staff') {
+                query = query.eq('assigned_to', currentUser.id);
+            }
+            const { data } = await query;
+            tasks = data || [];
+        }
+
+        // ⏰ المواعيد القريبة
+        if (alertType === 'upcoming') {
+            titleText = '⏰ مواعيد قريبة';
+            const today = new Date().toISOString().split('T')[0];
+            const twoDaysFromNow = new Date();
+            twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+            const twoDaysStr = twoDaysFromNow.toISOString().split('T')[0];
+
+            let query = supabase
+                .from('client_followups')
+                .select('*, consultation_requests!inner(client_name, phone, service)')
+                .eq('is_attachment_only', false)
+                .in('followup_status', ['pending', 'in_progress'])
+                .gte('next_followup', today)
+                .lte('next_followup', twoDaysStr);
+
+            if (currentUser?.role === 'followup_staff') {
+                query = query.eq('assigned_to', currentUser.id);
+            }
+            const { data } = await query;
+            tasks = data || [];
+        }
+
+        // 🔔 طلبات جديدة
+        if (alertType === 'new_requests') {
+            titleText = '🔔 طلبات جديدة بحاجة للتواصل';
+            const { data } = await supabase
+                .from('consultation_requests')
+                .select('*')
+                .eq('created_by', currentUser.id)
+                .eq('status', 'new');
+            tasks = data || [];
+        }
+
+        // 📌 مهام مكلف بها
+        if (alertType === 'assigned_tasks') {
+            titleText = '📌 المهام المكلف بها من المدير';
+            const { data } = await supabase
+                .from('client_followups')
+                .select('*, consultation_requests!inner(client_name, phone, service)')
+                .eq('assigned_to', currentUser.id)
+                .eq('is_attachment_only', false)
+                .in('followup_status', ['pending', 'in_progress']);
+            tasks = data || [];
+        }
+
+        title.textContent = titleText;
+
+        if (tasks.length === 0) {
+            body.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px;">لا توجد تفاصيل لعرضها.</div>';
+            return;
+        }
+
+        // 🔴 بناء الجدول
+        if (alertType === 'new_requests') {
+            // طلبات جديدة
+            let html = `
+                <div class="table-responsive">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #2d7aff; color: white;">
+                                <th style="padding: 10px;">#</th>
+                                <th style="padding: 10px;">اسم العميل</th>
+                                <th style="padding: 10px;">الهاتف</th>
+                                <th style="padding: 10px;">الخدمة</th>
+                                <th style="padding: 10px;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            tasks.forEach((item, idx) => {
+                html += `
+                    <tr style="border-bottom: 1px solid #e9edf4;">
+                        <td style="padding: 10px; text-align: center;">${idx + 1}</td>
+                        <td style="padding: 10px; text-align: center;">${item.client_name || 'غير محدد'}</td>
+                        <td style="padding: 10px; text-align: center;">${item.phone || '—'}</td>
+                        <td style="padding: 10px; text-align: center;">${item.service || '—'}</td>
+                        <td style="padding: 10px; text-align: center;">
+                            <button onclick="window.location.href='dashboard-admin.html?preview=${item.id}'" style="background: #17a2b8; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 معاينة</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table></div>`;
+            body.innerHTML = html;
+        } else {
+            // مهام
+            let html = `
+                <div class="table-responsive">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #2d7aff; color: white;">
+                                <th style="padding: 10px;">#</th>
+                                <th style="padding: 10px;">اسم العميل</th>
+                                <th style="padding: 10px;">الخدمة</th>
+                                <th style="padding: 10px;">المهمة</th>
+                                <th style="padding: 10px;">موعد التنفيذ</th>
+                                <th style="padding: 10px;">الحالة</th>
+                                <th style="padding: 10px;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            const statusLabels = {
+                pending: { text: '⏳ بانتظار', color: '#ffc107' },
+                in_progress: { text: '🔄 قيد التنفيذ', color: '#17a2b8' },
+                completed: { text: '✅ تم', color: '#28a745' },
+                failed: { text: '❌ تعذر', color: '#dc3545' }
+            };
+
+            tasks.forEach((task, idx) => {
+                const status = statusLabels[task.followup_status] || { text: task.followup_status || '—', color: '#6c757d' };
+                const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : '—';
+                const clientName = task.consultation_requests?.client_name || 'غير محدد';
+                const service = task.consultation_requests?.service || '—';
+
+                html += `
+                    <tr style="border-bottom: 1px solid #e9edf4;">
+                        <td style="padding: 10px; text-align: center;">${idx + 1}</td>
+                        <td style="padding: 10px; text-align: center;">${clientName}</td>
+                        <td style="padding: 10px; text-align: center;">${service}</td>
+                        <td style="padding: 10px; text-align: center; font-size: 12px;">${(task.action || '—').substring(0, 50)}${(task.action || '').length > 50 ? '...' : ''}</td>
+                        <td style="padding: 10px; text-align: center;">${dueDate}</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: ${status.color}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px;">${status.text}</span></td>
+                        <td style="padding: 10px; text-align: center;">
+                            <button onclick="window.location.href='dashboard-admin.html?preview=${task.request_id}'" style="background: #17a2b8; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 معاينة</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table></div>`;
+            body.innerHTML = html;
+        }
+
+    } catch (err) {
+        console.error('خطأ في تحميل تفاصيل التنبيه:', err);
+        body.innerHTML = `<div style="color: #dc3545; text-align: center;">❌ تعذر تحميل التفاصيل: ${err.message}</div>`;
+    }
+}
+
 	   async function fetchConsultations() {
     try {
         if (currentUser?.role === 'secretary') {
@@ -1664,14 +1882,15 @@ async function loadSmartAlerts() {
             await fetchEmployees();
             await fetchConsultations();
 			await loadSmartAlerts();
-			if (sectionId === 'sectionConsultations') {
-    if (allConsultations.length === 0) fetchConsultations();
-    else applyFilters();
-    loadSmartAlerts(); // 🔴 تحديث التنبيهات
-}
 
             showSection('sectionConsultations');
-        }
+		if (sectionId === 'sectionConsultations') {
+        if (allConsultations.length === 0) fetchConsultations();
+        else applyFilters();
+        loadSmartAlerts(); // 🔴 تحديث التنبيهات
+     }
+
+   }
 
        async function addManualConsultation() {
     const name = document.getElementById('manualName').value.trim();
