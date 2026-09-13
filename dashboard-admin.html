@@ -1002,7 +1002,7 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
         .eq('request_id', consultationId)
         .eq('assigned_to', assigneeId)
         .eq('is_attachment_only', false)
-        .in('followup_status', ['pending', 'in_progress']); // فقط المهام النشطة
+        .in('followup_status', ['pending', 'in_progress']);
 
     if (checkError) console.warn('خطأ في فحص المهام السابقة:', checkError);
 
@@ -1032,7 +1032,7 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
         );
 
         if (userChoice) {
-            // 🔴 تحديث المهمة الحالية
+            // 🔴 تحديث المهمة الحالية (بدون تحديث assigned_to في consultation_requests)
             const { error: updateError } = await supabase
                 .from('client_followups')
                 .update({
@@ -1047,12 +1047,6 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
             if (updateError) {
                 alert('❌ فشل تحديث المهمة: ' + updateError.message);
             } else {
-                // تحديث assigned_to في consultation_requests
-                await supabase
-                    .from('consultation_requests')
-                    .update({ assigned_to: assigneeId })
-                    .eq('id', consultationId);
-
                 alert('✅ تم تحديث المهمة بنجاح!');
                 openPreview(consultationId);
             }
@@ -1061,7 +1055,7 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
         // إذا اختار "إلغاء"، يكمل الكود لإنشاء مهمة جديدة
     }
 
-    // 🔴 إنشاء مهمة جديدة
+    // 🔴 إنشاء مهمة جديدة (بدون تحديث assigned_to في consultation_requests)
     const { error } = await supabase
         .from('client_followups')
         .insert(taskData);
@@ -1069,12 +1063,6 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
     if (error) {
         alert('❌ فشل إنشاء المتابعة: ' + error.message);
     } else {
-        // تحديث assigned_to في consultation_requests
-        await supabase
-            .from('consultation_requests')
-            .update({ assigned_to: assigneeId })
-            .eq('id', consultationId);
-
         alert('✅ تم إنشاء المتابعة وتكليف الموظف بنجاح!');
         openPreview(consultationId);
     }
