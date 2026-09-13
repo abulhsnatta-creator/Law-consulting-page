@@ -1493,87 +1493,126 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
             showSection('sectionConsultations');
         }
 
-        async function addManualConsultation() {
-            const name = document.getElementById('manualName').value.trim();
-            const phone = document.getElementById('manualPhone').value.trim();
-            const email = document.getElementById('manualEmail').value.trim();
-            const company = document.getElementById('manualCompany').value.trim();
-            const service = document.getElementById('manualService').value;
-            const message = document.getElementById('manualMessage').value.trim();
-            const out = document.getElementById('manualMsg');
-            const btn = document.getElementById('btnAddManualConsultation');
+       async function addManualConsultation() {
+    const name = document.getElementById('manualName').value.trim();
+    const phone = document.getElementById('manualPhone').value.trim();
+    const email = document.getElementById('manualEmail').value.trim();
+    const company = document.getElementById('manualCompany').value.trim();
+    const service = document.getElementById('manualService').value;
+    const message = document.getElementById('manualMessage').value.trim();
+    const out = document.getElementById('manualMsg');
+    const btn = document.getElementById('btnAddManualConsultation');
 
-            const attachmentInput = document.getElementById('manualAttachment');
-            const file = attachmentInput ? attachmentInput.files[0] : null;
-            let attachmentPath = null;
+    const attachmentInput = document.getElementById('manualAttachment');
+    const file = attachmentInput ? attachmentInput.files[0] : null;
+    let attachmentPath = null;
 
-            if (!name || !phone || !service) {
-                out.textContent = 'يرجى ملء الحقول الإلزامية (الاسم، الهاتف، الخدمة).';
-                return;
-            }
+    if (!name || !phone || !service) {
+        out.textContent = 'يرجى ملء الحقول الإلزامية (الاسم، الهاتف، الخدمة).';
+        return;
+    }
 
-            btn.disabled = true;
-            out.textContent = 'جاري الحفظ...';
+    btn.disabled = true;
+    out.textContent = 'جاري التحقق...';
 
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) { 
-                alert('يرجى تسجيل الدخول مجدداً.'); 
-                return; 
-            }
+    // 🔴 فحص التكرار (نفس الاسم + نفس الهاتف + نفس الخدمة خلال 24 ساعة)
+    try {
+        const { data: existingRequests, error: checkError } = await supabase
+            .from('consultation_requests')
+            .select('id, client_name, phone, service, created_at')
+            .eq('client_name', name)
+            .eq('phone', phone)
+            .eq('service', service)
+            .order('created_at', { ascending: false })
+            .limit(1);
 
-            if (file) {
-                const filePath = `${Date.now()}_${file.name}`;
-                const { error: uploadError } = await supabase.storage
-                    .from('consultation-files')
-                    .upload(filePath, file);
+        if (checkError) {
+            console.error('خطأ في فحص التكرار:', checkError);
+        } else if (existingRequests && existingRequests.length > 0) {
+            const lastRequest = existingRequests[0];
+            const lastDate = new Date(lastRequest.created_at);
+            const now = new Date();
+            const diffHours = (now - lastDate) / (1000 * 60 * 60);
 
-                if (uploadError) {
-                    alert('❌ حدث خطأ أثناء رفع الملف المرفق: ' + uploadError.message);
-                    if (btn) { btn.disabled = false; }
+            if (diffHours < 24) {
+                const userChoice = confirm(
+                    `⚠️ يوجد طلب سابق بنفس البيانات (${name} - ${phone}) بتاريخ ${lastDate.toLocaleString('ar-EG')}.\n\n` +
+                    `اضغط "موافق" إذا كان هذا هو نفس الطلب (لن يتم الحفظ).\n` +
+                    `اضغط "إلغاء" إذا كان هذا طلباً جديداً (سيتم الحفظ).`
+                );
+
+                if (userChoice) {
+                    out.textContent = '❌ تم إلغاء الإرسال لأن هذا الطلب موجود مسبقاً.';
+                    btn.disabled = false;
                     return;
                 }
-
-                const { data: urlData } = supabase.storage
-                    .from('consultation-files')
-                    .getPublicUrl(filePath);
-                
-                attachmentPath = urlData.publicUrl;
-            }
-
-            try {
-                const { error } = await supabase.from('consultation_requests').insert({
-                    client_name: name,
-                    full_name: name,
-                    phone: phone,
-                    email: email || null,
-                    company: company || null,
-                    service: service || null,
-                    message: message || null,
-                    privacy_accepted: true,
-                    status: 'new',
-                    created_by: session.user.id,
-                    attachment_path: attachmentPath
-                });
-
-                if (error) throw error;
-
-                out.textContent = '✅ تم حفظ الطلب بنجاح!';
-                document.getElementById('manualName').value = '';
-                document.getElementById('manualPhone').value = '';
-                document.getElementById('manualEmail').value = '';
-                document.getElementById('manualCompany').value = '';
-                document.getElementById('manualService').value = '';
-                document.getElementById('manualMessage').value = '';
-                document.getElementById('manualAttachment').value = '';
-                
-                await fetchConsultations();
-            } catch (err) {
-                out.textContent = '❌ فشل الحفظ: ' + err.message;
-            } finally {
-                btn.disabled = false;
             }
         }
+    } catch (checkErr) {
+        console.warn('تعذر فحص التكرار:', checkErr);
+    }
 
+    out.textContent = 'جاري الحفظ...';
+
+    // 🔴 رفع الملف المرفق (إذا وُجد)
+    if (file) {
+        const filePath = `${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('consultation-files')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            alert('❌ حدث خطأ أثناء رفع الملف المرفق: ' + uploadError.message);
+            if (btn) { btn.disabled = false; }
+            return;
+        }
+
+        const { data: urlData } = supabase.storage
+            .from('consultation-files')
+            .getPublicUrl(filePath);
+        
+        attachmentPath = urlData.publicUrl;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { 
+        alert('يرجى تسجيل الدخول مجدداً.'); 
+        return; 
+    }
+
+    try {
+        const { error } = await supabase.from('consultation_requests').insert({
+            client_name: name,
+            full_name: name,
+            phone: phone,
+            email: email || null,
+            company: company || null,
+            service: service || null,
+            message: message || null,
+            privacy_accepted: true,
+            status: 'new',
+            created_by: session.user.id,
+            attachment_path: attachmentPath
+        });
+
+        if (error) throw error;
+
+        out.textContent = '✅ تم حفظ الطلب بنجاح!';
+        document.getElementById('manualName').value = '';
+        document.getElementById('manualPhone').value = '';
+        document.getElementById('manualEmail').value = '';
+        document.getElementById('manualCompany').value = '';
+        document.getElementById('manualService').value = '';
+        document.getElementById('manualMessage').value = '';
+        document.getElementById('manualAttachment').value = '';
+        
+        await fetchConsultations();
+    } catch (err) {
+        out.textContent = '❌ فشل الحفظ: ' + err.message;
+    } finally {
+        btn.disabled = false;
+    }
+}
         document.getElementById('modalClose').addEventListener('click', function() {
             document.getElementById('previewModal').classList.remove('active');
         });
