@@ -138,7 +138,17 @@
     </div>
 
     <div id="sectionConsultations" class="section active">
-        <h2>📋 قائمة الطلبات</h2>
+<!-- 🔴 الشاشة الذكية - التنبيهات -->
+<div id="smartAlerts" style="background: linear-gradient(135deg, #f0f4ff, #e7f3ff); border-radius: 12px; padding: 15px 20px; margin-bottom: 20px; border-right: 5px solid #2d7aff;">
+    <h3 style="color: #1a2a3a; margin: 0 0 12px 0; display: flex; align-items: center; gap: 10px;">
+        <span style="background: linear-gradient(135deg, #2d7aff, #1a5cc4); color: white; width: 35px; height: 35px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px;">🔔</span>
+        التنبيهات الذكية
+    </h3>
+    <div id="alertsContainer" style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <div style="color: #718096; font-size: 13px;">⏳ جاري تحميل التنبيهات...</div>
+    </div>
+</div>       
+	   <h2>📋 قائمة الطلبات</h2>
         <div class="filters" id="filterContainer">
             <label>📅 من:</label><input type="date" id="filterDateFrom">
             <label>إلى:</label><input type="date" id="filterDateTo">
@@ -1290,7 +1300,171 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
             }
         }
 
-       async function fetchConsultations() {
+       // ============================================================
+// 🔴 الشاشة الذكية - دالة تحميل التنبيهات
+// ============================================================
+async function loadSmartAlerts() {
+    const container = document.getElementById('alertsContainer');
+    if (!container) return;
+
+    let alerts = [];
+
+    try {
+        // ⏰ 1. المهام المتأخرة (لكل الأدوار)
+        const today = new Date().toISOString().split('T')[0];
+
+        // للموظف
+        if (currentUser?.role === 'followup_staff') {
+            const { data: overdueTasks } = await supabase
+                .from('client_followups')
+                .select('id, action, next_followup, assigned_to')
+                .eq('assigned_to', currentUser.id)
+                .eq('is_attachment_only', false)
+                .in('followup_status', ['pending', 'in_progress'])
+                .lt('next_followup', today);
+
+            if (overdueTasks && overdueTasks.length > 0) {
+                alerts.push({
+                    icon: '⚠️',
+                    color: '#dc3545',
+                    text: `لديك ${overdueTasks.length} مهمة تجاوزت موعدها`,
+                    type: 'overdue'
+                });
+            }
+
+            // مهام جديدة
+            const { data: newTasks } = await supabase
+                .from('client_followups')
+                .select('id')
+                .eq('assigned_to', currentUser.id)
+                .eq('is_attachment_only', false)
+                .eq('followup_status', 'pending');
+
+            if (newTasks && newTasks.length > 0) {
+                alerts.push({
+                    icon: '📋',
+                    color: '#17a2b8',
+                    text: `لديك ${newTasks.length} مهمة بانتظار التنفيذ`,
+                    type: 'new_tasks'
+                });
+            }
+
+            // مواعيد قريبة (خلال 48 ساعة)
+            const twoDaysFromNow = new Date();
+            twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+            const twoDaysStr = twoDaysFromNow.toISOString().split('T')[0];
+
+            const { data: upcomingTasks } = await supabase
+                .from('client_followups')
+                .select('id')
+                .eq('assigned_to', currentUser.id)
+                .eq('is_attachment_only', false)
+                .in('followup_status', ['pending', 'in_progress'])
+                .gte('next_followup', today)
+                .lte('next_followup', twoDaysStr);
+
+            if (upcomingTasks && upcomingTasks.length > 0) {
+                alerts.push({
+                    icon: '⏰',
+                    color: '#ffc107',
+                    text: `لديك ${upcomingTasks.length} مهمة يجب إنجازها خلال يومين`,
+                    type: 'upcoming'
+                });
+            }
+        }
+
+        // للمدير
+        if (currentUser?.role === 'manager') {
+            const { data: allOverdue } = await supabase
+                .from('client_followups')
+                .select('id, assigned_to')
+                .eq('is_attachment_only', false)
+                .in('followup_status', ['pending', 'in_progress'])
+                .lt('next_followup', today);
+
+            if (allOverdue && allOverdue.length > 0) {
+                alerts.push({
+                    icon: '⚠️',
+                    color: '#dc3545',
+                    text: `هناك ${allOverdue.length} مهمة متأخرة عن موعدها`,
+                    type: 'overdue'
+                });
+            }
+
+            const { data: pendingTasks } = await supabase
+                .from('client_followups')
+                .select('id')
+                .eq('is_attachment_only', false)
+                .eq('followup_status', 'pending');
+
+            if (pendingTasks && pendingTasks.length > 0) {
+                alerts.push({
+                    icon: '📋',
+                    color: '#17a2b8',
+                    text: `${pendingTasks.length} مهمة بانتظار التنفيذ`,
+                    type: 'pending_tasks'
+                });
+            }
+        }
+
+        // للسكرتير
+        if (currentUser?.role === 'secretary') {
+            // طلبات جديدة لم يتم التواصل معها
+            const { data: newRequests } = await supabase
+                .from('consultation_requests')
+                .select('id')
+                .eq('created_by', currentUser.id)
+                .eq('status', 'new');
+
+            if (newRequests && newRequests.length > 0) {
+                alerts.push({
+                    icon: '🔔',
+                    color: '#ffc107',
+                    text: `لديك ${newRequests.length} طلب جديد بحاجة للتواصل`,
+                    type: 'new_requests'
+                });
+            }
+
+            // مهام مكلف بها من المدير
+            const { data: assignedTasks } = await supabase
+                .from('client_followups')
+                .select('id')
+                .eq('assigned_to', currentUser.id)
+                .eq('is_attachment_only', false)
+                .in('followup_status', ['pending', 'in_progress']);
+
+            if (assignedTasks && assignedTasks.length > 0) {
+                alerts.push({
+                    icon: '📌',
+                    color: '#2d7aff',
+                    text: `${assignedTasks.length} مهمة مكلف بها من المدير`,
+                    type: 'assigned_tasks'
+                });
+            }
+        }
+
+        // 🎨 بناء التنبيهات
+        if (alerts.length === 0) {
+            container.innerHTML = `
+                <div style="background: #e7f9ef; border-radius: 8px; padding: 10px 15px; font-size: 13px; color: #28a745; display: flex; align-items: center; gap: 8px;">
+                    ✅ لا توجد تنبيهات حالياً — كل شيء يسير بسلاسة.
+                </div>
+            `;
+        } else {
+            container.innerHTML = alerts.map(alert => `
+                <div style="background: white; border-radius: 8px; padding: 10px 15px; font-size: 13px; color: #333; display: flex; align-items: center; gap: 8px; border-right: 4px solid ${alert.color}; box-shadow: 0 2px 6px rgba(0,0,0,0.05); min-width: 200px;">
+                    <span style="font-size: 18px;">${alert.icon}</span>
+                    <span>${alert.text}</span>
+                </div>
+            `).join('');
+        }
+
+    } catch (err) {
+        console.error('خطأ في تحميل التنبيهات:', err);
+        container.innerHTML = `<div style="color: #dc3545; font-size: 13px;">❌ تعذر تحميل التنبيهات.</div>`;
+    }
+}
+	   async function fetchConsultations() {
     try {
         if (currentUser?.role === 'secretary') {
             // 🔴 السكرتير يرى نوعين من الطلبات:
@@ -1489,9 +1663,16 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
 
             await fetchEmployees();
             await fetchConsultations();
+			await loadSmartAlerts();
 
             showSection('sectionConsultations');
-        }
+		if (sectionId === 'sectionConsultations') {
+        if (allConsultations.length === 0) fetchConsultations();
+        else applyFilters();
+        loadSmartAlerts(); // 🔴 تحديث التنبيهات
+     }
+
+   }
 
        async function addManualConsultation() {
     const name = document.getElementById('manualName').value.trim();
