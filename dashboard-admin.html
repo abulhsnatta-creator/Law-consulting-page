@@ -1534,15 +1534,23 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
             const now = new Date();
             const diffHours = (now - lastDate) / (1000 * 60 * 60);
 
+            console.log('آخر طلب:', lastRequest);
+            console.log('فرق الساعات:', diffHours);
+
             if (diffHours < 24) {
                 const userChoice = confirm(
-                    `⚠️ يوجد طلب سابق بنفس البيانات (${name} - ${phone}) بتاريخ ${lastDate.toLocaleString('ar-EG')}.\n\n` +
+                    `⚠️ يوجد طلب سابق بنفس البيانات:\n\n` +
+                    `الاسم: ${lastRequest.client_name}\n` +
+                    `الهاتف: ${lastRequest.phone}\n` +
+                    `الخدمة: ${lastRequest.service}\n` +
+                    `التاريخ: ${lastDate.toLocaleString('ar-EG')}\n\n` +
                     `اضغط "موافق" إذا كان هذا هو نفس الطلب (لن يتم الحفظ).\n` +
                     `اضغط "إلغاء" إذا كان هذا طلباً جديداً (سيتم الحفظ).`
                 );
 
                 if (userChoice) {
-                    out.textContent = '❌ تم إلغاء الإرسال لأن هذا الطلب موجود مسبقاً.';
+                    out.textContent = '❌ فشل الحفظ: الطلب موجود مسبقاً خلال 24 ساعة.';
+                    out.style.color = '#dc3545';
                     btn.disabled = false;
                     return;
                 }
@@ -1553,6 +1561,7 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
     }
 
     out.textContent = 'جاري الحفظ...';
+    out.style.color = '#6c757d';
 
     // 🔴 رفع الملف المرفق (إذا وُجد)
     if (file) {
@@ -1598,6 +1607,7 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
         if (error) throw error;
 
         out.textContent = '✅ تم حفظ الطلب بنجاح!';
+        out.style.color = '#28a745';
         document.getElementById('manualName').value = '';
         document.getElementById('manualPhone').value = '';
         document.getElementById('manualEmail').value = '';
@@ -1609,11 +1619,12 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
         await fetchConsultations();
     } catch (err) {
         out.textContent = '❌ فشل الحفظ: ' + err.message;
+        out.style.color = '#dc3545';
     } finally {
         btn.disabled = false;
     }
-}
-        document.getElementById('modalClose').addEventListener('click', function() {
+} 
+		document.getElementById('modalClose').addEventListener('click', function() {
             document.getElementById('previewModal').classList.remove('active');
         });
         document.getElementById('previewModal').addEventListener('click', function(e) {
