@@ -1055,7 +1055,7 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
         // إذا اختار "إلغاء"، يكمل الكود لإنشاء مهمة جديدة
     }
 
-    // 🔴 إنشاء مهمة جديدة (بدون تحديث assigned_to في consultation_requests)
+    // 🔴 إنشاء مهمة جديدة
     const { error } = await supabase
         .from('client_followups')
         .insert(taskData);
@@ -1063,6 +1063,18 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
     if (error) {
         alert('❌ فشل إنشاء المتابعة: ' + error.message);
     } else {
+        // 🔴 تحديث assigned_to فقط إذا كان المكلف موظف متابعة (وليس سكرتير)
+        const assignedEmp = allEmployees.find(e => e.id === assigneeId);
+        if (assignedEmp && assignedEmp.role === 'followup_staff') {
+            const { error: updateError } = await supabase
+                .from('consultation_requests')
+                .update({ assigned_to: assigneeId })
+                .eq('id', consultationId);
+
+            if (updateError) {
+                console.error('خطأ في تحديث assigned_to:', updateError);
+            }
+        }
         alert('✅ تم إنشاء المتابعة وتكليف الموظف بنجاح!');
         openPreview(consultationId);
     }
