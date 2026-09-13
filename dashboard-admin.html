@@ -1278,29 +1278,84 @@ document.querySelectorAll('.btn-fail-task').forEach(btn => {
             }
         }
 
-        async function fetchConsultations() {
-            try {
-                let query = supabase
+       async function fetchConsultations() {
+    try {
+        if (currentUser?.role === 'secretary') {
+            // 🔴 السكرتير يرى نوعين من الطلبات:
+            // 1. الطلبات التي أدخلها (created_by)
+            // 2. الطلبات التي كُلّف بها (assigned_to في client_followups)
+
+            // 1. جلب الطلبات التي أدخلها السكرتير
+            const { data: createdByMe, error: cbError } = await supabase
+                .from('consultation_requests')
+                .select('*')
+                .eq('created_by', currentUser.id)
+                .order('created_at', { ascending: false });
+
+            if (cbError) console.warn('خطأ في جلب الطلبات التي أدخلها السكرتير:', cbError);
+
+            // 2. جلب الطلبات التي كُلّف بها السكرتير (من client_followups)
+            const { data: assignedTasks, error: atError } = await supabase
+                .from('client_followups')
+                .select('request_id')
+                .eq('assigned_to', currentUser.id)
+                .eq('is_attachment_only', false);
+
+            if (atError) console.warn('خطأ في جلب المهام المكلف بها:', atError);
+
+            // استخراج معرّفات الطلبات الفريدة
+            const assignedRequestIds = [...new Set((assignedTasks || []).map(t => t.request_id))];
+
+            // جلب تفاصيل الطلبات المكلف بها
+            let assignedRequests = [];
+            if (assignedRequestIds.length > 0) {
+                const { data: arData, error: arError } = await supabase
                     .from('consultation_requests')
                     .select('*')
+                    .in('id', assignedRequestIds)
                     .order('created_at', { ascending: false });
 
-                if (currentUser?.role === 'secretary') {
-                    query = query.eq('created_by', currentUser.id);
-                } else if (currentUser?.role === 'followup_staff') {
-                    query = query.eq('assigned_to', currentUser.id);
-                }
-
-                const { data, error } = await query;
-                if (error) throw error;
-                allConsultations = data || [];
-                applyFilters();
-            } catch (err) {
-                console.error(err);
-                document.getElementById('consultationsContainer').innerHTML = `<div class="message error">❌ ${err.message}</div>`;
+                if (arError) console.warn('خطأ في جلب تفاصيل الطلبات المكلف بها:', arError);
+                assignedRequests = arData || [];
             }
+
+            // 🔴 دمج النتيجتين بدون تكرار
+            const mergedMap = new Map();
+            [...(createdByMe || []), ...assignedRequests].forEach(item => {
+                mergedMap.set(item.id, item);
+            });
+
+            allConsultations = Array.from(mergedMap.values());
+            allConsultations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        } else if (currentUser?.role === 'followup_staff') {
+            // الموظف يرى الطلبات المكلف بها
+            const { data, error } = await supabase
+                .from('consultation_requests')
+                .select('*')
+                .eq('assigned_to', currentUser.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            allConsultations = data || [];
+
+        } else {
+            // المدير يرى كل شيء
+            const { data, error } = await supabase
+                .from('consultation_requests')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            allConsultations = data || [];
         }
 
+        applyFilters();
+    } catch (err) {
+        console.error(err);
+        document.getElementById('consultationsContainer').innerHTML = `<div class="message error">❌ ${err.message}</div>`;
+    }
+}
         function populateEmployeeFilter(employees) {
             const filterSelect = document.getElementById('filterEmployee');
             if (!filterSelect) return;
