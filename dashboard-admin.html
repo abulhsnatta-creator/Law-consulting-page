@@ -554,8 +554,8 @@ if (currentUser?.role === 'manager') {
         </div>
     `;
 } 
-else if (currentUser?.role === 'followup_staff' || currentUser?.role === 'secretary') {
-    // 🟢 للموظف والسكرتير: بطاقة المهام المسندة إليّ (التي لم تُستكمل)
+else if (currentUser?.role === 'followup_staff') {
+    // 🟢 للموظف: بطاقة المهام المسندة إليه فقط
     const { data: myActiveTasks } = await supabase
         .from('client_followups')
         .select('*')
@@ -642,6 +642,140 @@ else if (currentUser?.role === 'followup_staff' || currentUser?.role === 'secret
             </div>
             <div class="dashboard-card-body">
                 ${tasksHtml}
+            </div>
+        </div>
+    `;
+} 
+else if (currentUser?.role === 'secretary') {
+    // 🟢 للسكرتير: قسمان
+    // 1) المهام المسندة إليه (مع إمكانية التحديث)
+    // 2) المهام المسندة للموظف (للاطلاع فقط)
+
+    // --- القسم 1: المهام المسندة إلى السكرتير ---
+    const { data: myTasks } = await supabase
+        .from('client_followups')
+        .select('*')
+        .eq('request_id', consultationId)
+        .eq('assigned_to', currentUser.id)
+        .eq('is_attachment_only', false)
+        .in('followup_status', ['pending', 'in_progress'])
+        .order('followup_date', { ascending: false });
+
+    // --- القسم 2: المهام المسندة إلى الموظف (للاطلاع) ---
+    const { data: empTasks } = await supabase
+        .from('client_followups')
+        .select('*')
+        .eq('request_id', consultationId)
+        .neq('assigned_to', currentUser.id)
+        .eq('is_attachment_only', false)
+        .in('followup_status', ['pending', 'in_progress'])
+        .order('followup_date', { ascending: false });
+
+    // دالة مساعدة لبناء بطاقة مهمة
+    const buildTaskCard = (task, editable) => {
+        const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : 'غير محدد';
+        const statusLabels = {
+            pending: { text: '⏳ بانتظار التنفيذ', color: '#ffc107' },
+            in_progress: { text: '🔄 قيد التنفيذ', color: '#17a2b8' },
+            completed: { text: '✅ تم التنفيذ', color: '#28a745' },
+            failed: { text: '❌ تعذر التنفيذ', color: '#dc3545' }
+        };
+        const status = statusLabels[task.followup_status] || { text: task.followup_status || 'غير محدد', color: '#6c757d' };
+
+        const actionText = task.action || '';
+        const actionParts = actionText.split('|');
+        const actionsList = actionParts[0] ? actionParts[0].replace('الإجراءات:', '').trim() : '';
+        const docsList = actionParts[1] ? actionParts[1].replace('المستندات:', '').trim() : '';
+        
+        const actionsArray = actionsList ? actionsList.split(',').map(i => i.trim()).filter(i => i) : [];
+        const docsArray = docsList ? docsList.split(',').map(i => i.trim()).filter(i => i) : [];
+
+        // اسم الموظف المكلف (للقسم 2)
+        let assignedEmployeeName = '';
+        if (!editable && task.assigned_to) {
+            const emp = allEmployees.find(e => e.id === task.assigned_to);
+            if (emp) assignedEmployeeName = emp.full_name;
+        }
+
+        return `
+            <div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: ${editable ? '#f8faff' : '#f5f5f5'}; border-right: 4px solid ${status.color};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong style="color: #1a2a3a;">📋 مهمة #${task.id.slice(0, 8)} ${assignedEmployeeName ? `— 👤 ${assignedEmployeeName}` : ''}</strong>
+                    <span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">${status.text}</span>
+                </div>
+                
+                ${actionsArray.length > 0 ? `
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #333; font-size: 13px;">الإجراءات المطلوبة:</strong>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
+                            ${actionsArray.map((act) => `
+                                <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
+                                    <input type="checkbox" class="${editable ? 'employee-task-action' : ''}" data-task-id="${task.id}" value="${act}" ${editable ? '' : 'disabled'}> ${act}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${docsArray.length > 0 ? `
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #333; font-size: 13px;">المستندات المطلوبة:</strong>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
+                            ${docsArray.map((doc) => `
+                                <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
+                                    <input type="checkbox" class="${editable ? 'employee-task-doc' : ''}" data-task-id="${task.id}" value="${doc}" ${editable ? '' : 'disabled'}> ${doc}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${task.notes ? `<div style="font-size: 12px; color: #555; margin-bottom: 8px; background: #fff9e6; padding: 8px; border-radius: 6px; border-right: 3px solid #ffc107;"><strong>📝 تعليمات المدير:</strong> ${task.notes}</div>` : ''}
+                
+                <div style="font-size: 12px; color: #555; margin-bottom: 10px;">
+                    <strong>📅 موعد التنفيذ:</strong> ${dueDate}
+                </div>
+                
+                ${editable ? `
+                    <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn-save-employee-tasks" data-id="${task.id}" style="background: #2d7aff; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">💾 حفظ حالة المهام</button>
+                        <button class="btn-fail-task" data-id="${task.id}" style="background: #dc3545; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🔴 تعذر التنفيذ</button>
+                    </div>
+                ` : `
+                    <div style="margin-top: 10px; padding: 6px; background: #e7f3ff; border-radius: 6px; font-size: 11px; color: #2d7aff; text-align: center;">
+                        👁️ للاطلاع فقط
+                    </div>
+                `}
+            </div>
+        `;
+    };
+
+    let secretaryHtml = '';
+
+    // القسم 1
+    if (myTasks && myTasks.length > 0) {
+        secretaryHtml += `<h4 style="color: #2d7aff; margin: 0 0 10px 0;">📌 المهام المسندة إليّ</h4>`;
+        myTasks.forEach(t => secretaryHtml += buildTaskCard(t, true));
+    } else {
+        secretaryHtml += `<div class="message" style="margin-bottom: 15px;">✅ لا توجد مهام مسندة إليك حالياً.</div>`;
+    }
+
+    // القسم 2
+    secretaryHtml += `<hr style="margin: 15px 0; border: none; border-top: 1px dashed #dce1e8;">`;
+    if (empTasks && empTasks.length > 0) {
+        secretaryHtml += `<h4 style="color: #6c757d; margin: 0 0 10px 0;">👁️ المهام المسندة للموظف (للاطلاع)</h4>`;
+        empTasks.forEach(t => secretaryHtml += buildTaskCard(t, false));
+    } else {
+        secretaryHtml += `<div class="message">لا توجد مهام مسندة للموظف حالياً.</div>`;
+    }
+
+    tasksCard = `
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h3><span class="icon-circle">🔔</span> المهام</h3>
+            </div>
+            <div class="dashboard-card-body">
+                ${secretaryHtml}
             </div>
         </div>
     `;
