@@ -499,42 +499,153 @@
                     </div>
                 `;
 
-                let tasksCard = '';
-                if (requiredActions.length > 0 || requiredDocuments.length > 0) {
-                    tasksCard = `
-                        <div class="dashboard-card">
-                            <div class="dashboard-card-header">
-                                <h3><span class="icon-circle">📋</span> المهام والمستندات المطلوبة</h3>
-                            </div>
-                            <div class="dashboard-card-body">
-                                <div style="margin-bottom: 10px;">
-                                    <strong style="color: #333;">الإجراءات المطلوبة:</strong>
-                                    <ul style="list-style: none; padding: 0; margin-top: 5px;">
-                                        ${requiredActions.map((action, index) => `
-                                            <li class="dashboard-checkbox-item">
-                                                <input type="checkbox" id="action_${index}" class="manager-task-action" data-task-type="action" data-index="${index}"> 
-                                                <label for="action_${index}">${action}</label>
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                                <div style="margin-bottom: 10px;">
-                                    <strong style="color: #333;">المستندات المطلوبة:</strong>
-                                    <ul style="list-style: none; padding: 0; margin-top: 5px;">
-                                        ${requiredDocuments.map((doc, index) => `
-                                            <li class="dashboard-checkbox-item">
-                                                <input type="checkbox" id="doc_${index}" class="manager-task-doc" data-task-type="document" data-index="${index}"> 
-                                                <label for="doc_${index}">${doc}</label>
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                                <button id="btnSaveTasks" class="dashboard-btn">✅ حفظ حالة المهام</button>
+                // ============================================================
+// 🔴 بطاقة المهام (ديناميكية حسب الدور)
+// ============================================================
+let tasksCard = '';
+
+if (currentUser?.role === 'manager') {
+    // 🟢 للمدير: بطاقة تكليف الموظف بمتابعة (مع إمكانية الإسناد)
+    tasksCard = `
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h3><span class="icon-circle">📝</span> تكليف الموظف بمتابعة</h3>
+            </div>
+            <div class="dashboard-card-body">
+                <div style="margin-bottom: 12px;">
+                    <strong style="color: #333;">الإجراءات المطلوبة:</strong>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                        ${['تحديد طبيعة الاستشارة', 'الاتصال بالعميل', 'تحديد موعد', 'مراجعة المستندات'].map((action) => `
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" class="task-action-checkbox" value="${action}"> ${action}
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <strong style="color: #333;">المستندات المطلوبة:</strong>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                        ${['مستندات داعمة', 'بطاقة شخصية', 'توكيل', 'عقد'].map((doc) => `
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" class="task-doc-checkbox" value="${doc}"> ${doc}
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">الموظف المكلف:</label>
+                        <select id="assigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+                            <option value="">اختر الموظف</option>
+                            ${allEmployees.filter(e => e.role === 'followup_staff' || e.role === 'secretary').map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.role === 'secretary' ? 'سكرتير' : 'موظف'})</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">موعد التنفيذ:</label>
+                        <input type="date" id="followupDueDate" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+                    </div>
+                </div>
+                <div style="margin-top: 12px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">ملاحظات المدير:</label>
+                    <textarea id="managerNotes" rows="3" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;" placeholder="تعليمات للموظف..."></textarea>
+                </div>
+                <button id="btnCreateTask" class="dashboard-btn" style="margin-top: 15px; background: #28a745;">🟢 إنشاء المتابعة وتكليف الموظف</button>
+            </div>
+        </div>
+    `;
+} 
+else if (currentUser?.role === 'followup_staff' || currentUser?.role === 'secretary') {
+    // 🟢 للموظف والسكرتير: بطاقة المهام المسندة إليّ (التي لم تُستكمل)
+    const { data: myActiveTasks } = await supabase
+        .from('client_followups')
+        .select('*')
+        .eq('request_id', consultationId)
+        .eq('assigned_to', currentUser.id)
+        .eq('is_attachment_only', false)
+        .in('followup_status', ['pending', 'in_progress'])
+        .order('followup_date', { ascending: false });
+
+    let tasksHtml = '';
+    if (myActiveTasks && myActiveTasks.length > 0) {
+        myActiveTasks.forEach((task) => {
+            const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : 'غير محدد';
+            const statusLabels = {
+                pending: { text: '⏳ بانتظار التنفيذ', color: '#ffc107' },
+                in_progress: { text: '🔄 قيد التنفيذ', color: '#17a2b8' },
+                completed: { text: '✅ تم التنفيذ', color: '#28a745' },
+                failed: { text: '❌ تعذر التنفيذ', color: '#dc3545' }
+            };
+            const status = statusLabels[task.followup_status] || { text: task.followup_status || 'غير محدد', color: '#6c757d' };
+
+            const actionText = task.action || '';
+            const actionParts = actionText.split('|');
+            const actionsList = actionParts[0] ? actionParts[0].replace('الإجراءات:', '').trim() : '';
+            const docsList = actionParts[1] ? actionParts[1].replace('المستندات:', '').trim() : '';
+            
+            const actionsArray = actionsList ? actionsList.split(',').map(i => i.trim()).filter(i => i) : [];
+            const docsArray = docsList ? docsList.split(',').map(i => i.trim()).filter(i => i) : [];
+
+            tasksHtml += `
+                <div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #f8faff; border-right: 4px solid ${status.color};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong style="color: #1a2a3a;">📋 مهمة #${task.id.slice(0, 8)}</strong>
+                        <span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">${status.text}</span>
+                    </div>
+                    
+                    ${actionsArray.length > 0 ? `
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #333; font-size: 13px;">الإجراءات المطلوبة:</strong>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
+                                ${actionsArray.map((act) => `
+                                    <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
+                                        <input type="checkbox" class="employee-task-action" data-task-id="${task.id}" value="${act}"> ${act}
+                                    </label>
+                                `).join('')}
                             </div>
                         </div>
-                    `;
-                }
+                    ` : ''}
+                    
+                    ${docsArray.length > 0 ? `
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #333; font-size: 13px;">المستندات المطلوبة:</strong>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
+                                ${docsArray.map((doc) => `
+                                    <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
+                                        <input type="checkbox" class="employee-task-doc" data-task-id="${task.id}" value="${doc}"> ${doc}
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.notes ? `<div style="font-size: 12px; color: #555; margin-bottom: 8px; background: #fff9e6; padding: 8px; border-radius: 6px; border-right: 3px solid #ffc107;"><strong>📝 تعليمات المدير:</strong> ${task.notes}</div>` : ''}
+                    
+                    <div style="font-size: 12px; color: #555; margin-bottom: 10px;">
+                        <strong>📅 موعد التنفيذ:</strong> ${dueDate}
+                    </div>
+                    
+                    <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn-save-employee-tasks" data-id="${task.id}" style="background: #2d7aff; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">💾 حفظ حالة المهام</button>
+                        <button class="btn-fail-task" data-id="${task.id}" style="background: #dc3545; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🔴 تعذر التنفيذ</button>
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        tasksHtml = '<div class="message">✅ لا توجد مهام نشطة حالياً — كل شيء منجز.</div>';
+    }
 
+    tasksCard = `
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h3><span class="icon-circle">🔔</span> المهام المسندة إليّ</h3>
+            </div>
+            <div class="dashboard-card-body">
+                ${tasksHtml}
+            </div>
+        </div>
+    `;
+}
                 let initialCard = '';
                 if (initialConsultation) {
                     initialCard = `
@@ -617,172 +728,7 @@
                     </div>
                 `;
 
-// 🔴 بطاقة تكليف الموظف بمتابعة (للمدير فقط) - مع زرين منفصلين
-let assignTaskCard = '';
-if (currentUser?.role === 'manager') {
-    assignTaskCard = `
-        <div class="dashboard-card">
-            <div class="dashboard-card-header">
-                <h3><span class="icon-circle">📝</span> تكليف الموظف بمتابعة</h3>
-            </div>
-            <div class="dashboard-card-body">
-                <div style="margin-bottom: 12px;">
-                    <strong style="color: #333;">الإجراءات المطلوبة:</strong>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                        ${['تحديد طبيعة الاستشارة', 'الاتصال بالعميل', 'تحديد موعد', 'مراجعة المستندات'].map((action) => `
-                            <label style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" class="task-action-checkbox" value="${action}"> ${action}
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <strong style="color: #333;">المستندات المطلوبة:</strong>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                        ${['مستندات داعمة', 'بطاقة شخصية', 'توكيل', 'عقد'].map((doc) => `
-                            <label style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" class="task-doc-checkbox" value="${doc}"> ${doc}
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">موعد التنفيذ:</label>
-                        <input type="date" id="followupDueDate" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
-                    </div>
-                </div>
-                <div style="margin-top: 12px;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">ملاحظات المدير:</label>
-                    <textarea id="managerNotes" rows="3" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;" placeholder="تعليمات للموظف..."></textarea>
-                </div>
-
-                <hr style="margin: 15px 0; border: none; border-top: 1px solid #e9edf4;">
-
-                <div style="margin-bottom: 10px;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">🟢 تكليف موظف متابعة:</label>
-                    <select id="assigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
-                        <option value="">اختر الموظف</option>
-                        ${allEmployees.filter(e => e.role === 'followup_staff').map(emp => `<option value="${emp.id}">${emp.full_name}</option>`).join('')}
-                    </select>
-                    <button id="btnCreateTask" class="dashboard-btn" style="margin-top: 8px; background: #28a745; width: 100%;">🟢 تكليف الموظف بمتابعة</button>
-                </div>
-
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #dce1e8;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">📋 إضافة إلى قائمة السكرتير:</label>
-                    <select id="secretarySelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
-                        <option value="">اختر السكرتير</option>
-                        ${allEmployees.filter(e => e.role === 'secretary').map(emp => `<option value="${emp.id}">${emp.full_name}</option>`).join('')}
-                    </select>
-                    <button id="btnAddToSecretary" class="dashboard-btn" style="margin-top: 8px; background: #2d7aff; width: 100%;">📋 إضافة إلى قائمة السكرتير</button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-				// 🔴 بطاقة المتابعات المكلف بها (للموظف فقط)
-let assignedTasksCard = '';
-if (currentUser?.role === 'followup_staff') {
-    const { data: myTasks, error: myTasksError } = await supabase
-        .from('client_followups')
-        .select('*')
-        .eq('request_id', consultationId)
-        .eq('assigned_to', currentUser.id)
-        .eq('is_attachment_only', false)
-        .order('followup_date', { ascending: false });
-
-    if (myTasksError) console.warn('خطأ في جلب المهام المكلف بها:', myTasksError);
-
-    let tasksHtml = '';
-    if (myTasks && myTasks.length > 0) {
-        myTasks.forEach((task) => {
-            const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : 'غير محدد';
-            const statusLabels = {
-                pending: { text: '⏳ بانتظار التنفيذ', color: '#ffc107' },
-                in_progress: { text: '🔄 قيد التنفيذ', color: '#17a2b8' },
-                completed: { text: '✅ تم التنفيذ', color: '#28a745' },
-                failed: { text: '❌ تعذر التنفيذ', color: '#dc3545' }
-            };
-            const status = statusLabels[task.followup_status] || { text: task.followup_status || 'غير محدد', color: '#6c757d' };
-
-            // استخراج الإجراءات والمستندات بأمان
-            const actionText = task.action || '';
-            const actionParts = actionText.split('|');
-            const actionsList = actionParts[0] ? actionParts[0].replace('الإجراءات:', '').trim() : '';
-            const docsList = actionParts[1] ? actionParts[1].replace('المستندات:', '').trim() : '';
-            
-            const actionsArray = actionsList ? actionsList.split(',').map(i => i.trim()).filter(i => i) : [];
-            const docsArray = docsList ? docsList.split(',').map(i => i.trim()).filter(i => i) : [];
-
-            tasksHtml += `
-                <div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #f8faff; border-right: 4px solid ${status.color};">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <strong style="color: #1a2a3a;">📋 مهمة #${task.id.slice(0, 8)}</strong>
-                        <span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">${status.text}</span>
-                    </div>
-                    
-                    ${actionsArray.length > 0 ? `
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #333; font-size: 13px;">الإجراءات المطلوبة:</strong>
-                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
-                                ${actionsArray.map((act) => `
-                                    <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
-                                        <input type="checkbox" class="employee-task-action" data-task-id="${task.id}" value="${act}"> ${act}
-                                    </label>
-                                `).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    ${docsArray.length > 0 ? `
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #333; font-size: 13px;">المستندات المطلوبة:</strong>
-                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
-                                ${docsArray.map((doc) => `
-                                    <label style="display: flex; align-items: center; gap: 5px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8; font-size: 12px;">
-                                        <input type="checkbox" class="employee-task-doc" data-task-id="${task.id}" value="${doc}"> ${doc}
-                                    </label>
-                                `).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    ${task.notes ? `<div style="font-size: 12px; color: #555; margin-bottom: 8px; background: #fff9e6; padding: 8px; border-radius: 6px; border-right: 3px solid #ffc107;"><strong>📝 تعليمات المدير:</strong> ${task.notes}</div>` : ''}
-                    
-                    <div style="font-size: 12px; color: #555; margin-bottom: 10px;">
-                        <strong>📅 موعد التنفيذ:</strong> ${dueDate}
-                    </div>
-                    
-         ${task.followup_status !== 'completed' && task.followup_status !== 'failed' ? `
-    <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-        <button class="btn-save-employee-tasks" data-id="${task.id}" style="...">💾 حفظ حالة المهام</button>
-        <button class="btn-fail-task" data-id="${task.id}" style="...">🔴 تعذر التنفيذ</button>
-    </div>
-` : ''}
-${currentUser?.role === 'secretary' ? `
-    <div style="margin-top: 10px; padding: 8px; background: #f0f4ff; border-radius: 6px; font-size: 11px; color: #2d7aff; text-align: center;">
-        👁️ للقراءة فقط — المهمة مكلف بها الموظف
-    </div>
-` : ''}
-</div>
-            `;
-        });
-    } else {
-        tasksHtml = '<div class="message">لا توجد مهام مكلف بها حالياً.</div>';
-    }
-
-    assignedTasksCard = `
-        <div class="dashboard-card">
-            <div class="dashboard-card-header">
-                <h3><span class="icon-circle">🔔</span> المتابعات المكلف بها</h3>
-            </div>
-            <div class="dashboard-card-body">
-                ${tasksHtml}
-            </div>
-        </div>
-    `;
-}			
+		
 				let addFollowupCard = `
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
@@ -798,7 +744,7 @@ ${currentUser?.role === 'secretary' ? `
                     </div>
                 `;
 
-body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${initialCard}${assignedTasksCard}${assignTaskCard}${followupsCard}${attachmentsCard}${addFollowupCard}</div>`;            
+body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${initialCard}${followupsCard}${attachmentsCard}${addFollowupCard}</div>`;
 			  const saveTasksBtn = document.getElementById('btnSaveTasks');
                 if (saveTasksBtn) {
                     saveTasksBtn.addEventListener('click', async function() {
