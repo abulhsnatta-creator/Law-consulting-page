@@ -1627,38 +1627,8 @@ async function showAlertDetails(alertType) {
             html += `</tbody></table></div>`;
             body.innerHTML = html;
         } else {
-            // 🔴 تجميع المهام حسب الطلب (لتجنب التكرار)
-            const groupedByRequest = {};
-            tasks.forEach(task => {
-                const reqId = task.request_id;
-                if (!groupedByRequest[reqId]) {
-                    groupedByRequest[reqId] = {
-                        request_id: reqId,
-                        client_name: task.consultation_requests?.client_name || 'غير محدد',
-                        service: task.consultation_requests?.service || '—',
-                        tasks: [],
-                        earliest_due: null,
-                        has_overdue: false
-                    };
-                }
-                groupedByRequest[reqId].tasks.push(task);
-
-                // تحديد أقرب موعد
-                if (task.next_followup) {
-                    const taskDate = new Date(task.next_followup);
-                    if (!groupedByRequest[reqId].earliest_due || taskDate < new Date(groupedByRequest[reqId].earliest_due)) {
-                        groupedByRequest[reqId].earliest_due = task.next_followup;
-                    }
-                }
-
-                // فحص التأخير
-                if (task.next_followup && new Date(task.next_followup) < new Date() && task.followup_status !== 'completed' && task.followup_status !== 'failed') {
-                    groupedByRequest[reqId].has_overdue = true;
-                }
-            });
-
-            const groupedTasks = Object.values(groupedByRequest);
-
+		
+            // مهام
             let html = `
                 <div class="table-responsive">
                     <table style="width: 100%; border-collapse: collapse;">
@@ -1667,8 +1637,8 @@ async function showAlertDetails(alertType) {
                                 <th style="padding: 10px;">#</th>
                                 <th style="padding: 10px;">اسم العميل</th>
                                 <th style="padding: 10px;">الخدمة</th>
-                                <th style="padding: 10px;">عدد المهام</th>
-                                <th style="padding: 10px;">أقرب موعد</th>
+                                <th style="padding: 10px;">المهمة</th>
+                                <th style="padding: 10px;">موعد التنفيذ</th>
                                 <th style="padding: 10px;">الحالة</th>
                                 <th style="padding: 10px;">الإجراء</th>
                             </tr>
@@ -1676,40 +1646,43 @@ async function showAlertDetails(alertType) {
                         <tbody>
             `;
 
-            groupedTasks.forEach((group, idx) => {
-                const dueDate = group.earliest_due ? new Date(group.earliest_due).toLocaleDateString('ar-EG') : '—';
-                const statusBadge = group.has_overdue 
-                    ? '<span style="background: #dc3545; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px;">⚠️ متأخر</span>'
-                    : '<span style="background: #17a2b8; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px;">⏳ بانتظار</span>';
+            const statusLabels = {
+                pending: { text: '⏳ بانتظار', color: '#ffc107' },
+                in_progress: { text: '🔄 قيد التنفيذ', color: '#17a2b8' },
+                completed: { text: '✅ تم', color: '#28a745' },
+                failed: { text: '❌ تعذر', color: '#dc3545' }
+            };
+
+            tasks.forEach((task, idx) => {
+                const status = statusLabels[task.followup_status] || { text: task.followup_status || '—', color: '#6c757d' };
+                const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : '—';
+                const clientName = task.consultation_requests?.client_name || 'غير محدد';
+                const service = task.consultation_requests?.service || '—';
 
                 html += `
                     <tr style="border-bottom: 1px solid #e9edf4;">
                         <td style="padding: 10px; text-align: center;">${idx + 1}</td>
-                        <td style="padding: 10px; text-align: center; font-weight: 600;">${group.client_name}</td>
-                        <td style="padding: 10px; text-align: center;">${group.service}</td>
-                        <td style="padding: 10px; text-align: center;"><span style="background: #e7f3ff; color: #2d7aff; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">${group.tasks.length} مهمة</span></td>
+                        <td style="padding: 10px; text-align: center;">${clientName}</td>
+                        <td style="padding: 10px; text-align: center;">${service}</td>
+                        <td style="padding: 10px; text-align: center; font-size: 12px;">${(task.action || '—').substring(0, 50)}${(task.action || '').length > 50 ? '...' : ''}</td>
                         <td style="padding: 10px; text-align: center;">${dueDate}</td>
-                        <td style="padding: 10px; text-align: center;">${statusBadge}</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: ${status.color}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px;">${status.text}</span></td>
                         <td style="padding: 10px; text-align: center;">
-                            <button class="btn-open-preview" data-request-id="${group.request_id}" style="background: #17a2b8; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 معاينة</button>
+                            <button onclick="window.location.href='dashboard-admin.html?preview=${task.request_id}'" style="background: #17a2b8; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 معاينة</button>
                         </td>
                     </tr>
                 `;
             });
             html += `</tbody></table></div>`;
             body.innerHTML = html;
-
-            // 🔴 ربط أزرار المعاينة
-            document.querySelectorAll('.btn-open-preview').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const reqId = this.dataset.requestId;
-                    // إغلاق الـ Modal
-                    document.getElementById('alertDetailsModal')?.remove();
-                    // فتح الطلب
-                    openPreview(reqId);
-                });
-            });
         }
+
+    } catch (err) {
+        console.error('خطأ في تحميل تفاصيل التنبيه:', err);
+        body.innerHTML = `<div style="color: #dc3545; text-align: center;">❌ تعذر تحميل التفاصيل: ${err.message}</div>`;
+    }
+}
+
 	   async function fetchConsultations() {
     try {
         if (currentUser?.role === 'secretary') {
