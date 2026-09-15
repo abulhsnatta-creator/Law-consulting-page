@@ -257,7 +257,38 @@
         </div>
         <div id="employeesContainer"><div class="loading">⏳ جاري التحميل...</div></div>
     </div>
-</div>
+    <!-- 🔴 قسم التقارير -->
+    <div id="sectionReports" class="section">
+        <h2 style="display: flex; justify-content: space-between; align-items: center;">
+            📊 لوحة التقارير
+            <button onclick="window.print()" style="background: #2d7aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">🖨️ طباعة التقرير</button>
+        </h2>
+        
+        <!-- بطاقات الإحصائيات العامة -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+            <div class="dashboard-card" style="text-align: center;">
+                <div style="font-size: 32px;">📋</div>
+                <div style="font-size: 14px; color: #718096;">إجمالي الطلبات</div>
+                <div id="statTotalRequests" style="font-size: 28px; font-weight: 700; color: #1a2a3a; margin-top: 8px;">0</div>
+            </div>
+            <div class="dashboard-card" style="text-align: center;">
+                <div style="font-size: 32px;">✅</div>
+                <div style="font-size: 14px; color: #718096;">المهام المنجزة</div>
+                <div id="statCompletedTasks" style="font-size: 28px; font-weight: 700; color: #28a745; margin-top: 8px;">0</div>
+            </div>
+            <div class="dashboard-card" style="text-align: center;">
+                <div style="font-size: 32px;">⏳</div>
+                <div style="font-size: 14px; color: #718096;">المهام قيد التنفيذ</div>
+                <div id="statPendingTasks" style="font-size: 28px; font-weight: 700; color: #ffc107; margin-top: 8px;">0</div>
+            </div>
+            <div class="dashboard-card" style="text-align: center;">
+                <div style="font-size: 32px;">⚠️</div>
+                <div style="font-size: 14px; color: #718096;">المهام المتأخرة</div>
+                <div id="statOverdueTasks" style="font-size: 28px; font-weight: 700; color: #dc3545; margin-top: 8px;">0</div>
+            </div>
+        </div>
+    </div>
+</div>	
 
 <div class="modal-overlay" id="previewModal">
     <div class="modal-content">
