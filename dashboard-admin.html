@@ -125,7 +125,6 @@
         .dashboard-card:nth-child(6) .icon-circle { background: linear-gradient(135deg, #2d7aff, #1a5cc4); }
         @media (max-width: 900px) { .dashboard-container { grid-template-columns: 1fr; } .dashboard-detail-row { flex-direction: column; align-items: flex-start; gap: 2px; } .dashboard-detail-label { width: 100%; } }
     </style>
-	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -135,7 +134,6 @@
         <button class="nav-btn" id="btnShowConsultations">📋 عرض الطلبات</button>
         <button class="nav-btn hidden" id="btnManualEntry">📝 إدخال طلب يدوي</button>
         <button class="nav-btn hidden" id="btnShowEmployees">👥 إدارة الموظفين</button>
-		<button class="nav-btn" id="btnShowReports">📊 التقارير</button>
         <button class="nav-btn logout" id="btnLogout">🚪 تسجيل الخروج</button>
     </div>
 
@@ -257,37 +255,6 @@
         </div>
         <div id="employeesContainer"><div class="loading">⏳ جاري التحميل...</div></div>
     </div>
-	<!-- 🔴 قسم التقارير -->
-<div id="sectionReports" class="section">
-    <h2 style="display: flex; justify-content: space-between; align-items: center;">
-        📊 لوحة التقارير
-        <button onclick="window.print()" style="background: #2d7aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">🖨️ طباعة التقرير</button>
-    </h2>
-    
-    <!-- بطاقات الإحصائيات العامة -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-        <div class="dashboard-card" style="text-align: center;">
-            <div style="font-size: 32px;">📋</div>
-            <div style="font-size: 14px; color: #718096;">إجمالي الطلبات</div>
-            <div id="statTotalRequests" style="font-size: 28px; font-weight: 700; color: #1a2a3a; margin-top: 8px;">0</div>
-        </div>
-        <div class="dashboard-card" style="text-align: center;">
-            <div style="font-size: 32px;">✅</div>
-            <div style="font-size: 14px; color: #718096;">المهام المنجزة</div>
-            <div id="statCompletedTasks" style="font-size: 28px; font-weight: 700; color: #28a745; margin-top: 8px;">0</div>
-        </div>
-        <div class="dashboard-card" style="text-align: center;">
-            <div style="font-size: 32px;">⏳</div>
-            <div style="font-size: 14px; color: #718096;">المهام قيد التنفيذ</div>
-            <div id="statPendingTasks" style="font-size: 28px; font-weight: 700; color: #ffc107; margin-top: 8px;">0</div>
-        </div>
-        <div class="dashboard-card" style="text-align: center;">
-            <div style="font-size: 32px;">⚠️</div>
-            <div style="font-size: 14px; color: #718096;">المهام المتأخرة</div>
-            <div id="statOverdueTasks" style="font-size: 28px; font-weight: 700; color: #dc3545; margin-top: 8px;">0</div>
-        </div>
-    </div>
-</div>
 </div>
 
 <div class="modal-overlay" id="previewModal">
@@ -1825,48 +1792,7 @@ async function showAlertDetails(alertType) {
     }
 }
 
-// ============================================================
-// 🔴 دالة تحميل التقارير
-// ============================================================
-async function loadReports() {
-    try {
-        // 1. إجمالي الطلبات
-        const { count: totalRequests } = await supabase
-            .from('consultation_requests')
-            .select('*', { count: 'exact', head: true });
-        document.getElementById('statTotalRequests').textContent = totalRequests || 0;
-
-        // 2. المهام المنجزة
-        const { count: completedTasks } = await supabase
-            .from('client_followups')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_attachment_only', false)
-            .eq('followup_status', 'completed');
-        document.getElementById('statCompletedTasks').textContent = completedTasks || 0;
-
-        // 3. المهام قيد التنفيذ
-        const { count: pendingTasks } = await supabase
-            .from('client_followups')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_attachment_only', false)
-            .in('followup_status', ['pending', 'in_progress']);
-        document.getElementById('statPendingTasks').textContent = pendingTasks || 0;
-
-        // 4. المهام المتأخرة
-        const today = new Date().toISOString().split('T')[0];
-        const { count: overdueTasks } = await supabase
-            .from('client_followups')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_attachment_only', false)
-            .in('followup_status', ['pending', 'in_progress'])
-            .lt('next_followup', today);
-        document.getElementById('statOverdueTasks').textContent = overdueTasks || 0;
-
-    } catch (err) {
-        console.error('خطأ في تحميل التقارير:', err);
-    }
-}	
-	async function fetchConsultations() {
+	   async function fetchConsultations() {
     try {
         if (currentUser?.role === 'secretary') {
             // 🔴 السكرتير يرى نوعين من الطلبات:
@@ -1988,9 +1914,9 @@ async function loadReports() {
             } else if (sectionId === 'sectionEmployees') {
                 if (allEmployees.length === 0) fetchEmployees();
                 else renderEmployees(allEmployees);
-				} else if (sectionId === 'sectionReports') {
-    loadReports();
-}
+            }
+        }
+
         async function handleLogout() {
             try {
                 const { error } = await supabase.auth.signOut();
@@ -2050,10 +1976,6 @@ async function loadReports() {
             document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
             document.getElementById('btnManualEntry').addEventListener('click', () => showSection('sectionManualEntry'));
             document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
-			document.getElementById('btnShowReports').addEventListener('click', function() {
-    showSection('sectionReports');
-    loadReports();
-});
             document.getElementById('btnLogout').addEventListener('click', handleLogout);
 
             document.getElementById('btnApplyFilters').addEventListener('click', applyFilters);
