@@ -124,8 +124,8 @@
         .dashboard-card:nth-child(5) .icon-circle { background: linear-gradient(135deg, #ff4d4d, #cc0000); }
         .dashboard-card:nth-child(6) .icon-circle { background: linear-gradient(135deg, #2d7aff, #1a5cc4); }
         @media (max-width: 900px) { .dashboard-container { grid-template-columns: 1fr; } .dashboard-detail-row { flex-direction: column; align-items: flex-start; gap: 2px; } .dashboard-detail-label { width: 100%; } }
-</style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    </style>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -135,8 +135,8 @@
         <button class="nav-btn" id="btnShowConsultations">📋 عرض الطلبات</button>
         <button class="nav-btn hidden" id="btnManualEntry">📝 إدخال طلب يدوي</button>
         <button class="nav-btn hidden" id="btnShowEmployees">👥 إدارة الموظفين</button>
-        <button class="nav-btn logout" id="btnLogout">🚪 تسجيل الخروج</button>
 		<button class="nav-btn hidden" id="btnShowReports">📊 التقارير</button>
+        <button class="nav-btn logout" id="btnLogout">🚪 تسجيل الخروج</button>
     </div>
 
     <div id="sectionConsultations" class="section active">
@@ -257,7 +257,7 @@
         </div>
         <div id="employeesContainer"><div class="loading">⏳ جاري التحميل...</div></div>
     </div>
-    <!-- 🔴 قسم التقارير -->
+	    <!-- 🔴 قسم التقارير -->
     <div id="sectionReports" class="section">
         <h2 style="display: flex; justify-content: space-between; align-items: center;">
             📊 لوحة التقارير
@@ -288,7 +288,7 @@
             </div>
         </div>
     </div>
-</div>	
+</div>
 
 <div class="modal-overlay" id="previewModal">
     <div class="modal-content">
@@ -1825,7 +1825,7 @@ async function showAlertDetails(alertType) {
     }
 }
 
-	  // ============================================================
+// ============================================================
 // 🔴 دالة تحميل التقارير
 // ============================================================
 async function loadReports() {
@@ -1865,8 +1865,8 @@ async function loadReports() {
     } catch (err) {
         console.error('خطأ في تحميل التقارير:', err);
     }
-}
-		async function fetchConsultations() {
+}	  
+	  async function fetchConsultations() {
     try {
         if (currentUser?.role === 'secretary') {
             // 🔴 السكرتير يرى نوعين من الطلبات:
@@ -2030,26 +2030,32 @@ async function loadReports() {
 
             document.getElementById('userNameDisplay').textContent = `👤 ${currentUser.full_name}`;
 
-            if (currentUser.role === 'manager') {
-                document.getElementById('pageTitle').innerHTML = `🏛️ لوحة تحكم المدير <span class="user-info">👤 ${currentUser.full_name}</span>`;
-                document.getElementById('btnShowEmployees').classList.remove('hidden');
-                document.getElementById('btnManualEntry').classList.remove('hidden');
-                document.getElementById('btnShowConsultations').classList.remove('hidden');
-            } else if (currentUser.role === 'secretary') {
-                document.getElementById('pageTitle').innerHTML = `📝 لوحة السكرتير <span class="user-info">👤 ${currentUser.full_name}</span>`;
-                document.getElementById('btnShowEmployees').classList.add('hidden');
-                document.getElementById('btnManualEntry').classList.remove('hidden');
-                document.getElementById('btnShowConsultations').classList.remove('hidden');
-            } else {
-                document.getElementById('pageTitle').innerHTML = `📋 لوحة المتابعة <span class="user-info">👤 ${currentUser.full_name}</span>`;
-                document.getElementById('btnShowEmployees').classList.add('hidden');
-                document.getElementById('btnManualEntry').classList.add('hidden');
-                document.getElementById('btnShowConsultations').classList.remove('hidden');
-            }
-
+           if (currentUser.role === 'manager') {
+    document.getElementById('pageTitle').innerHTML = `🏛️ لوحة تحكم المدير <span class="user-info">👤 ${currentUser.full_name}</span>`;
+    document.getElementById('btnShowEmployees').classList.remove('hidden');
+    document.getElementById('btnManualEntry').classList.remove('hidden');
+    document.getElementById('btnShowConsultations').classList.remove('hidden');
+    document.getElementById('btnShowReports').classList.remove('hidden');
+} else if (currentUser.role === 'secretary') {
+    document.getElementById('pageTitle').innerHTML = `📝 لوحة السكرتير <span class="user-info">👤 ${currentUser.full_name}</span>`;
+    document.getElementById('btnShowEmployees').classList.add('hidden');
+    document.getElementById('btnManualEntry').classList.remove('hidden');
+    document.getElementById('btnShowConsultations').classList.remove('hidden');
+    document.getElementById('btnShowReports').classList.remove('hidden');
+} else {
+    document.getElementById('pageTitle').innerHTML = `📋 لوحة المتابعة <span class="user-info">👤 ${currentUser.full_name}</span>`;
+    document.getElementById('btnShowEmployees').classList.add('hidden');
+    document.getElementById('btnManualEntry').classList.add('hidden');
+    document.getElementById('btnShowConsultations').classList.remove('hidden');
+    document.getElementById('btnShowReports').classList.add('hidden');
+}
             document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
             document.getElementById('btnManualEntry').addEventListener('click', () => showSection('sectionManualEntry'));
             document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
+			document.getElementById('btnShowReports').addEventListener('click', () => {
+    showSection('sectionReports');
+    loadReports();
+});
             document.getElementById('btnLogout').addEventListener('click', handleLogout);
 
             document.getElementById('btnApplyFilters').addEventListener('click', applyFilters);
