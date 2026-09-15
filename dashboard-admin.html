@@ -1825,7 +1825,48 @@ async function showAlertDetails(alertType) {
     }
 }
 
-	   async function fetchConsultations() {
+	  // ============================================================
+// 🔴 دالة تحميل التقارير
+// ============================================================
+async function loadReports() {
+    try {
+        // 1. إجمالي الطلبات
+        const { count: totalRequests } = await supabase
+            .from('consultation_requests')
+            .select('*', { count: 'exact', head: true });
+        document.getElementById('statTotalRequests').textContent = totalRequests || 0;
+
+        // 2. المهام المنجزة
+        const { count: completedTasks } = await supabase
+            .from('client_followups')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_attachment_only', false)
+            .eq('followup_status', 'completed');
+        document.getElementById('statCompletedTasks').textContent = completedTasks || 0;
+
+        // 3. المهام قيد التنفيذ
+        const { count: pendingTasks } = await supabase
+            .from('client_followups')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_attachment_only', false)
+            .in('followup_status', ['pending', 'in_progress']);
+        document.getElementById('statPendingTasks').textContent = pendingTasks || 0;
+
+        // 4. المهام المتأخرة
+        const today = new Date().toISOString().split('T')[0];
+        const { count: overdueTasks } = await supabase
+            .from('client_followups')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_attachment_only', false)
+            .in('followup_status', ['pending', 'in_progress'])
+            .lt('next_followup', today);
+        document.getElementById('statOverdueTasks').textContent = overdueTasks || 0;
+
+    } catch (err) {
+        console.error('خطأ في تحميل التقارير:', err);
+    }
+}
+		async function fetchConsultations() {
     try {
         if (currentUser?.role === 'secretary') {
             // 🔴 السكرتير يرى نوعين من الطلبات:
