@@ -1991,9 +1991,6 @@ async function loadReports() {
 				} else if (sectionId === 'sectionReports') {
     loadReports();
 }
-            }
-        }
-
         async function handleLogout() {
             try {
                 const { error } = await supabase.auth.signOut();
