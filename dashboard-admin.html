@@ -297,6 +297,25 @@
             <div id="employeePerformanceTable" style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
                 <div style="text-align: center; color: #6c757d;">⏳ جاري التحميل...</div>
             </div>
+			        <!-- 🔴 الطلبات حسب الخدمة -->
+        <div style="margin-top: 25px;">
+            <h3 style="color: #1a2a3a; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <span style="background: linear-gradient(135deg, #28a745, #218838); color: white; width: 35px; height: 35px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">📊</span>
+                الطلبات حسب الخدمة
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- الرسم البياني -->
+                <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+                    <canvas id="serviceChart" style="max-height: 300px;"></canvas>
+                </div>
+                <!-- الجدول -->
+                <div id="serviceTable" style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+                    <div style="text-align: center; color: #6c757d;">⏳ جاري التحميل...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
         </div>
     </div>
 </div>
@@ -1872,7 +1891,8 @@ async function loadReports() {
             .lt('next_followup', today);
         document.getElementById('statOverdueTasks').textContent = overdueTasks || 0;
 		// 🔴 استدعاء دوال التقارير التفصيلية
-await loadEmployeePerformance();
+                  await loadEmployeePerformance();
+                  await loadRequestsByService();
 
     }catch (err) {
         console.error('خطأ في تحميل التقارير:', err);
@@ -1980,6 +2000,145 @@ async function loadEmployeePerformance() {
         container.innerHTML = `<div class="message error">❌ تعذر تحميل البيانات: ${err.message}</div>`;
     }
 }	 
+// ============================================================
+// 🔴 دالة تحميل الطلبات حسب الخدمة
+// ============================================================
+let serviceChartInstance = null; // لتخزين نسخة الرسم البياني
+
+async function loadRequestsByService() {
+    const tableContainer = document.getElementById('serviceTable');
+    const chartCanvas = document.getElementById('serviceChart');
+    
+    if (!tableContainer || !chartCanvas) return;
+
+    try {
+        // 1. جلب جميع الطلبات
+        const { data: requests } = await supabase
+            .from('consultation_requests')
+            .select('service');
+
+        if (!requests || requests.length === 0) {
+            tableContainer.innerHTML = '<div class="message">لا توجد طلبات.</div>';
+            return;
+        }
+
+        // 2. تجميع الطلبات حسب الخدمة
+        const serviceNames = {
+            corporate: 'استشارات الشركات',
+            contracts: 'صياغة العقود',
+            litigation: 'قضايا وتقاضي',
+            arbitration: 'تحكيم وتسوية نزاعات',
+            ip: 'حماية الملكية الفكرية',
+            other: 'استشارة عامة'
+        };
+
+        const serviceColors = {
+            corporate: '#2d7aff',
+            contracts: '#28a745',
+            litigation: '#ffc107',
+            arbitration: '#17a2b8',
+            ip: '#dc3545',
+            other: '#6c757d'
+        };
+
+        const serviceCounts = {};
+        requests.forEach(req => {
+            const service = req.service || 'other';
+            serviceCounts[service] = (serviceCounts[service] || 0) + 1;
+        });
+
+        const total = requests.length;
+        const labels = [];
+        const data = [];
+        const colors = [];
+
+        Object.entries(serviceCounts).forEach(([key, count]) => {
+            labels.push(serviceNames[key] || key);
+            data.push(count);
+            colors.push(serviceColors[key] || '#6c757d');
+        });
+
+        // 3. بناء الجدول
+        let tableHtml = `
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #2d7aff; color: white;">
+                        <th style="padding: 10px; text-align: center;">#</th>
+                        <th style="padding: 10px; text-align: center;">الخدمة</th>
+                        <th style="padding: 10px; text-align: center;">عدد الطلبات</th>
+                        <th style="padding: 10px; text-align: center;">النسبة</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        Object.entries(serviceCounts).forEach(([key, count], idx) => {
+            const percentage = Math.round((count / total) * 100);
+            tableHtml += `
+                <tr style="border-bottom: 1px solid #e9edf4;">
+                    <td style="padding: 10px; text-align: center;">${idx + 1}</td>
+                    <td style="padding: 10px; text-align: center; font-weight: 600;">${serviceNames[key] || key}</td>
+                    <td style="padding: 10px; text-align: center; font-weight: 600;">${count}</td>
+                    <td style="padding: 10px; text-align: center;">${percentage}%</td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `
+                <tr style="background: #f8faff; font-weight: 700;">
+                    <td style="padding: 10px; text-align: center;" colspan="2">الإجمالي</td>
+                    <td style="padding: 10px; text-align: center;">${total}</td>
+                    <td style="padding: 10px; text-align: center;">100%</td>
+                </tr>
+            </tbody></table>
+        `;
+        tableContainer.innerHTML = tableHtml;
+
+        // 4. بناء الرسم البياني
+        if (serviceChartInstance) {
+            serviceChartInstance.destroy(); // حذف الرسم القديم
+        }
+
+        serviceChartInstance = new Chart(chartCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { size: 12, family: 'Tajawal' },
+                            padding: 10
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const percentage = Math.round((value / total) * 100);
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error('خطأ في تحميل الطلبات حسب الخدمة:', err);
+        tableContainer.innerHTML = `<div class="message error">❌ تعذر تحميل البيانات: ${err.message}</div>`;
+    }
+}
 	 async function fetchConsultations() {
     try {
         if (currentUser?.role === 'secretary') {
