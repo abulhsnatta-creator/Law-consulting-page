@@ -586,48 +586,106 @@ if (currentUser?.role === 'manager') {
                 <h3><span class="icon-circle">📝</span> تكليف الموظف بمتابعة</h3>
             </div>
             <div class="dashboard-card-body">
-                <div style="margin-bottom: 12px;">
-                    <strong style="color: #333;">الإجراءات المطلوبة:</strong>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                        ${['تحديد طبيعة الاستشارة', 'الاتصال بالعميل', 'تحديد موعد', 'مراجعة المستندات'].map((action) => `
-                            <label style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" class="task-action-checkbox" value="${action}"> ${action}
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <strong style="color: #333;">المستندات المطلوبة:</strong>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                        ${['مستندات داعمة', 'بطاقة شخصية', 'توكيل', 'عقد'].map((doc) => `
-                            <label style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" class="task-doc-checkbox" value="${doc}"> ${doc}
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
-                <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">الموظف المكلف:</label>
-                        <select id="assigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
-                            <option value="">اختر الموظف</option>
-                            ${allEmployees.filter(e => e.role === 'followup_staff' || e.role === 'secretary').map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.role === 'secretary' ? 'سكرتير' : 'موظف'})</option>`).join('')}
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">موعد التنفيذ:</label>
-                        <input type="date" id="followupDueDate" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
-                    </div>
-                </div>
-                <div style="margin-top: 12px;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">ملاحظات المدير:</label>
-                    <textarea id="managerNotes" rows="3" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;" placeholder="تعليمات للموظف..."></textarea>
-                </div>
-                <button id="btnCreateTask" class="dashboard-btn" style="margin-top: 15px; background: #28a745;">🟢 إنشاء المتابعة وتكليف الموظف</button>
+    <!-- 🔴 القسم 1: تكليف الموظف الرئيسي (إلزامي) -->
+    <h4 style="color: #2d7aff; margin: 0 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid #e9edf4;">
+        🟢 تكليف الموظف الرئيسي (إلزامي)
+    </h4>
+    
+    <div style="margin-bottom: 12px;">
+        <strong style="color: #333;">الإجراءات المطلوبة:</strong>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+            ${['تحديد طبيعة الاستشارة', 'الاتصال بالعميل', 'تحديد موعد', 'مراجعة المستندات'].map((action) => `
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" class="task-action-checkbox" value="${action}"> ${action}
+                </label>
+            `).join('')}
+        </div>
+    </div>
+    <div style="margin-bottom: 12px;">
+        <strong style="color: #333;">المستندات المطلوبة:</strong>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+            ${['مستندات داعمة', 'بطاقة شخصية', 'توكيل', 'عقد'].map((doc) => `
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" class="task-doc-checkbox" value="${doc}"> ${doc}
+                </label>
+            `).join('')}
+        </div>
+    </div>
+    <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 5px;">الموظف المكلف:</label>
+            <select id="assigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+                <option value="">اختر الموظف</option>
+                ${allEmployees.filter(e => e.role === 'followup_staff' || e.role === 'secretary').map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.role === 'secretary' ? 'سكرتير' : 'موظف'})</option>`).join('')}
+            </select>
+        </div>
+        <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 5px;">موعد التنفيذ:</label>
+            <input type="date" id="followupDueDate" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+        </div>
+    </div>
+    <div style="margin-top: 12px;">
+        <label style="font-weight: 600; display: block; margin-bottom: 5px;">ملاحظات المدير:</label>
+        <textarea id="managerNotes" rows="3" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;" placeholder="تعليمات للموظف..."></textarea>
+    </div>
+    <button id="btnCreateTask" class="dashboard-btn" style="margin-top: 15px; background: #28a745; width: 100%;">🟢 تكليف الموظف الرئيسي</button>
+
+    <!-- 🔴 القسم 2: إسناد أعمال إضافية (اختياري) -->
+    <h4 style="color: #2d7aff; margin: 25px 0 12px 0; padding-bottom: 8px; border-bottom: 2px dashed #e9edf4;">
+        📋 إسناد أعمال إضافية (اختياري)
+    </h4>
+    
+    <div style="margin-bottom: 12px;">
+        <strong style="color: #333;">الإجراءات الإضافية:</strong>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+            ${['متابعة هاتفية', 'تذكير بموعد', 'تنسيق مع جهة خارجية', 'أعمال إدارية'].map((action) => `
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" class="extra-action-checkbox" value="${action}"> ${action}
+                </label>
+            `).join('')}
+        </div>
+    </div>
+    <div style="margin-bottom: 12px;">
+        <strong style="color: #333;">المستندات الإضافية:</strong>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+            ${['تقارير', 'مراسلات', 'نماذج'].map((doc) => `
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" class="extra-doc-checkbox" value="${doc}"> ${doc}
+                </label>
+            `).join('')}
+        </div>
+    </div>
+    <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 5px;">الشخص المكلف:</label>
+            <select id="extraAssigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+                <option value="">اختر الموظف/السكرتير</option>
+                ${allEmployees.filter(e => e.role === 'followup_staff' || e.role === 'secretary').map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.role === 'secretary' ? 'سكرتير' : 'موظف'})</option>`).join('')}
+            </select>
+        </div>
+        <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 5px;">موعد التنفيذ:</label>
+            <input type="date" id="extraDueDate" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+        </div>
+    </div>
+    <div style="margin-top: 12px;">
+        <label style="font-weight: 600; display: block; margin-bottom: 5px;">ملاحظات:</label>
+        <textarea id="extraNotes" rows="2" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;" placeholder="تعليمات للأعمال الإضافية..."></textarea>
+    </div>
+    <button id="btnCreateExtraTask" class="dashboard-btn" style="margin-top: 15px; background: #2d7aff; width: 100%;">📋 إسناد الأعمال الإضافية</button>
+	    <!-- 🔴 قسم المهام المسندة حالياً (للمدير) -->
+    <hr style="margin: 25px 0; border: none; border-top: 2px dashed #dce1e8;">
+    <div style="margin-top: 15px;">
+        <h4 style="color: #2d7aff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📌</span> المهام المسندة حالياً
+        </h4>
+        <div id="assignedTasksList" style="background: #f8faff; border-radius: 8px; padding: 12px;">
+            <div style="text-align: center; color: #6c757d; font-size: 13px;">⏳ جاري التحميل...</div>
+        </div>
             </div>
         </div>
     `;
-} 
+}
 else if (currentUser?.role === 'followup_staff') {
     // 🟢 للموظف: بطاقة المهام المسندة إليه فقط
     const { data: myActiveTasks } = await supabase
@@ -1243,7 +1301,56 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
         openPreview(consultationId);
     }
 });
-				// 🔴 زر إضافة إلى قائمة السكرتير (للمدير فقط)
+		// ============================================================
+// 🔴 زر إسناد الأعمال الإضافية (للمدير فقط)
+// ============================================================
+document.getElementById('btnCreateExtraTask')?.addEventListener('click', async function() {
+    const extraAssigneeId = document.getElementById('extraAssigneeSelect').value;
+    const extraDueDate = document.getElementById('extraDueDate').value;
+    const extraNotes = document.getElementById('extraNotes').value.trim();
+
+    if (!extraAssigneeId) {
+        alert('يرجى اختيار الشخص المكلف بالأعمال الإضافية.');
+        return;
+    }
+
+    const selectedExtraActions = [];
+    const selectedExtraDocs = [];
+    document.querySelectorAll('.extra-action-checkbox:checked').forEach(cb => selectedExtraActions.push(cb.value));
+    document.querySelectorAll('.extra-doc-checkbox:checked').forEach(cb => selectedExtraDocs.push(cb.value));
+
+    if (selectedExtraActions.length === 0 && selectedExtraDocs.length === 0) {
+        alert('يرجى تحديد الإجراءات أو المستندات الإضافية.');
+        return;
+    }
+
+    const actionText = `الإجراءات: ${selectedExtraActions.join(', ') || 'لا يوجد'} | المستندات: ${selectedExtraDocs.join(', ') || 'لا يوجد'}`;
+
+    const extraTaskData = {
+        request_id: consultationId,
+        followup_date: new Date().toISOString(),
+        contact_method: 'other',
+        action: actionText,
+        notes: extraNotes,
+        next_followup: extraDueDate ? new Date(extraDueDate).toISOString() : null,
+        followup_status: 'pending',
+        created_by: currentUser.id,
+        assigned_to: extraAssigneeId,
+        is_attachment_only: false
+    };
+
+    const { error } = await supabase
+        .from('client_followups')
+        .insert(extraTaskData);
+
+    if (error) {
+        alert('❌ فشل إسناد الأعمال الإضافية: ' + error.message);
+    } else {
+        alert('✅ تم إسناد الأعمال الإضافية بنجاح!');
+        openPreview(consultationId);
+    }
+});
+		// 🔴 زر إضافة إلى قائمة السكرتير (للمدير فقط)
 document.getElementById('btnAddToSecretary')?.addEventListener('click', async function() {
     const secretaryId = document.getElementById('secretarySelect').value;
     const dueDate = document.getElementById('followupDueDate').value;
@@ -1850,6 +1957,10 @@ async function showAlertDetails(alertType) {
             });
             html += `</tbody></table></div>`;
             body.innerHTML = html;
+			// 🔴 تحميل المهام المسندة (للمدير فقط)
+if (currentUser?.role === 'manager') {
+    await loadAssignedTasks(consultationId);
+}
 
             // 🔴 ربط أزرار المعاينة
             document.querySelectorAll('.btn-open-preview').forEach(btn => {
@@ -2010,6 +2121,85 @@ async function loadEmployeePerformance() {
     } catch (err) {
         console.error('خطأ في تحميل أداء الموظفين:', err);
         container.innerHTML = `<div class="message error">❌ تعذر تحميل البيانات: ${err.message}</div>`;
+    }
+}
+// ============================================================
+// 🔴 دالة تحميل المهام المسندة (للمدير في بطاقة التكليف)
+// ============================================================
+async function loadAssignedTasks(consultationId) {
+    const container = document.getElementById('assignedTasksList');
+    if (!container) return;
+
+    try {
+        // 1. جلب جميع المهام المسندة على هذا الطلب
+        const { data: assignedTasks, error: atError } = await supabase
+            .from('client_followups')
+            .select('*')
+            .eq('request_id', consultationId)
+            .eq('is_attachment_only', false)
+            .not('assigned_to', 'is', null)
+            .order('followup_date', { ascending: false });
+
+        if (atError) throw atError;
+
+        if (!assignedTasks || assignedTasks.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #718096; font-size: 13px; padding: 10px;">
+                    📭 لا توجد مهام مسندة حتى الآن.
+                </div>
+            `;
+            return;
+        }
+
+        // 2. بناء القائمة
+        const statusLabels = {
+            pending: { text: '⏳ بانتظار التنفيذ', color: '#ffc107' },
+            in_progress: { text: '🔄 قيد التنفيذ', color: '#17a2b8' },
+            completed: { text: '✅ تم التنفيذ', color: '#28a745' },
+            failed: { text: '❌ تعذر التنفيذ', color: '#dc3545' }
+        };
+
+        let html = '';
+        assignedTasks.forEach((task) => {
+            const status = statusLabels[task.followup_status] || { text: task.followup_status || 'غير محدد', color: '#6c757d' };
+            const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : 'غير محدد';
+            
+            // اسم الموظف
+            const emp = allEmployees.find(e => e.id === task.assigned_to);
+            const empName = emp ? emp.full_name : 'غير محدد';
+            const empRole = emp ? (emp.role === 'secretary' ? 'سكرتير' : 'موظف') : '';
+
+            html += `
+                <div style="background: white; border: 1px solid #e9edf4; border-radius: 8px; padding: 12px; margin-bottom: 10px; border-right: 4px solid ${status.color};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div>
+                            <strong style="color: #1a2a3a; font-size: 13px;">👤 ${empName}</strong>
+                            <span style="background: #e7f3ff; color: #2d7aff; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-right: 6px;">${empRole}</span>
+                        </div>
+                        <span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">${status.text}</span>
+                    </div>
+                    
+                    <div style="font-size: 12px; color: #555; margin-bottom: 6px;">
+                        <strong>المهمة:</strong> ${(task.action || '—').substring(0, 80)}${(task.action || '').length > 80 ? '...' : ''}
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: #718096;">
+                        <span>📅 موعد التنفيذ: ${dueDate}</span>
+                        <span>🕐 أُسندت: ${task.followup_date ? new Date(task.followup_date).toLocaleDateString('ar-EG') : '—'}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+    } catch (err) {
+        console.error('خطأ في تحميل المهام المسندة:', err);
+        container.innerHTML = `
+            <div style="text-align: center; color: #dc3545; font-size: 13px; padding: 10px;">
+                ❌ تعذر تحميل المهام المسندة: ${err.message}
+            </div>
+        `;
     }
 }	 
 // ============================================================
@@ -2372,18 +2562,20 @@ async function loadOverdueTasks() {
         }
 
         function showSection(sectionId) {
-            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-            const target = document.getElementById(sectionId);
-            if (target) target.classList.add('active');
-            if (sectionId === 'sectionConsultations') {
-                if (allConsultations.length === 0) fetchConsultations();
-                else applyFilters();
-            } else if (sectionId === 'sectionEmployees') {
-                if (allEmployees.length === 0) fetchEmployees();
-                else renderEmployees(allEmployees);
-            }
-        }
-
+    document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById(sectionId);
+    if (target) target.classList.add('active');
+    if (sectionId === 'sectionConsultations') {
+        if (allConsultations.length === 0) fetchConsultations();
+        else applyFilters();
+        loadSmartAlerts();
+    } else if (sectionId === 'sectionEmployees') {
+        if (allEmployees.length === 0) fetchEmployees();
+        else renderEmployees(allEmployees);
+    } else if (sectionId === 'sectionReports') {
+        loadReports();
+    }
+}
         async function handleLogout() {
             try {
                 const { error } = await supabase.auth.signOut();
@@ -2476,12 +2668,7 @@ async function loadOverdueTasks() {
             openPreview(previewId);
         }, 500);
     }
-		if (sectionId === 'sectionConsultations') {
-        if (allConsultations.length === 0) fetchConsultations();
-        else applyFilters();
-        loadSmartAlerts(); // 🔴 تحديث التنبيهات
-     }
-
+	
    }
 
        async function addManualConsultation() {
