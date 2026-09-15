@@ -264,7 +264,7 @@
             <button onclick="window.print()" style="background: #2d7aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">🖨️ طباعة التقرير</button>
         </h2>
         
-        <!-- بطاقات الإحصائيات العامة -->
+              <!-- بطاقات الإحصائيات العامة -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
             <div class="dashboard-card" style="text-align: center;">
                 <div style="font-size: 32px;">📋</div>
@@ -287,9 +287,19 @@
                 <div id="statOverdueTasks" style="font-size: 28px; font-weight: 700; color: #dc3545; margin-top: 8px;">0</div>
             </div>
         </div>
+
+        <!-- 🔴 جدول أداء الموظفين (الكود الجديد) -->
+        <div style="margin-top: 25px;">
+            <h3 style="color: #1a2a3a; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <span style="background: linear-gradient(135deg, #2d7aff, #1a5cc4); color: white; width: 35px; height: 35px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">👥</span>
+                أداء الموظفين
+            </h3>
+            <div id="employeePerformanceTable" style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+                <div style="text-align: center; color: #6c757d;">⏳ جاري التحميل...</div>
+            </div>
+        </div>
     </div>
 </div>
-
 <div class="modal-overlay" id="previewModal">
     <div class="modal-content">
         <button class="modal-close" id="modalClose">✕</button>
@@ -1861,12 +1871,116 @@ async function loadReports() {
             .in('followup_status', ['pending', 'in_progress'])
             .lt('next_followup', today);
         document.getElementById('statOverdueTasks').textContent = overdueTasks || 0;
+		// 🔴 استدعاء دوال التقارير التفصيلية
+await loadEmployeePerformance();
 
-    } catch (err) {
+    }catch (err) {
         console.error('خطأ في تحميل التقارير:', err);
     }
 }	  
-	  async function fetchConsultations() {
+// ============================================================
+// 🔴 دالة تحميل أداء الموظفين
+// ============================================================
+async function loadEmployeePerformance() {
+    const container = document.getElementById('employeePerformanceTable');
+    if (!container) return;
+
+    try {
+        // 1. جلب جميع الموظفين (followup_staff + secretary)
+        const { data: employees } = await supabase
+            .from('staff_profiles')
+            .select('id, full_name, role')
+            .in('role', ['followup_staff', 'secretary'])
+            .eq('is_active', true);
+
+        if (!employees || employees.length === 0) {
+            container.innerHTML = '<div class="message">لا يوجد موظفون نشطون.</div>';
+            return;
+        }
+
+        // 2. جلب كل المهام (من client_followups)
+        const { data: allTasks } = await supabase
+            .from('client_followups')
+            .select('assigned_to, followup_status, next_followup')
+            .eq('is_attachment_only', false)
+            .not('assigned_to', 'is', null);
+
+        const today = new Date().toISOString().split('T')[0];
+
+        // 3. حساب الإحصائيات لكل موظف
+        const performance = employees.map(emp => {
+            const empTasks = (allTasks || []).filter(t => t.assigned_to === emp.id);
+            const total = empTasks.length;
+            const completed = empTasks.filter(t => t.followup_status === 'completed').length;
+            const pending = empTasks.filter(t => t.followup_status === 'pending' || t.followup_status === 'in_progress').length;
+            const overdue = empTasks.filter(t => 
+                (t.followup_status === 'pending' || t.followup_status === 'in_progress') && 
+                t.next_followup && 
+                t.next_followup < today
+            ).length;
+            const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            return {
+                name: emp.full_name,
+                role: emp.role === 'secretary' ? 'سكرتير' : 'موظف',
+                total,
+                completed,
+                pending,
+                overdue,
+                completionRate
+            };
+        });
+
+        // 4. بناء الجدول
+        let html = `
+            <div class="table-responsive">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #2d7aff; color: white;">
+                            <th style="padding: 12px; text-align: center;">#</th>
+                            <th style="padding: 12px; text-align: center;">الموظف</th>
+                            <th style="padding: 12px; text-align: center;">الدور</th>
+                            <th style="padding: 12px; text-align: center;">إجمالي المهام</th>
+                            <th style="padding: 12px; text-align: center;">✅ منجزة</th>
+                            <th style="padding: 12px; text-align: center;">⏳ قيد التنفيذ</th>
+                            <th style="padding: 12px; text-align: center;">⚠️ متأخرة</th>
+                            <th style="padding: 12px; text-align: center;">نسبة الإنجاز</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        performance.forEach((emp, idx) => {
+            const rateColor = emp.completionRate >= 80 ? '#28a745' : emp.completionRate >= 50 ? '#ffc107' : '#dc3545';
+            
+            html += `
+                <tr style="border-bottom: 1px solid #e9edf4;">
+                    <td style="padding: 12px; text-align: center;">${idx + 1}</td>
+                    <td style="padding: 12px; text-align: center; font-weight: 600;">${emp.name}</td>
+                    <td style="padding: 12px; text-align: center; font-size: 12px; color: #718096;">${emp.role}</td>
+                    <td style="padding: 12px; text-align: center; font-weight: 600;">${emp.total}</td>
+                    <td style="padding: 12px; text-align: center; color: #28a745; font-weight: 600;">${emp.completed}</td>
+                    <td style="padding: 12px; text-align: center; color: #ffc107; font-weight: 600;">${emp.pending}</td>
+                    <td style="padding: 12px; text-align: center; color: #dc3545; font-weight: 600;">${emp.overdue}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        <div style="background: #f0f2f5; border-radius: 12px; height: 20px; position: relative; overflow: hidden;">
+                            <div style="background: ${rateColor}; height: 100%; width: ${emp.completionRate}%; border-radius: 12px;"></div>
+                            <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 11px; font-weight: 700; color: #1a2a3a;">${emp.completionRate}%</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+
+    } catch (err) {
+        console.error('خطأ في تحميل أداء الموظفين:', err);
+        container.innerHTML = `<div class="message error">❌ تعذر تحميل البيانات: ${err.message}</div>`;
+    }
+}	 
+	 async function fetchConsultations() {
     try {
         if (currentUser?.role === 'secretary') {
             // 🔴 السكرتير يرى نوعين من الطلبات:
