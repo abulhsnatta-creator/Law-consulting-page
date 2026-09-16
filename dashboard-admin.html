@@ -1952,7 +1952,6 @@ async function showAlertDetails(alertType) {
             body.innerHTML = html;
 			// 🔴 تحميل المهام المسندة (للمدير فقط)
 if (currentUser?.role === 'manager') {
-    await loadAssignedTasks(consultationId);
 }
 
             // 🔴 ربط أزرار المعاينة
