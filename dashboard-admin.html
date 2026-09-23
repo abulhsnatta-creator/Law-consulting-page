@@ -205,6 +205,21 @@
     let currentUser = null;
     let allConsultations = [];
     let allEmployees = [];
+	// دالة مساعدة لتحويل أي قيمة إلى مصفوفة
+function parseArrayField(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) return parsed;
+        } catch (e) {
+            const cleaned = value.replace(/^\{|\}$/g, '');
+            return cleaned.split(',').map(s => s.trim().replace(/^"|"$/g, '')).filter(s => s);
+        }
+    }
+    return [];
+}
 
     // ============================================================
     // 3. التهيئة
@@ -497,7 +512,35 @@ console.log('🔍 [DEBUG] كل الموظفين:', employees?.map(e => ({id: e.i
             if (conError || !consultation) { body.innerHTML = `<div class="message error">❌ ${conError?.message}</div>`; return; }
 
             const { data: initialConsultation } = await supabase.from('initial_consultations').select('*').eq('request_id', consultationId).limit(1).maybeSingle();
-            const { data: followups } = await supabase.from('client_followups').select('*').eq('request_id', consultationId).order('followup_date', { ascending: false });
+           
+		 // 🔴 جلب المتطلبات الخاصة بالخدمة
+const { data: serviceReq, error: serviceReqError } = await supabase
+    .from('service_requirements')
+    .select('required_actions, required_documents')
+    .eq('service_type', consultation.service || 'other')
+    .maybeSingle();
+
+if (serviceReqError) console.warn('⚠️ خطأ في جلب متطلبات الخدمة:', serviceReqError);
+
+const DEFAULT_ACTIONS = ['تحديد طبيعة الاستشارة', 'الاتصال بالعميل', 'تحديد موعد', 'مراجعة المستندات'];
+const DEFAULT_DOCS = ['مستندات داعمة', 'بطاقة شخصية', 'توكيل', 'عقد'];
+
+const requiredActionsList = serviceReq 
+    ? (parseArrayField(serviceReq.required_actions).length > 0 
+        ? parseArrayField(serviceReq.required_actions) 
+        : DEFAULT_ACTIONS)
+    : DEFAULT_ACTIONS;
+
+const requiredDocumentsList = serviceReq 
+    ? (parseArrayField(serviceReq.required_documents).length > 0 
+        ? parseArrayField(serviceReq.required_documents) 
+        : DEFAULT_DOCS)
+    : DEFAULT_DOCS;
+
+console.log('🔍 [DEBUG] الخدمة:', consultation.service);
+console.log('🔍 [DEBUG] الإجراءات المطلوبة:', requiredActionsList);
+console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumentsList);
+		   const { data: followups } = await supabase.from('client_followups').select('*').eq('request_id', consultationId).order('followup_date', { ascending: false });
             const { data: attachmentsData } = await supabase.from('client_followups').select('id, attachment_path, followup_date').eq('request_id', consultationId).eq('is_attachment_only', true).order('followup_date', { ascending: false });
 
             let attachmentsHtml = '';
@@ -549,19 +592,18 @@ console.log('🔍 [DEBUG] كل الموظفين:', employees?.map(e => ({id: e.i
                     <div class="dashboard-card">
                         <div class="dashboard-card-header"><h3><span class="icon-circle">📝</span> تكليف الموظف بمتابعة</h3></div>
                         <div class="dashboard-card-body">
-                            <div style="margin-bottom: 12px;">
-                                <strong style="color: #333;">الإجراءات المطلوبة:</strong>
-                                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                                    ${['تحديد طبيعة الاستشارة', 'الاتصال بالعميل', 'تحديد موعد', 'مراجعة المستندات'].map(a => `<label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" class="task-action-checkbox" value="${a}"> ${a}</label>`).join('')}
-                                </div>
-                            </div>
-                            <div style="margin-bottom: 12px;">
-                                <strong style="color: #333;">المستندات المطلوبة:</strong>
-                                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                                    ${['مستندات داعمة', 'بطاقة شخصية', 'توكيل', 'عقد'].map(d => `<label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" class="task-doc-checkbox" value="${d}"> ${d}</label>`).join('')}
-                                </div>
-                            </div>
-                            <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                           <div style="margin-bottom: 12px;">
+    <strong style="color: #333;">📌 الإجراءات المطلوبة <span style="font-size: 11px; color: #718096; font-weight: normal;">(خاصة بخدمة: ${consultation.service || 'غير محددة'})</span>:</strong>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+        ${requiredActionsList.map(a => `<label style="display: flex; align-items: center; gap: 5px; background: #f0f4ff; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8;"><input type="checkbox" class="task-action-checkbox" value="${a}"> ${a}</label>`).join('')}
+    </div>
+</div>
+<div style="margin-bottom: 12px;">
+    <strong style="color: #333;">📎 المستندات المطلوبة:</strong>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+        ${requiredDocumentsList.map(d => `<label style="display: flex; align-items: center; gap: 5px; background: #fff9e6; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8;"><input type="checkbox" class="task-doc-checkbox" value="${d}"> ${d}</label>`).join('')}
+    </div>
+</div>                            <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <div>
                                     <label style="font-weight: 600; display: block; margin-bottom: 5px;">الموظف المكلف:</label>
                                     <select id="assigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
