@@ -574,16 +574,45 @@ console.log('🔍 [DEBUG] الخدمة:', consultation.service);
 console.log('🔍 [DEBUG] الإجراءات المطلوبة:', requiredActionsList);
 console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumentsList);
 		   const { data: followups } = await supabase.from('client_followups').select('*').eq('request_id', consultationId).order('followup_date', { ascending: false });
-            const { data: attachmentsData } = await supabase.from('client_followups').select('id, attachment_path, followup_date').eq('request_id', consultationId).eq('is_attachment_only', true).order('followup_date', { ascending: false });
+            const { data: attachmentsData } = await supabase
+    .from('client_followups')
+    .select('id, attachment_path, attachment_name, followup_date')
+    .eq('request_id', consultationId)
+    .eq('is_attachment_only', true)
+    .order('followup_date', { ascending: false });
 
             let attachmentsHtml = '';
             if (attachmentsData && attachmentsData.length > 0) {
                 attachmentsData.forEach(att => {
-                    if (att.attachment_path) {
-                        const date = att.followup_date ? new Date(att.followup_date).toLocaleString('ar-EG') : '—';
-                        attachmentsHtml += `<div class="dashboard-attachment-item"><a href="${att.attachment_path}" target="_blank">📎 ${date}</a><button class="btn-delete-attachment" data-id="${att.id}">🗑️</button></div>`;
-                    }
-                });
+    if (att.attachment_path) {
+        const date = att.followup_date ? new Date(att.followup_date).toLocaleString('ar-EG') : '—';
+        const fileName = att.attachment_name || 'مرفق بدون اسم';
+        
+        // 🔴 أخذ امتداد الملف لعرض أيقونة مناسبة
+        const ext = fileName.split('.').pop().toLowerCase();
+        let icon = '📎';
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) icon = '🖼️';
+        else if (ext === 'pdf') icon = '📄';
+        else if (['doc', 'docx'].includes(ext)) icon = '📝';
+        else if (['xls', 'xlsx'].includes(ext)) icon = '📊';
+        else if (['zip', 'rar'].includes(ext)) icon = '🗜️';
+        
+        attachmentsHtml += `
+            <div class="dashboard-attachment-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #f0f4ff; border-radius: 8px; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                    <span style="font-size: 20px;">${icon}</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <a href="${att.attachment_path}" target="_blank" style="color: #2d7aff; text-decoration: none; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${fileName}">${fileName}</a>
+                        <small style="color: #718096; font-size: 10px;">📅 ${date}</small>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <a href="${att.attachment_path}" download="${fileName}" style="background: #28a745; color: white; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: 600;">⬇️ تحميل</a>
+                    <button class="btn-delete-attachment" data-id="${att.id}" style="background: #dc3545; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600;">🗑️</button>
+                </div>
+            </div>`;
+    }
+});
             } else {
                 attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
             }
@@ -951,19 +980,43 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
 
             // 4. زر إضافة مرفق
             document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', async function() {
-                const consId = this.dataset.id;
-                const file = document.getElementById('newFollowupAttachment').files[0];
-                if (!file) { alert('اختر ملفاً.'); return; }
-                const filePath = `${Date.now()}_${file.name}`;
-                const { error: uploadError } = await supabase.storage.from('consultation-files').upload(filePath, file);
-                if (uploadError) { alert('❌ ' + uploadError.message); return; }
-                const { data: urlData } = supabase.storage.from('consultation-files').getPublicUrl(filePath);
-                const { data: { user } } = await supabase.auth.getUser();
-                const { error } = await supabase.from('client_followups').insert({ request_id: consId, notes: '', followup_status: 'new', created_by: user?.id, contact_method: 'other', action: '', followup_date: new Date().toISOString(), attachment_path: urlData.publicUrl, is_attachment_only: true });
-                if (error) alert('❌ ' + error.message);
-                else { alert('✅ تم الإضافة!'); openPreview(consId); }
-            });
-
+    const consId = this.dataset.id;
+    const file = document.getElementById('newFollowupAttachment').files[0];
+    if (!file) { alert('اختر ملفاً.'); return; }
+    
+    // 🔴 استخدام اسم لاتيني مؤقت لتجنب مشاكل المسافات والحروف العربية في المسار
+    const fileExt = file.name.split('.').pop();
+    const safeFileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+        .from('consultation-files')
+        .upload(safeFileName, file);
+    
+    if (uploadError) { alert('❌ ' + uploadError.message); return; }
+    
+    const { data: urlData } = supabase.storage
+        .from('consultation-files')
+        .getPublicUrl(safeFileName);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // 🔴 تخزين اسم الملف الأصلي في العمود الجديد
+    const { error } = await supabase.from('client_followups').insert({
+        request_id: consId,
+        notes: '',
+        followup_status: 'new',
+        created_by: user?.id,
+        contact_method: 'other',
+        action: '',
+        followup_date: new Date().toISOString(),
+        attachment_path: urlData.publicUrl,
+        attachment_name: file.name,  // 🔴 الاسم الأصلي كما اختاره المستخدم
+        is_attachment_only: true
+    });
+    
+    if (error) alert('❌ ' + error.message);
+    else { alert('✅ تم إضافة المرفق!'); openPreview(consId); }
+});
             // 5. زر إضافة متابعة
             document.getElementById('btnAddFollowup')?.addEventListener('click', async function() {
                 const consId = this.dataset.id;
