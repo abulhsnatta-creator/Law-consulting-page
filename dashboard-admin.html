@@ -195,9 +195,9 @@
     // ============================================================
     // 1. إعداد Supabase
     // ============================================================
-        const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_URL = 'https://wacvbnebicbutyzpnkez.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3ZibmViaWNidXR5enBua2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODYzMjEsImV4cCI6MjEwMTc2MjMyMX0.NEjwCs4ZBcoJT9ZVxNnYaZRY1-DIUjk-aNqV3rs5A4w';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ============================================================
     // 2. المتغيرات العامة
@@ -205,54 +205,56 @@
     let currentUser = null;
     let allConsultations = [];
     let allEmployees = [];
-// ============================================================
-// 🔴 خريطة أسماء الخدمات وألوانها
-// ============================================================
-const SERVICE_NAMES = {
-    corporate: 'استشارات الشركات',
-    contracts: 'صياغة العقود',
-    litigation: 'قضايا وتقاضي',
-    arbitration: 'تحكيم وتسوية نزاعات',
-    ip: 'حماية الملكية الفكرية',
-    other: 'استشارة عامة'
-};
 
-const SERVICE_COLORS = {
-    corporate: { bg: '#e7f3ff', color: '#2d7aff' },
-    contracts: { bg: '#e7f9ef', color: '#28a745' },
-    litigation: { bg: '#fff9e6', color: '#856404' },
-    arbitration: { bg: '#e0f7fa', color: '#17a2b8' },
-    ip: { bg: '#f8d7da', color: '#dc3545' },
-    other: { bg: '#f0f2f5', color: '#6c757d' }
-};
+    // ============================================================
+    // 🟢 خريطة أسماء الخدمات وألوانها (تعديل 2: أسماء عربية)
+    // ============================================================
+    const SERVICE_NAMES = {
+        corporate: 'استشارات الشركات',
+        contracts: 'صياغة العقود',
+        litigation: 'قضايا وتقاضي',
+        arbitration: 'تحكيم وتسوية نزاعات',
+        ip: 'حماية الملكية الفكرية',
+        other: 'استشارة عامة'
+    };
 
-// دالة إرجاع الاسم العربي فقط
-function getServiceNameAr(serviceKey) {
-    if (!serviceKey) return '—';
-    return SERVICE_NAMES[serviceKey] || serviceKey;
-}
+    const SERVICE_COLORS = {
+        corporate: { bg: '#e7f3ff', color: '#2d7aff' },
+        contracts: { bg: '#e7f9ef', color: '#28a745' },
+        litigation: { bg: '#fff9e6', color: '#856404' },
+        arbitration: { bg: '#e0f7fa', color: '#17a2b8' },
+        ip: { bg: '#f8d7da', color: '#dc3545' },
+        other: { bg: '#f0f2f5', color: '#6c757d' }
+    };
 
-// دالة إرجاع شارة HTML كاملة (اسم + لون)
-function getServiceBadge(serviceKey) {
-    const name = getServiceNameAr(serviceKey);
-    const colors = SERVICE_COLORS[serviceKey] || { bg: '#f0f2f5', color: '#6c757d' };
-    return `<span style="background: ${colors.bg}; color: ${colors.color}; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block;">${name}</span>`;
-}
-	// دالة مساعدة لتحويل أي قيمة إلى مصفوفة
-function parseArrayField(value) {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    if (typeof value === 'string') {
-        try {
-            const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) return parsed;
-        } catch (e) {
-            const cleaned = value.replace(/^\{|\}$/g, '');
-            return cleaned.split(',').map(s => s.trim().replace(/^"|"$/g, '')).filter(s => s);
-        }
+    function getServiceNameAr(serviceKey) {
+        if (!serviceKey) return '—';
+        return SERVICE_NAMES[serviceKey] || serviceKey;
     }
-    return [];
-}
+
+    function getServiceBadge(serviceKey) {
+        const name = getServiceNameAr(serviceKey);
+        const colors = SERVICE_COLORS[serviceKey] || { bg: '#f0f2f5', color: '#6c757d' };
+        return `<span style="background: ${colors.bg}; color: ${colors.color}; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block;">${name}</span>`;
+    }
+
+    // ============================================================
+    // 🟢 دالة مساعدة لتحويل أي قيمة إلى مصفوفة (تعديل 1)
+    // ============================================================
+    function parseArrayField(value) {
+        if (!value) return [];
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+                const cleaned = value.replace(/^\{|\}$/g, '');
+                return cleaned.split(',').map(s => s.trim().replace(/^"|"$/g, '')).filter(s => s);
+            }
+        }
+        return [];
+    }
 
     // ============================================================
     // 3. التهيئة
@@ -280,7 +282,6 @@ function parseArrayField(value) {
         currentUser = { id: profile.id, role: profile.role, full_name: profile.full_name };
         document.getElementById('userNameDisplay').textContent = `👤 ${currentUser.full_name}`;
 
-        // تهيئة الأزرار حسب الدور
         if (currentUser.role === 'manager') {
             document.getElementById('pageTitle').innerHTML = `🏛️ لوحة تحكم المدير <span class="user-info">👤 ${currentUser.full_name}</span>`;
             document.getElementById('btnShowEmployees').classList.remove('hidden');
@@ -294,43 +295,37 @@ function parseArrayField(value) {
             document.getElementById('pageTitle').innerHTML = `📋 لوحة المتابعة <span class="user-info">👤 ${currentUser.full_name}</span>`;
         }
 
-        // ربط الأزرار الرئيسية
         document.getElementById('btnShowConsultations').addEventListener('click', () => showSection('sectionConsultations'));
         document.getElementById('btnManualEntry').addEventListener('click', () => showSection('sectionManualEntry'));
         document.getElementById('btnShowEmployees').addEventListener('click', () => showSection('sectionEmployees'));
         document.getElementById('btnShowReports').addEventListener('click', () => { showSection('sectionReports'); loadReports(); });
         document.getElementById('btnLogout').addEventListener('click', handleLogout);
 
-        // ربط الفلاتر
         document.getElementById('btnApplyFilters').addEventListener('click', applyFilters);
         document.getElementById('btnResetFilters').addEventListener('click', resetFilters);
         document.getElementById('filterClientName').addEventListener('input', applyFilters);
 
-        // ربط نماذج الإضافة
         document.getElementById('btnAddEmployee').addEventListener('click', addEmployee);
         document.getElementById('btnAddManualConsultation').addEventListener('click', addManualConsultation);
 
-        // ربط نافذة المعاينة
         document.getElementById('modalClose').addEventListener('click', closePreview);
         document.getElementById('previewModal').addEventListener('click', function(e) {
             if (e.target === this) closePreview();
         });
 
-        // جلب البيانات الأولية
         await fetchEmployees();
         await fetchConsultations();
         await loadSmartAlerts();
 
         showSection('sectionConsultations');
 
-        // فتح المعاينة تلقائياً إذا وُجد بارامتر
         const urlParams = new URLSearchParams(window.location.search);
         const previewId = urlParams.get('preview');
         if (previewId) setTimeout(() => openPreview(previewId), 500);
     }
 
     // ============================================================
-    // 4. التنقل بين الأقسام
+    // 4. التنقل
     // ============================================================
     function showSection(sectionId) {
         document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
@@ -344,9 +339,6 @@ function parseArrayField(value) {
         }
     }
 
-    // ============================================================
-    // 5. تسجيل الخروج
-    // ============================================================
     async function handleLogout() {
         const { error } = await supabase.auth.signOut();
         if (error) alert('❌ ' + error.message);
@@ -354,7 +346,7 @@ function parseArrayField(value) {
     }
 
     // ============================================================
-    // 6. جلب الموظفين
+    // 5. جلب الموظفين
     // ============================================================
     async function fetchEmployees() {
         try {
@@ -368,7 +360,7 @@ function parseArrayField(value) {
     }
 
     // ============================================================
-    // 7. جلب الطلبات حسب الدور
+    // 6. جلب الطلبات
     // ============================================================
     async function fetchConsultations() {
         try {
@@ -401,7 +393,7 @@ function parseArrayField(value) {
     }
 
     // ============================================================
-    // 8. الفلاتر
+    // 7. الفلاتر
     // ============================================================
     function applyFilters() {
         const dateFrom = document.getElementById('filterDateFrom')?.value || '';
@@ -425,21 +417,12 @@ function parseArrayField(value) {
     }
 
     // ============================================================
-    // 9. عرض قائمة الطلبات
+    // 8. عرض الطلبات (تعديل 2: أسماء الخدمات عربية)
     // ============================================================
     async function renderConsultations(data, employees) {
         const container = document.getElementById('consultationsContainer');
         if (!container) return;
         if (!data || data.length === 0) {
-		// 🔴 DEBUG
-console.log('🔍 [DEBUG] عدد الطلبات:', data.length);
-console.log('🔍 [DEBUG] عدد الموظفين:', employees?.length);
-console.log('🔍 [DEBUG] أول طلب:', {
-    client_name: data[0]?.client_name,
-    assigned_to: data[0]?.assigned_to,
-    type_of_assigned_to: typeof data[0]?.assigned_to
-});
-console.log('🔍 [DEBUG] كل الموظفين:', employees?.map(e => ({id: e.id, name: e.full_name, type: typeof e.id})));
             container.innerHTML = `<div class="message">📭 لا توجد طلبات.</div>`;
             return;
         }
@@ -462,7 +445,8 @@ console.log('🔍 [DEBUG] كل الموظفين:', employees?.map(e => ({id: e.i
                 const st = sl[latestTask.followup_status];
                 if (st) statusBadge = `<span style="background: ${st.color}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-right: 5px;">${st.text}</span>`;
             }
-            rows += `<tr data-id="${item.id}"><td>${idx + 1}</td><td>${item.client_name || 'غير محدد'}</td><td>${item.email || '—'}</td><td>${item.phone || '—'}</td><td><span style="background: #e7f3ff; color: #2d7aff; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">${getServiceBadge(item.service)}</span></td><td>${item.attachment_path ? `<a href="${item.attachment_path}" target="_blank" style="color: #2d7aff;">📎 ملف</a>` : '—'}</td><td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td><td>${statusBadge} ${assignedName}</td><td><button class="btn-preview" data-id="${item.id}">📄 معاينة</button><button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button><button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button></td></tr>`;
+            // 🟢 تعديل: استخدام getServiceBadge بدلاً من عرض المفتاح الإنجليزي
+            rows += `<tr data-id="${item.id}"><td>${idx + 1}</td><td>${item.client_name || 'غير محدد'}</td><td>${item.email || '—'}</td><td>${item.phone || '—'}</td><td>${getServiceBadge(item.service)}</td><td>${item.attachment_path ? `<a href="${item.attachment_path}" target="_blank" style="color: #2d7aff;">📎 ملف</a>` : '—'}</td><td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td><td>${statusBadge} ${assignedName}</td><td><button class="btn-preview" data-id="${item.id}">📄 معاينة</button><button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button><button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button></td></tr>`;
         });
 
         container.innerHTML = `<div class="table-responsive"><table><thead><tr><th>#</th><th>اسم العميل</th><th>البريد</th><th>الهاتف</th><th>الخدمة</th><th>المرفقات</th><th>التاريخ</th><th>المتابع</th><th>الإجراء</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -482,7 +466,7 @@ console.log('🔍 [DEBUG] كل الموظفين:', employees?.map(e => ({id: e.i
     }
 
     // ============================================================
-    // 10. عرض الموظفين
+    // 9. عرض الموظفين
     // ============================================================
     function renderEmployees(data) {
         const container = document.getElementById('employeesContainer');
@@ -531,8 +515,10 @@ console.log('🔍 [DEBUG] كل الموظفين:', employees?.map(e => ({id: e.i
 
     function closePreview() {
         document.getElementById('previewModal').classList.remove('active');
-    }    // ============================================================
-    // 11. شاشة المعاينة (openPreview)
+    }
+
+    // ============================================================
+    // 10. شاشة المعاينة
     // ============================================================
     async function openPreview(consultationId) {
         const modal = document.getElementById('previewModal');
@@ -545,79 +531,77 @@ console.log('🔍 [DEBUG] كل الموظفين:', employees?.map(e => ({id: e.i
             if (conError || !consultation) { body.innerHTML = `<div class="message error">❌ ${conError?.message}</div>`; return; }
 
             const { data: initialConsultation } = await supabase.from('initial_consultations').select('*').eq('request_id', consultationId).limit(1).maybeSingle();
-           
-		 // 🔴 جلب المتطلبات الخاصة بالخدمة
-const { data: serviceReq, error: serviceReqError } = await supabase
-    .from('service_requirements')
-    .select('required_actions, required_documents')
-    .eq('service_type', consultation.service || 'other')
-    .maybeSingle();
 
-if (serviceReqError) console.warn('⚠️ خطأ في جلب متطلبات الخدمة:', serviceReqError);
+            // 🟢 تعديل 1: جلب المتطلبات الخاصة بالخدمة من جدول service_requirements
+            const { data: serviceReq, error: serviceReqError } = await supabase
+                .from('service_requirements')
+                .select('required_actions, required_documents')
+                .eq('service_type', consultation.service || 'other')
+                .maybeSingle();
 
-const DEFAULT_ACTIONS = ['تحديد طبيعة الاستشارة', 'الاتصال بالعميل', 'تحديد موعد', 'مراجعة المستندات'];
-const DEFAULT_DOCS = ['مستندات داعمة', 'بطاقة شخصية', 'توكيل', 'عقد'];
+            if (serviceReqError) console.warn('⚠️ خطأ في جلب متطلبات الخدمة:', serviceReqError);
 
-const requiredActionsList = serviceReq 
-    ? (parseArrayField(serviceReq.required_actions).length > 0 
-        ? parseArrayField(serviceReq.required_actions) 
-        : DEFAULT_ACTIONS)
-    : DEFAULT_ACTIONS;
+            const DEFAULT_ACTIONS = ['تحديد طبيعة الاستشارة', 'الاتصال بالعميل', 'تحديد موعد', 'مراجعة المستندات'];
+            const DEFAULT_DOCS = ['مستندات داعمة', 'بطاقة شخصية', 'توكيل', 'عقد'];
 
-const requiredDocumentsList = serviceReq 
-    ? (parseArrayField(serviceReq.required_documents).length > 0 
-        ? parseArrayField(serviceReq.required_documents) 
-        : DEFAULT_DOCS)
-    : DEFAULT_DOCS;
+            const requiredActionsList = serviceReq
+                ? (parseArrayField(serviceReq.required_actions).length > 0
+                    ? parseArrayField(serviceReq.required_actions)
+                    : DEFAULT_ACTIONS)
+                : DEFAULT_ACTIONS;
 
-console.log('🔍 [DEBUG] الخدمة:', consultation.service);
-console.log('🔍 [DEBUG] الإجراءات المطلوبة:', requiredActionsList);
-console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumentsList);
-		   const { data: followups } = await supabase.from('client_followups').select('*').eq('request_id', consultationId).order('followup_date', { ascending: false });
+            const requiredDocumentsList = serviceReq
+                ? (parseArrayField(serviceReq.required_documents).length > 0
+                    ? parseArrayField(serviceReq.required_documents)
+                    : DEFAULT_DOCS)
+                : DEFAULT_DOCS;
+
+            const { data: followups } = await supabase.from('client_followups').select('*').eq('request_id', consultationId).order('followup_date', { ascending: false });
+
+            // 🟢 تعديل 3: جلب attachment_name لعرض اسم الملف الأصلي
             const { data: attachmentsData } = await supabase
-    .from('client_followups')
-    .select('id, attachment_path, attachment_name, followup_date')
-    .eq('request_id', consultationId)
-    .eq('is_attachment_only', true)
-    .order('followup_date', { ascending: false });
+                .from('client_followups')
+                .select('id, attachment_path, attachment_name, followup_date')
+                .eq('request_id', consultationId)
+                .eq('is_attachment_only', true)
+                .order('followup_date', { ascending: false });
 
             let attachmentsHtml = '';
             if (attachmentsData && attachmentsData.length > 0) {
                 attachmentsData.forEach(att => {
-    if (att.attachment_path) {
-        const date = att.followup_date ? new Date(att.followup_date).toLocaleString('ar-EG') : '—';
-        const fileName = att.attachment_name || 'مرفق بدون اسم';
-        
-        // 🔴 أخذ امتداد الملف لعرض أيقونة مناسبة
-        const ext = fileName.split('.').pop().toLowerCase();
-        let icon = '📎';
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) icon = '🖼️';
-        else if (ext === 'pdf') icon = '📄';
-        else if (['doc', 'docx'].includes(ext)) icon = '📝';
-        else if (['xls', 'xlsx'].includes(ext)) icon = '📊';
-        else if (['zip', 'rar'].includes(ext)) icon = '🗜️';
-        
-        attachmentsHtml += `
-            <div class="dashboard-attachment-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #f0f4ff; border-radius: 8px; margin-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
-                    <span style="font-size: 20px;">${icon}</span>
-                    <div style="flex: 1; min-width: 0;">
-                        <a href="${att.attachment_path}" target="_blank" style="color: #2d7aff; text-decoration: none; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${fileName}">${fileName}</a>
-                        <small style="color: #718096; font-size: 10px;">📅 ${date}</small>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 6px;">
-                    <a href="${att.attachment_path}" download="${fileName}" style="background: #28a745; color: white; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: 600;">⬇️ تحميل</a>
-                    <button class="btn-delete-attachment" data-id="${att.id}" style="background: #dc3545; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600;">🗑️</button>
-                </div>
-            </div>`;
-    }
-});
+                    if (att.attachment_path) {
+                        const date = att.followup_date ? new Date(att.followup_date).toLocaleString('ar-EG') : '—';
+                        const fileName = att.attachment_name || 'مرفق بدون اسم';
+
+                        // أيقونة حسب امتداد الملف
+                        const ext = fileName.split('.').pop().toLowerCase();
+                        let icon = '📎';
+                        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) icon = '🖼️';
+                        else if (ext === 'pdf') icon = '📄';
+                        else if (['doc', 'docx'].includes(ext)) icon = '📝';
+                        else if (['xls', 'xlsx'].includes(ext)) icon = '📊';
+                        else if (['zip', 'rar'].includes(ext)) icon = '🗜️';
+
+                        attachmentsHtml += `
+                            <div class="dashboard-attachment-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #f0f4ff; border-radius: 8px; margin-bottom: 8px;">
+                                <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                                    <span style="font-size: 20px;">${icon}</span>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <a href="${att.attachment_path}" target="_blank" style="color: #2d7aff; text-decoration: none; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${fileName}">${fileName}</a>
+                                        <small style="color: #718096; font-size: 10px;">📅 ${date}</small>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 6px;">
+                                    <a href="${att.attachment_path}" download="${fileName}" style="background: #28a745; color: white; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: 600;">⬇️ تحميل</a>
+                                    <button class="btn-delete-attachment" data-id="${att.id}" style="background: #dc3545; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600;">🗑️</button>
+                                </div>
+                            </div>`;
+                    }
+                });
             } else {
                 attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
             }
 
-            // تحديد المتابع الأصلي
             let originalAssigneeId = consultation.assigned_to || null;
             let originalAssigneeName = 'غير محدد';
             if (originalAssigneeId) {
@@ -625,9 +609,7 @@ console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumen
                 if (emp) originalAssigneeName = emp.full_name;
             }
 
-            // ============================================================
-            // كارت معلومات العميل
-            // ============================================================
+            // كارت العميل (تعديل 2: اسم الخدمة بالعربية)
             const customerCard = `
                 <div class="dashboard-card">
                     <div class="dashboard-card-header"><h3><span class="icon-circle">👤</span> معلومات العميل</h3></div>
@@ -635,7 +617,7 @@ console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumen
                         <div class="dashboard-detail-row"><span class="dashboard-detail-label">الاسم</span><span class="dashboard-detail-value">${consultation.client_name || '—'}</span></div>
                         <div class="dashboard-detail-row"><span class="dashboard-detail-label">البريد</span><span class="dashboard-detail-value">${consultation.email || '—'}</span></div>
                         <div class="dashboard-detail-row"><span class="dashboard-detail-label">الهاتف</span><span class="dashboard-detail-value">${consultation.phone || '—'}</span></div>
-                        <div class="dashboard-detail-row"><span class="dashboard-detail-label">الخدمة</span><span class="dashboard-detail-value"><span style="background: #e7f3ff; color: #2d7aff; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">${getServiceNameAr(consultation.service)}</span></span></div>
+                        <div class="dashboard-detail-row"><span class="dashboard-detail-label">الخدمة</span><span class="dashboard-detail-value">${getServiceBadge(consultation.service)}</span></div>
                         <div class="dashboard-detail-row"><span class="dashboard-detail-label">تاريخ الطلب</span><span class="dashboard-detail-value">${consultation.created_at ? new Date(consultation.created_at).toLocaleString('ar-EG') : '—'}</span></div>
                         <div class="dashboard-detail-row"><span class="dashboard-detail-label">الموظف المسند</span><span class="dashboard-detail-value">${originalAssigneeName}</span></div>
                         ${consultation.message ? `<div class="dashboard-detail-row"><span class="dashboard-detail-label">الرسالة</span><span class="dashboard-detail-value">${consultation.message}</span></div>` : ''}
@@ -644,9 +626,7 @@ console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumen
                 </div>
             `;
 
-            // ============================================================
-            // كارت المهام (حسب الدور)
-            // ============================================================
+            // كارت المهام
             let tasksCard = '';
 
             if (currentUser.role === 'manager') {
@@ -654,18 +634,20 @@ console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumen
                     <div class="dashboard-card">
                         <div class="dashboard-card-header"><h3><span class="icon-circle">📝</span> تكليف الموظف بمتابعة</h3></div>
                         <div class="dashboard-card-body">
-                           <div style="margin-bottom: 12px;">
-    <strong style="color: #333;">📌 الإجراءات المطلوبة <span style="font-size: 11px; color: #718096; font-weight: normal;">(خاصة بخدمة: ${consultation.service || 'غير محددة'})</span>:</strong>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-        ${requiredActionsList.map(a => `<label style="display: flex; align-items: center; gap: 5px; background: #f0f4ff; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8;"><input type="checkbox" class="task-action-checkbox" value="${a}"> ${a}</label>`).join('')}
-    </div>
-</div>
-<div style="margin-bottom: 12px;">
-    <strong style="color: #333;">📎 المستندات المطلوبة:</strong>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-        ${requiredDocumentsList.map(d => `<label style="display: flex; align-items: center; gap: 5px; background: #fff9e6; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8;"><input type="checkbox" class="task-doc-checkbox" value="${d}"> ${d}</label>`).join('')}
-    </div>
-</div>                            <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <h4 style="color: #2d7aff; margin: 0 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid #e9edf4;">🟢 تكليف الموظف الرئيسي</h4>
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: #333;">📌 الإجراءات المطلوبة <span style="font-size: 11px; color: #718096; font-weight: normal;">(خاصة بخدمة: ${getServiceNameAr(consultation.service)})</span>:</strong>
+                                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                                    ${requiredActionsList.map(a => `<label style="display: flex; align-items: center; gap: 5px; background: #f0f4ff; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8;"><input type="checkbox" class="task-action-checkbox" value="${a}"> ${a}</label>`).join('')}
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: #333;">📎 المستندات المطلوبة:</strong>
+                                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                                    ${requiredDocumentsList.map(d => `<label style="display: flex; align-items: center; gap: 5px; background: #fff9e6; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8;"><input type="checkbox" class="task-doc-checkbox" value="${d}"> ${d}</label>`).join('')}
+                                </div>
+                            </div>
+                            <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <div>
                                     <label style="font-weight: 600; display: block; margin-bottom: 5px;">الموظف المكلف:</label>
                                     <select id="assigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
@@ -682,7 +664,39 @@ console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumen
                                 <label style="font-weight: 600; display: block; margin-bottom: 5px;">ملاحظات المدير:</label>
                                 <textarea id="managerNotes" rows="3" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;"></textarea>
                             </div>
-                            <button id="btnCreateTask" class="dashboard-btn" style="margin-top: 15px; background: #28a745;">🟢 إنشاء المتابعة وتكليف الموظف</button>
+                            <button id="btnCreateTask" class="dashboard-btn" style="margin-top: 15px; background: #28a745; width: 100%;">🟢 إنشاء/تحديث المهمة الرئيسية</button>
+
+                            <h4 style="color: #2d7aff; margin: 25px 0 12px 0; padding-bottom: 8px; border-bottom: 2px dashed #e9edf4;">📋 إسناد أعمال إضافية (اختياري)</h4>
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: #333;">الإجراءات الإضافية:</strong>
+                                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                                    ${['متابعة هاتفية', 'تذكير بموعد', 'تنسيق مع جهة خارجية', 'أعمال إدارية'].map(a => `<label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" class="extra-action-checkbox" value="${a}"> ${a}</label>`).join('')}
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: #333;">المستندات الإضافية:</strong>
+                                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                                    ${['تقارير', 'مراسلات', 'نماذج'].map(d => `<label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" class="extra-doc-checkbox" value="${d}"> ${d}</label>`).join('')}
+                                </div>
+                            </div>
+                            <div class="dashboard-form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">الشخص المكلف:</label>
+                                    <select id="extraAssigneeSelect" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+                                        <option value="">اختر الموظف/السكرتير</option>
+                                        ${allEmployees.filter(e => e.role === 'followup_staff' || e.role === 'secretary').map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.role === 'secretary' ? 'سكرتير' : 'موظف'})</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">موعد التنفيذ:</label>
+                                    <input type="date" id="extraDueDate" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;">
+                                </div>
+                            </div>
+                            <div style="margin-top: 12px;">
+                                <label style="font-weight: 600; display: block; margin-bottom: 5px;">ملاحظات:</label>
+                                <textarea id="extraNotes" rows="2" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;"></textarea>
+                            </div>
+                            <button id="btnCreateExtraTask" class="dashboard-btn" style="margin-top: 15px; background: #2d7aff; width: 100%;">📋 إسناد/تحديث الأعمال الإضافية</button>
                         </div>
                     </div>
                 `;
@@ -692,12 +706,7 @@ console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumen
                 if (myTasks.length > 0) {
                     myTasks.forEach((task) => {
                         const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : 'غير محدد';
-                        const statusLabels = {
-                            pending: { text: '⏳ بانتظار التنفيذ', color: '#ffc107' },
-                            in_progress: { text: '🔄 قيد التنفيذ', color: '#17a2b8' },
-                            completed: { text: '✅ تم التنفيذ', color: '#28a745' },
-                            failed: { text: '❌ تعذر التنفيذ', color: '#dc3545' }
-                        };
+                        const statusLabels = { pending: { text: '⏳ بانتظار التنفيذ', color: '#ffc107' }, in_progress: { text: '🔄 قيد التنفيذ', color: '#17a2b8' }, completed: { text: '✅ تم التنفيذ', color: '#28a745' }, failed: { text: '❌ تعذر التنفيذ', color: '#dc3545' } };
                         const status = statusLabels[task.followup_status] || { text: 'غير محدد', color: '#6c757d' };
                         const actionParts = (task.action || '').split('|');
                         const actionsArray = actionParts[0] ? actionParts[0].replace('الإجراءات:', '').trim().split(',').map(i => i.trim()).filter(i => i && i !== 'لا يوجد') : [];
@@ -711,41 +720,17 @@ console.log('🔍 [DEBUG] المستندات المطلوبة:', requiredDocumen
 
                         tasksHtml += `
                             <div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #f8faff; border-right: 4px solid ${status.color};">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                    <strong>📋 مهمة #${task.id.slice(0, 8)}</strong>
-                                    <span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">${status.text}</span>
-                                </div>
-                                ${actionsArray.length > 0 ? `<div style="margin-bottom: 10px;"><strong style="font-size: 13px;">الإجراءات المطلوبة (${doneActions.length}/${actionsArray.length}):</strong><div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">${actionsArray.map(act => { const isDone = doneActions.includes(act); return `<label style="display: flex; align-items: center; gap: 5px; background: ${isDone ? '#e7f9ef' : 'white'}; padding: 6px 10px; border-radius: 6px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; font-size: 12px; ${isDone ? 'color: #28a745; font-weight: 600;' : ''}"><input type="checkbox" class="employee-task-action" data-task-id="${task.id}" value="${act}" ${isDone ? 'checked disabled' : (isFinished ? 'disabled' : '')}> ${isDone ? '✅' : ''} ${act}</label>`; }).join('')}</div></div>` : ''}
-                                ${docsArray.length > 0 ? `<div style="margin-bottom: 10px;"><strong style="font-size: 13px;">المستندات المطلوبة (${doneDocs.length}/${docsArray.length}):</strong><div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">${docsArray.map(doc => { const isDone = doneDocs.includes(doc); return `<label style="display: flex; align-items: center; gap: 5px; background: ${isDone ? '#e7f9ef' : 'white'}; padding: 6px 10px; border-radius: 6px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; font-size: 12px; ${isDone ? 'color: #28a745; font-weight: 600;' : ''}"><input type="checkbox" class="employee-task-doc" data-task-id="${task.id}" value="${doc}" ${isDone ? 'checked disabled' : (isFinished ? 'disabled' : '')}> ${isDone ? '✅' : ''} ${doc}</label>`; }).join('')}</div></div>` : ''}
-${(task.followup_status === 'in_progress' || task.followup_status === 'completed') && totalReq > 0 ? `
-    <div style="margin-top: 12px; padding: 10px; background: ${percent === 100 ? '#e7f9ef' : '#f0f4ff'}; border-radius: 8px; border-right: 3px solid ${percent === 100 ? '#28a745' : '#2d7aff'};">
-        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 6px;">
-            <span>📊 نسبة الإنجاز: ${totalDone} من ${totalReq} بنود</span>
-            <span style="color: ${percent === 100 ? '#28a745' : '#2d7aff'};">${percent}%</span>
-        </div>
-        <div style="background: #e9edf4; border-radius: 12px; height: 14px; overflow: hidden;">
-            <div style="background: ${percent === 100 ? 'linear-gradient(90deg, #28a745, #20c997)' : 'linear-gradient(90deg, #2d7aff, #17a2b8)'}; height: 100%; width: ${percent}%; transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 700;">${percent > 15 ? percent + '%' : ''}</div>
-        </div>
-        ${percent === 100 ? `<div style="text-align: center; font-size: 11px; color: #28a745; margin-top: 6px; font-weight: 700;">🎉 تم إكمال جميع البنود!</div>` : `<div style="text-align: center; font-size: 11px; color: #718096; margin-top: 6px;">⏳ متبقي ${totalReq - totalDone} بند لإكمال المهمة</div>`}
-    </div>
-` : ''}
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><strong>📋 مهمة #${task.id.slice(0, 8)}</strong><span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">${status.text}</span></div>
+                                ${actionsArray.length > 0 ? `<div style="margin-bottom: 10px;"><strong style="font-size: 13px;">الإجراءات (${doneActions.length}/${actionsArray.length}):</strong><div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">${actionsArray.map(act => { const isDone = doneActions.includes(act); return `<label style="display: flex; align-items: center; gap: 5px; background: ${isDone ? '#e7f9ef' : 'white'}; padding: 6px 10px; border-radius: 6px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; font-size: 12px;"><input type="checkbox" class="employee-task-action" data-task-id="${task.id}" value="${act}" ${isDone ? 'checked disabled' : (isFinished ? 'disabled' : '')}> ${isDone ? '✅' : ''} ${act}</label>`; }).join('')}</div></div>` : ''}
+                                ${docsArray.length > 0 ? `<div style="margin-bottom: 10px;"><strong style="font-size: 13px;">المستندات (${doneDocs.length}/${docsArray.length}):</strong><div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">${docsArray.map(doc => { const isDone = doneDocs.includes(doc); return `<label style="display: flex; align-items: center; gap: 5px; background: ${isDone ? '#e7f9ef' : 'white'}; padding: 6px 10px; border-radius: 6px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; font-size: 12px;"><input type="checkbox" class="employee-task-doc" data-task-id="${task.id}" value="${doc}" ${isDone ? 'checked disabled' : (isFinished ? 'disabled' : '')}> ${isDone ? '✅' : ''} ${doc}</label>`; }).join('')}</div></div>` : ''}
+                                ${(task.followup_status === 'in_progress' || task.followup_status === 'completed') && totalReq > 0 ? `<div style="margin-top: 10px;"><div style="display: flex; justify-content: space-between; font-size: 11px;"><span>نسبة الإنجاز</span><span>${percent}%</span></div><div style="background: #f0f2f5; border-radius: 12px; height: 12px; overflow: hidden;"><div style="background: ${percent === 100 ? '#28a745' : '#2d7aff'}; height: 100%; width: ${percent}%;"></div></div></div>` : ''}
                                 ${task.notes && !task.notes.includes('تم إنجاز:') ? `<div style="font-size: 12px; margin-top: 8px; background: #fff9e6; padding: 8px; border-radius: 6px; border-right: 3px solid #ffc107;"><strong>📝 تعليمات المدير:</strong> ${task.notes}</div>` : ''}
                                 <div style="font-size: 12px; margin-top: 8px;"><strong>📅 موعد التنفيذ:</strong> ${dueDate}</div>
-${!isFinished ? `
-    <div style="margin-top: 10px; display: flex; gap: 8px;">
-        <button class="btn-save-employee-tasks" data-id="${task.id}" style="flex: 1; background: #2d7aff; color: white; border: none; padding: 10px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">💾 حفظ التقدم (${totalDone}/${totalReq})</button>
-        <button class="btn-fail-task" data-id="${task.id}" style="flex: 1; background: #dc3545; color: white; border: none; padding: 10px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🔴 تعذر التنفيذ</button>
-    </div>
-` : `
-    <div style="margin-top: 10px; padding: 12px; background: ${task.followup_status === 'completed' ? 'linear-gradient(135deg, #28a745, #20c997)' : status.color}; color: white; border-radius: 8px; font-size: 13px; text-align: center; font-weight: 700;">
-        ${task.followup_status === 'completed' ? '🎉 تم التنفيذ بالكامل' : '❌ المهمة متعذرة التنفيذ'}
-    </div>
-`}                            </div>
+                                ${!isFinished ? `<div style="margin-top: 10px; display: flex; gap: 8px;"><button class="btn-save-employee-tasks" data-id="${task.id}" style="background: #2d7aff; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">💾 حفظ</button><button class="btn-fail-task" data-id="${task.id}" style="background: #dc3545; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🔴 تعذر</button></div>` : `<div style="margin-top: 10px; padding: 8px; background: ${status.color}; color: white; border-radius: 6px; font-size: 12px; text-align: center; font-weight: 600;">${task.followup_status === 'completed' ? '✅ المهمة مكتملة' : '❌ المهمة متعذرة'}</div>`}
+                            </div>
                         `;
                     });
-                } else {
-                    tasksHtml = '<div class="message">✅ لا توجد مهام نشطة.</div>';
-                }
+                } else { tasksHtml = '<div class="message">✅ لا توجد مهام نشطة.</div>'; }
                 tasksCard = `<div class="dashboard-card"><div class="dashboard-card-header"><h3><span class="icon-circle">🔔</span> المهام المسندة إليّ</h3></div><div class="dashboard-card-body">${tasksHtml}</div></div>`;
             } else if (currentUser.role === 'secretary') {
                 const myTasks = (followups || []).filter(f => String(f.assigned_to) === String(currentUser.id) && !f.is_attachment_only);
@@ -766,16 +751,8 @@ ${!isFinished ? `
                         ${docsArray.map(doc => { const isDone = doneDocs.includes(doc); return `<label style="display: flex; align-items: center; gap: 5px; background: ${isDone ? '#e7f9ef' : 'white'}; padding: 6px 10px; border-radius: 6px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; font-size: 12px; margin: 4px 0;"><input type="checkbox" class="${editable ? 'employee-task-doc' : ''}" data-task-id="${task.id}" value="${doc}" ${isDone ? 'checked disabled' : (editable && !isFinished ? '' : 'disabled')}> ${isDone ? '✅' : ''} ${doc}</label>`; }).join('')}
                         ${task.notes && !task.notes.includes('تم إنجاز:') ? `<div style="font-size: 12px; margin-top: 8px; background: #fff9e6; padding: 8px; border-radius: 6px;"><strong>📝 تعليمات المدير:</strong> ${task.notes}</div>` : ''}
                         <div style="font-size: 12px; margin-top: 8px;"><strong>📅 موعد التنفيذ:</strong> ${dueDate}</div>
-${editable && !isFinished ? `
-    <div style="margin-top: 10px; display: flex; gap: 8px;">
-        <button class="btn-save-employee-tasks" data-id="${task.id}" style="flex: 1; background: #2d7aff; color: white; border: none; padding: 10px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">💾 حفظ (${(task.completed_items?.actions?.length || 0) + (task.completed_items?.docs?.length || 0)}/${actionsArray.length + docsArray.length})</button>
-        <button class="btn-fail-task" data-id="${task.id}" style="flex: 1; background: #dc3545; color: white; border: none; padding: 10px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🔴 تعذر</button>
-    </div>
-` : (isFinished ? `
-    <div style="margin-top: 10px; padding: 10px; background: ${task.followup_status === 'completed' ? 'linear-gradient(135deg, #28a745, #20c997)' : status.color}; color: white; border-radius: 8px; font-size: 12px; text-align: center; font-weight: 700;">
-        ${task.followup_status === 'completed' ? '🎉 تم التنفيذ بالكامل' : '❌ متعذرة'}
-    </div>
-` : '')}                    </div>`;
+                        ${editable && !isFinished ? `<div style="margin-top: 10px; display: flex; gap: 8px;"><button class="btn-save-employee-tasks" data-id="${task.id}" style="background: #2d7aff; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">💾 حفظ</button><button class="btn-fail-task" data-id="${task.id}" style="background: #dc3545; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">🔴 تعذر</button></div>` : ''}
+                    </div>`;
                 };
                 let secHtml = `<h4 style="color: #28a745; margin: 0 0 10px 0;">📌 مهامي</h4>`;
                 secHtml += myTasks.length > 0 ? myTasks.map(t => buildSecTask(t, true)).join('') : '<div class="message">لا توجد مهام.</div>';
@@ -784,17 +761,13 @@ ${editable && !isFinished ? `
                 tasksCard = `<div class="dashboard-card"><div class="dashboard-card-header"><h3><span class="icon-circle">🔔</span> المهام</h3></div><div class="dashboard-card-body">${secHtml}</div></div>`;
             }
 
-            // ============================================================
             // كارت المقابلة الأولى
-            // ============================================================
             let initialCard = '';
             if (initialConsultation) {
                 initialCard = `<div class="dashboard-card"><div class="dashboard-card-header"><h3><span class="icon-circle">📝</span> المقابلة الأولى</h3></div><div class="dashboard-card-body"><div class="dashboard-detail-row"><span class="dashboard-detail-label">التاريخ</span><span class="dashboard-detail-value">${initialConsultation.consultation_date ? new Date(initialConsultation.consultation_date).toLocaleString('ar-EG') : '—'}</span></div><div class="dashboard-detail-row"><span class="dashboard-detail-label">الملخص</span><span class="dashboard-detail-value">${initialConsultation.summary || '-'}</span></div></div></div>`;
             }
 
-            // ============================================================
-            // كارت سجل المتابعة (حسب الدور)
-            // ============================================================
+            // كارت سجل المتابعة
             const buildTaskLogItem = (f, editable) => {
                 const date = f.followup_date ? new Date(f.followup_date).toLocaleString('ar-EG') : '—';
                 const dueDate = f.next_followup ? new Date(f.next_followup).toLocaleDateString('ar-EG') : 'غير محدد';
@@ -818,8 +791,8 @@ ${editable && !isFinished ? `
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><strong style="font-size: 13px;">📋 مهمة #${(f.id || '').slice(0, 8)}</strong><span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 10px;">${status.text}</span></div>
                     <div style="font-size: 12px; margin-bottom: 8px;"><strong>👤 الموظف:</strong> ${followerName} | <strong>📅 التاريخ:</strong> ${date}</div>
                     <div style="font-size: 12px; margin-bottom: 8px;"><strong>⏰ موعد التنفيذ:</strong> ${dueDate}</div>
-                    ${actionsArray.length > 0 ? `<div style="margin-bottom: 6px;"><strong style="font-size: 12px;">📌 الإجراءات (${doneActions.length}/${actionsArray.length}):</strong><div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">${actionsArray.map(a => { const isDone = doneActions.includes(a); return `<span style="background: ${isDone ? '#e7f9ef' : 'white'}; padding: 3px 8px; border-radius: 10px; font-size: 11px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; color: ${isDone ? '#28a745' : '#333'}; ${isDone ? 'font-weight: 600;' : ''}">${isDone ? '✅ ' : ''}${a}</span>`; }).join('')}</div></div>` : ''}
-                    ${docsArray.length > 0 ? `<div style="margin-bottom: 6px;"><strong style="font-size: 12px;">📎 المستندات (${doneDocs.length}/${docsArray.length}):</strong><div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">${docsArray.map(d => { const isDone = doneDocs.includes(d); return `<span style="background: ${isDone ? '#e7f9ef' : 'white'}; padding: 3px 8px; border-radius: 10px; font-size: 11px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; color: ${isDone ? '#28a745' : '#333'}; ${isDone ? 'font-weight: 600;' : ''}">${isDone ? '✅ ' : ''}${d}</span>`; }).join('')}</div></div>` : ''}
+                    ${actionsArray.length > 0 ? `<div style="margin-bottom: 6px;"><strong style="font-size: 12px;">📌 الإجراءات (${doneActions.length}/${actionsArray.length}):</strong><div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">${actionsArray.map(a => { const isDone = doneActions.includes(a); return `<span style="background: ${isDone ? '#e7f9ef' : 'white'}; padding: 3px 8px; border-radius: 10px; font-size: 11px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; color: ${isDone ? '#28a745' : '#333'};">${isDone ? '✅ ' : ''}${a}</span>`; }).join('')}</div></div>` : ''}
+                    ${docsArray.length > 0 ? `<div style="margin-bottom: 6px;"><strong style="font-size: 12px;">📎 المستندات (${doneDocs.length}/${docsArray.length}):</strong><div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">${docsArray.map(d => { const isDone = doneDocs.includes(d); return `<span style="background: ${isDone ? '#e7f9ef' : 'white'}; padding: 3px 8px; border-radius: 10px; font-size: 11px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; color: ${isDone ? '#28a745' : '#333'};">${isDone ? '✅ ' : ''}${d}</span>`; }).join('')}</div></div>` : ''}
                     ${(f.followup_status === 'in_progress' || f.followup_status === 'completed') && totalReq > 0 ? `<div style="margin-top: 8px;"><div style="display: flex; justify-content: space-between; font-size: 11px;"><span>نسبة الإنجاز</span><span>${percent}%</span></div><div style="background: #f0f2f5; border-radius: 12px; height: 8px; overflow: hidden;"><div style="background: ${percent === 100 ? '#28a745' : '#2d7aff'}; height: 100%; width: ${percent}%;"></div></div></div>` : ''}
                     ${f.notes && !f.notes.includes('تم إنجاز:') && f.followup_status !== 'failed' ? `<div style="font-size: 12px; margin-top: 8px; background: #fff9e6; padding: 8px; border-radius: 6px; border-right: 3px solid #ffc107;"><strong>📝 تعليمات المدير:</strong> ${f.notes}</div>` : ''}
                     ${actionButtons}
@@ -845,93 +818,49 @@ ${editable && !isFinished ? `
                 followupsCard = `<div class="dashboard-card"><div class="dashboard-card-header"><h3><span class="icon-circle">📊</span> سجل مهامي</h3></div><div class="dashboard-card-body">${html}</div></div>`;
             }
 
-            // ============================================================
-            // كارت المرفقات + إضافة متابعة
-            // ============================================================
             const attachmentsCard = `<div class="dashboard-card"><div class="dashboard-card-header"><h3><span class="icon-circle">📎</span> المرفقات الإضافية</h3></div><div class="dashboard-card-body"><div id="attachmentsList">${attachmentsHtml}</div><div class="dashboard-form-grid" style="margin-top: 10px;"><input type="file" id="newFollowupAttachment" accept="image/*,.pdf"><button id="btnAddFollowupAttachment" data-id="${consultationId}" class="dashboard-btn">إضافة مرفق</button></div></div></div>`;
             const addFollowupCard = `<div class="dashboard-card"><div class="dashboard-card-header"><h3><span class="icon-circle">➕</span> إضافة متابعة</h3></div><div class="dashboard-card-body"><div class="dashboard-form-grid"><input type="text" id="newFollowupNote" placeholder="ملاحظة"><input type="text" id="newFollowupStatus" placeholder="الحالة"><button id="btnAddFollowup" data-id="${consultationId}" class="dashboard-btn">إضافة</button></div></div></div>`;
 
-            // ============================================================
-            // عرض كل الكروت
-            // ============================================================
             body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${initialCard}${followupsCard}${attachmentsCard}${addFollowupCard}</div>`;
 
             // ============================================================
-            // ربط الأزرار بعد عرض المحتوى
+            // ربط الأزرار
             // ============================================================
 
-// 1. زر حفظ حالة المهام (مع منع الإكمال غير الصحيح)
-document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        const taskId = this.dataset.id;
-        const checkedActions = [];
-        const checkedDocs = [];
-        document.querySelectorAll(`.employee-task-action[data-task-id="${taskId}"]:checked`).forEach(cb => checkedActions.push(cb.value));
-        document.querySelectorAll(`.employee-task-doc[data-task-id="${taskId}"]:checked`).forEach(cb => checkedDocs.push(cb.value));
-        
-        if (checkedActions.length === 0 && checkedDocs.length === 0) {
-            alert('⚠️ يرجى تحديد بند واحد على الأقل قبل الحفظ.');
-            return;
-        }
+            // 1. زر حفظ حالة المهام
+            document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const taskId = this.dataset.id;
+                    const checkedActions = [];
+                    const checkedDocs = [];
+                    document.querySelectorAll(`.employee-task-action[data-task-id="${taskId}"]:checked`).forEach(cb => checkedActions.push(cb.value));
+                    document.querySelectorAll(`.employee-task-doc[data-task-id="${taskId}"]:checked`).forEach(cb => checkedDocs.push(cb.value));
+                    if (checkedActions.length === 0 && checkedDocs.length === 0) { alert('يرجى تحديد عنصر.'); return; }
 
-        // جلب بيانات المهمة الحالية
-        const { data: currentTask, error: fetchError } = await supabase
-            .from('client_followups')
-            .select('notes, action')
-            .eq('id', taskId)
-            .single();
-        
-        if (fetchError || !currentTask) {
-            alert('❌ تعذر جلب بيانات المهمة: ' + (fetchError?.message || 'غير معروفة'));
-            return;
-        }
+                    const { data: currentTask } = await supabase.from('client_followups').select('notes, action').eq('id', taskId).single();
+                    const actionParts = (currentTask?.action || '').split('|');
+                    const allActions = actionParts[0] ? actionParts[0].replace('الإجراءات:', '').trim().split(',').map(i => i.trim()).filter(i => i && i !== 'لا يوجد') : [];
+                    const allDocs = actionParts[1] ? actionParts[1].replace('المستندات:', '').trim().split(',').map(i => i.trim()).filter(i => i && i !== 'لا يوجد') : [];
 
-        // استخراج كل البنود المطلوبة من حقل action
-        const actionParts = (currentTask.action || '').split('|');
-        const allActions = actionParts[0] 
-            ? actionParts[0].replace('الإجراءات:', '').trim().split(',').map(i => i.trim()).filter(i => i && i !== 'لا يوجد') 
-            : [];
-        const allDocs = actionParts[1] 
-            ? actionParts[1].replace('المستندات:', '').trim().split(',').map(i => i.trim()).filter(i => i && i !== 'لا يوجد') 
-            : [];
+                    const originalNotes = currentTask?.notes && !currentTask.notes.includes('تم إنجاز:') ? currentTask.notes : (currentTask?.notes?.split('تم إنجاز:')[0].trim() || '');
+                    const progressSummary = `تم إنجاز: ${checkedActions.join(', ') || 'لا شيء'} — المستندات: ${checkedDocs.join(', ') || 'لا شيء'}`;
+                    const finalNotes = originalNotes ? `${originalNotes}\n\n${progressSummary}` : progressSummary;
 
-        const totalReq = allActions.length + allDocs.length;
-        const totalDone = checkedActions.length + checkedDocs.length;
-        
-        // 🔴 تحديد ما إذا كانت المهمة اكتملت بالكامل
-        const isComplete = totalReq > 0 && totalDone >= totalReq;
-        const newStatus = isComplete ? 'completed' : 'in_progress';
+                    const totalReq = allActions.length + allDocs.length;
+                    const totalDone = checkedActions.length + checkedDocs.length;
+                    const isComplete = totalReq > 0 && totalDone >= totalReq;
 
-        // تجهيز الملاحظات
-        const originalNotes = currentTask.notes && !currentTask.notes.includes('تم إنجاز:') 
-            ? currentTask.notes 
-            : (currentTask.notes?.split('تم إنجاز:')[0].trim() || '');
-        const progressSummary = `تم إنجاز: ${checkedActions.join(', ') || 'لا شيء'} — المستندات: ${checkedDocs.join(', ') || 'لا شيء'}`;
-        const finalNotes = originalNotes ? `${originalNotes}\n\n${progressSummary}` : progressSummary;
+                    const { error } = await supabase.from('client_followups').update({
+                        notes: finalNotes,
+                        completed_items: { actions: checkedActions, docs: checkedDocs },
+                        followup_status: isComplete ? 'completed' : 'in_progress'
+                    }).eq('id', taskId);
 
-        // تحديث المهمة
-        const { error } = await supabase
-            .from('client_followups')
-            .update({
-                notes: finalNotes,
-                completed_items: { actions: checkedActions, docs: checkedDocs },
-                followup_status: newStatus
-            })
-            .eq('id', taskId);
+                    if (error) alert('❌ ' + error.message);
+                    else { alert(isComplete ? '✅ اكتملت المهمة!' : `✅ تم حفظ التقدم (${totalDone}/${totalReq}).`); openPreview(consultationId); }
+                });
+            });
 
-        if (error) {
-            alert('❌ فشل الحفظ: ' + error.message);
-        } else {
-            // 🔴 رسالة مختلفة حسب حالة الإكمال
-            if (isComplete) {
-                alert(`🎉 اكتملت المهمة بالكامل! (${totalDone}/${totalReq})`);
-            } else {
-                alert(`✅ تم حفظ التقدم: ${totalDone} من ${totalReq} بنود.\n📌 المتبقي: ${totalReq - totalDone} بند.`);
-            }
-            openPreview(consultationId);
-        }
-    });
-});
             // 2. زر تعذر التنفيذ
             document.querySelectorAll('.btn-fail-task, .btn-fail-task-inline').forEach(btn => {
                 btn.addEventListener('click', async function() {
@@ -978,45 +907,46 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
                 });
             });
 
-            // 4. زر إضافة مرفق
+            // 🟢 4. زر إضافة مرفق (تعديل 3: تخزين attachment_name)
             document.getElementById('btnAddFollowupAttachment')?.addEventListener('click', async function() {
-    const consId = this.dataset.id;
-    const file = document.getElementById('newFollowupAttachment').files[0];
-    if (!file) { alert('اختر ملفاً.'); return; }
-    
-    // 🔴 استخدام اسم لاتيني مؤقت لتجنب مشاكل المسافات والحروف العربية في المسار
-    const fileExt = file.name.split('.').pop();
-    const safeFileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-    
-    const { error: uploadError } = await supabase.storage
-        .from('consultation-files')
-        .upload(safeFileName, file);
-    
-    if (uploadError) { alert('❌ ' + uploadError.message); return; }
-    
-    const { data: urlData } = supabase.storage
-        .from('consultation-files')
-        .getPublicUrl(safeFileName);
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // 🔴 تخزين اسم الملف الأصلي في العمود الجديد
-    const { error } = await supabase.from('client_followups').insert({
-        request_id: consId,
-        notes: '',
-        followup_status: 'new',
-        created_by: user?.id,
-        contact_method: 'other',
-        action: '',
-        followup_date: new Date().toISOString(),
-        attachment_path: urlData.publicUrl,
-        attachment_name: file.name,  // 🔴 الاسم الأصلي كما اختاره المستخدم
-        is_attachment_only: true
-    });
-    
-    if (error) alert('❌ ' + error.message);
-    else { alert('✅ تم إضافة المرفق!'); openPreview(consId); }
-});
+                const consId = this.dataset.id;
+                const file = document.getElementById('newFollowupAttachment').files[0];
+                if (!file) { alert('اختر ملفاً.'); return; }
+
+                // استخدام اسم لاتيني آمن للمسار
+                const fileExt = file.name.split('.').pop();
+                const safeFileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('consultation-files')
+                    .upload(safeFileName, file);
+
+                if (uploadError) { alert('❌ ' + uploadError.message); return; }
+
+                const { data: urlData } = supabase.storage
+                    .from('consultation-files')
+                    .getPublicUrl(safeFileName);
+
+                const { data: { user } } = await supabase.auth.getUser();
+
+                // 🟢 تخزين اسم الملف الأصلي في عمود attachment_name
+                const { error } = await supabase.from('client_followups').insert({
+                    request_id: consId,
+                    notes: '',
+                    followup_status: 'new',
+                    created_by: user?.id,
+                    contact_method: 'other',
+                    action: '',
+                    followup_date: new Date().toISOString(),
+                    attachment_path: urlData.publicUrl,
+                    attachment_name: file.name,
+                    is_attachment_only: true
+                });
+
+                if (error) alert('❌ ' + error.message);
+                else { alert('✅ تم إضافة المرفق!'); openPreview(consId); }
+            });
+
             // 5. زر إضافة متابعة
             document.getElementById('btnAddFollowup')?.addEventListener('click', async function() {
                 const consId = this.dataset.id;
@@ -1040,41 +970,190 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
                 });
             });
 
-            // 7. زر إنشاء المهمة (للمدير)
-            document.getElementById('btnCreateTask')?.addEventListener('click', async function() {
-                const assigneeId = document.getElementById('assigneeSelect').value;
-                const dueDate = document.getElementById('followupDueDate').value;
-                const notes = document.getElementById('managerNotes').value.trim();
-                if (!assigneeId) { alert('اختر الموظف.'); return; }
-                const selectedActions = [], selectedDocs = [];
-                document.querySelectorAll('.task-action-checkbox:checked').forEach(cb => selectedActions.push(cb.value));
-                document.querySelectorAll('.task-doc-checkbox:checked').forEach(cb => selectedDocs.push(cb.value));
-                if (selectedActions.length === 0 && selectedDocs.length === 0) { alert('حدد الإجراءات.'); return; }
-                const actionText = `الإجراءات: ${selectedActions.join(', ') || 'لا يوجد'} | المستندات: ${selectedDocs.join(', ') || 'لا يوجد'}`;
-                const taskData = {
-                    request_id: consultationId,
-                    followup_date: new Date().toISOString(),
-                    contact_method: 'other',
-                    action: actionText,
-                    notes: notes,
-                    next_followup: dueDate ? new Date(dueDate).toISOString() : null,
-                    followup_status: 'pending',
-                    created_by: currentUser.id,
-                    assigned_to: assigneeId,
-                    is_attachment_only: false,
-                    completed_items: { actions: [], docs: [] }
-                };
-                const { error } = await supabase.from('client_followups').insert(taskData);
-                if (error) { alert('❌ ' + error.message); return; }
-                const assignedEmp = allEmployees.find(e => e.id === assigneeId);
-                const { data: currentRequest } = await supabase.from('consultation_requests').select('assigned_to').eq('id', consultationId).single();
-                const hasOriginal = currentRequest?.assigned_to != null;
-                if (assignedEmp && assignedEmp.role === 'followup_staff') {
-                    await supabase.from('consultation_requests').update({ assigned_to: assigneeId }).eq('id', consultationId);
-                } else if (!hasOriginal) {
-                    await supabase.from('consultation_requests').update({ assigned_to: assigneeId }).eq('id', consultationId);
+            // ============================================================
+           // 7. زر تكليف الموظف الرئيسي - يُنقل المهمة للموظف الجديد بدون إنشاء مهمة ثانية
+document.getElementById('btnCreateTask')?.addEventListener('click', async function() {
+    const assigneeId = document.getElementById('assigneeSelect').value;
+    const dueDate = document.getElementById('followupDueDate').value;
+    const notes = document.getElementById('managerNotes').value.trim();
+    
+    if (!assigneeId) { alert('⚠️ اختر الموظف.'); return; }
+    
+    const selectedActions = [], selectedDocs = [];
+    document.querySelectorAll('.task-action-checkbox:checked').forEach(cb => selectedActions.push(cb.value));
+    document.querySelectorAll('.task-doc-checkbox:checked').forEach(cb => selectedDocs.push(cb.value));
+    
+    if (selectedActions.length === 0 && selectedDocs.length === 0) { 
+        alert('⚠️ حدد الإجراءات أو المستندات.'); 
+        return; 
+    }
+    
+    const actionText = `الإجراءات: ${selectedActions.join(', ') || 'لا يوجد'} | المستندات: ${selectedDocs.join(', ') || 'لا يوجد'}`;
+
+    // 🔴 1. البحث عن أي مهمة سابقة على الطلب (بغض النظر عن الموظف)
+    const { data: existingTasks, error: findError } = await supabase
+        .from('client_followups')
+        .select('id, action, notes, next_followup, assigned_to')
+        .eq('request_id', consultationId)
+        .eq('is_attachment_only', false)
+        .order('followup_date', { ascending: false })
+        .limit(1);
+
+    if (findError) console.error('خطأ في البحث:', findError);
+    
+    const existingTask = (existingTasks && existingTasks.length > 0) ? existingTasks[0] : null;
+
+    // 🔴 2. التحقق من التكرار (نفس الموظف + نفس البيانات → رفض)
+    if (existingTask && String(existingTask.assigned_to) === String(assigneeId)) {
+        const oldDueDate = existingTask.next_followup ? existingTask.next_followup.split('T')[0] : '';
+        const newDueDate = dueDate || '';
+        const isSameAction = (existingTask.action || '') === actionText;
+        const isSameNotes = (existingTask.notes || '') === (notes || '');
+        const isSameDueDate = oldDueDate === newDueDate;
+        
+        if (isSameAction && isSameNotes && isSameDueDate) {
+            alert('⚠️ لم يتم الحفظ: هذه المهمة موجودة مسبقاً بنفس البيانات.');
+            return;
+        }
+    }
+
+    let error;
+    let isUpdate = false;
+    let isTransfer = false;
+
+    if (existingTask) {
+        // 🔴 3أ. يوجد مهمة سابقة → تحديثها (مع تغيير الموظف إذا اختلف)
+        isUpdate = true;
+        isTransfer = String(existingTask.assigned_to) !== String(assigneeId);
+        
+        const { error: updateError } = await supabase
+            .from('client_followups')
+            .update({
+                assigned_to: assigneeId,        // ← 🔴 تغيير الموظف
+                action: actionText,
+                notes: notes,
+                next_followup: dueDate ? new Date(dueDate).toISOString() : null,
+                followup_status: 'pending',
+                followup_date: new Date().toISOString(),
+                completed_items: { actions: [], docs: [] }
+            })
+            .eq('id', existingTask.id);
+        error = updateError;
+    } else {
+        // 🔴 3ب. لا توجد مهمة سابقة → إنشاء مهمة جديدة
+        const taskData = {
+            request_id: consultationId,
+            followup_date: new Date().toISOString(),
+            contact_method: 'other',
+            action: actionText,
+            notes: notes,
+            next_followup: dueDate ? new Date(dueDate).toISOString() : null,
+            followup_status: 'pending',
+            created_by: currentUser.id,
+            assigned_to: assigneeId,
+            is_attachment_only: false,
+            completed_items: { actions: [], docs: [] }
+        };
+        const { error: insertError } = await supabase.from('client_followups').insert(taskData);
+        error = insertError;
+    }
+
+    if (error) { alert('❌ ' + error.message); return; }
+    
+    // 🔴 4. تحديث الموظف المسند للطلب
+    const assignedEmp = allEmployees.find(e => String(e.id) === String(assigneeId));
+    if (assignedEmp && assignedEmp.role === 'followup_staff') {
+        await supabase.from('consultation_requests').update({ assigned_to: assigneeId }).eq('id', consultationId);
+    }
+    
+    // 🔴 5. رسالة حسب الحالة
+    if (isTransfer) {
+        alert('✅ تم نقل المهمة للموظف الجديد بنجاح! (بدون إنشاء مهمة جديدة)');
+    } else if (isUpdate) {
+        alert('✅ تم تحديث المهمة بنجاح!');
+    } else {
+        alert('✅ تم إنشاء المهمة وتكليف الموظف بنجاح!');
+    }
+    
+    openPreview(consultationId);
+});
+            // ============================================================
+            // 8. زر إسناد الأعمال الإضافية (مع منع التكرار - من الملف الأول)
+            // ============================================================
+            document.getElementById('btnCreateExtraTask')?.addEventListener('click', async function() {
+                const extraAssigneeId = document.getElementById('extraAssigneeSelect').value;
+                const extraDueDate = document.getElementById('extraDueDate').value;
+                const extraNotes = document.getElementById('extraNotes').value.trim();
+                if (!extraAssigneeId) { alert('اختر الشخص المكلف.'); return; }
+                const selectedExtraActions = [], selectedExtraDocs = [];
+                document.querySelectorAll('.extra-action-checkbox:checked').forEach(cb => selectedExtraActions.push(cb.value));
+                document.querySelectorAll('.extra-doc-checkbox:checked').forEach(cb => selectedExtraDocs.push(cb.value));
+                if (selectedExtraActions.length === 0 && selectedExtraDocs.length === 0) { alert('حدد الإجراءات أو المستندات الإضافية.'); return; }
+
+                const actionText = `الإجراءات: ${selectedExtraActions.join(', ') || 'لا يوجد'} | المستندات: ${selectedExtraDocs.join(', ') || 'لا يوجد'}`;
+
+                // البحث عن مهمة إضافية سابقة لنفس الطلب ونفس الموظف
+                const { data: existingExtraTasks, error: findError } = await supabase
+                    .from('client_followups')
+                    .select('id, action, notes, next_followup')
+                    .eq('request_id', consultationId)
+                    .eq('assigned_to', extraAssigneeId)
+                    .eq('is_attachment_only', false)
+                    .order('followup_date', { ascending: false })
+                    .limit(1);
+
+                if (findError) console.error('خطأ في البحث:', findError);
+                const existingExtraTask = (existingExtraTasks && existingExtraTasks.length > 0) ? existingExtraTasks[0] : null;
+
+                // التحقق من التكرار
+                if (existingExtraTask) {
+                    const oldDueDate = existingExtraTask.next_followup ? existingExtraTask.next_followup.split('T')[0] : '';
+                    const newDueDate = extraDueDate || '';
+                    const isSameAction = (existingExtraTask.action || '') === actionText;
+                    const isSameNotes = (existingExtraTask.notes || '') === (extraNotes || '');
+                    const isSameDueDate = oldDueDate === newDueDate;
+                    if (isSameAction && isSameNotes && isSameDueDate) {
+                        alert('⚠️ لم يتم الحفظ: هذه المهمة الإضافية موجودة مسبقاً بنفس البيانات.');
+                        return;
+                    }
                 }
-                alert('✅ تم إنشاء المتابعة!');
+
+                let error;
+                let isUpdate = false;
+                if (existingExtraTask) {
+                    isUpdate = true;
+                    const { error: updateError } = await supabase
+                        .from('client_followups')
+                        .update({
+                            action: actionText,
+                            notes: extraNotes,
+                            next_followup: extraDueDate ? new Date(extraDueDate).toISOString() : null,
+                            followup_status: 'pending',
+                            followup_date: new Date().toISOString(),
+                            completed_items: { actions: [], docs: [] }
+                        })
+                        .eq('id', existingExtraTask.id);
+                    error = updateError;
+                } else {
+                    const extraTaskData = {
+                        request_id: consultationId,
+                        followup_date: new Date().toISOString(),
+                        contact_method: 'other',
+                        action: actionText,
+                        notes: extraNotes,
+                        next_followup: extraDueDate ? new Date(extraDueDate).toISOString() : null,
+                        followup_status: 'pending',
+                        created_by: currentUser.id,
+                        assigned_to: extraAssigneeId,
+                        is_attachment_only: false,
+                        completed_items: { actions: [], docs: [] }
+                    };
+                    const { error: insertError } = await supabase.from('client_followups').insert(extraTaskData);
+                    error = insertError;
+                }
+
+                if (error) { alert('❌ ' + error.message); return; }
+                alert(isUpdate ? '✅ تم تحديث الأعمال الإضافية بنجاح!' : '✅ تم إسناد الأعمال الإضافية بنجاح!');
                 openPreview(consultationId);
             });
 
@@ -1085,7 +1164,7 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
     }
 
     // ============================================================
-    // 12. التنبيهات الذكية
+    // 11. التنبيهات الذكية
     // ============================================================
     async function loadSmartAlerts() {
         const container = document.getElementById('alertsContainer');
@@ -1148,7 +1227,7 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
     }
 
     // ============================================================
-    // 13. التقارير
+    // 12. التقارير
     // ============================================================
     async function loadReports() {
         try {
@@ -1201,16 +1280,6 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
             const { data: reqs } = await supabase.from('consultation_requests').select('service');
             if (!reqs || reqs.length === 0) { tc.innerHTML = '<div class="message">لا توجد طلبات.</div>'; return; }
             const sn = SERVICE_NAMES;
-			const SERVICE_COLORS = {
-    corporate: { bg: '#e7f3ff', color: '#2d7aff' },
-    contracts: { bg: '#e7f9ef', color: '#28a745' },
-    litigation: { bg: '#fff9e6', color: '#856404' },
-    arbitration: { bg: '#e0f7fa', color: '#17a2b8' },
-    ip: { bg: '#f8d7da', color: '#dc3545' },
-    other: { bg: '#f0f2f5', color: '#6c757d' }
-};
-
-
             const sc = { corporate: '#2d7aff', contracts: '#28a745', litigation: '#ffc107', arbitration: '#17a2b8', ip: '#dc3545', other: '#6c757d' };
             const counts = {};
             reqs.forEach(r => { const s = r.service || 'other'; counts[s] = (counts[s] || 0) + 1; });
@@ -1247,7 +1316,7 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
     }
 
     // ============================================================
-    // 14. إضافة طلب يدوي
+    // 13. إضافة طلب يدوي
     // ============================================================
     async function addManualConsultation() {
         const name = document.getElementById('manualName').value.trim();
@@ -1290,7 +1359,7 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
     }
 
     // ============================================================
-    // 15. إضافة موظف
+    // 14. إضافة موظف
     // ============================================================
     async function addEmployee() {
         const name = document.getElementById('empName').value.trim();
@@ -1310,7 +1379,7 @@ document.querySelectorAll('.btn-save-employee-tasks').forEach(btn => {
     }
 
     // ============================================================
-    // 16. تشغيل التهيئة
+    // 15. تشغيل التهيئة
     // ============================================================
     document.addEventListener('DOMContentLoaded', initPage);
 
