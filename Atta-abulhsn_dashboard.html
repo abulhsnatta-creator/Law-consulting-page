@@ -1754,6 +1754,7 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
         created_by: currentUser.id,
         assigned_to: extraAssigneeId,
         is_attachment_only: false,
+	    task_type: 'extra',                 // ✅ الإضافة
         completed_items: { actions: [], docs: [] }
     });
     
