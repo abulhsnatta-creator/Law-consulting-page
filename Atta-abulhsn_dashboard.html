@@ -1717,7 +1717,7 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
         }
     });
     
-    // إذا وُجد تعارض → رفض
+    // 🔴 إذا وُجد تعارض → عرض خيار النقل
     if (conflicts.length > 0) {
         let msg = '⚠️ تعارض مع مهام إضافية لموظفين آخرين:\n\n';
         conflicts.forEach(c => {
@@ -1727,12 +1727,48 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
             if (c.docs.length > 0) msg += `   📎 ${c.docs.join(', ')}\n`;
             msg += '\n';
         });
-        msg += 'لا يمكن إسناد نفس الإجراءات لموظفين مختلفين.';
-        toast('❌ تعارض مع موظف آخر', 'error');
-        alert(msg);
-        return;
-    }
-    
+        msg += '🔀 هل تريد نقل هذه الإجراءات من الموظفين السابقين إلى الموظف الجديد؟\n\n';
+        msg += '⚠️ سيتم حذفها من مهام الموظفين السابقين.';
+        
+        if (!confirm(msg)) {
+            toast('تم الإلغاء.', 'info');
+            return;
+        }
+        
+        // 🔴 نقل الإجراءات المتعارضة
+        for (const conflict of conflicts) {
+            const oldTask = (allExtraTasks || []).find(
+                t => String(t.assigned_to) === String(conflict.employee)
+            );
+            if (!oldTask) continue;
+            
+            const parsed = parseActionString(oldTask.action);
+            const remainingActions = parsed.actions.filter(a => !conflict.actions.includes(a));
+            const remainingDocs = parsed.docs.filter(d => !conflict.docs.includes(d));
+            
+            // إذا أصبحت المهمة فارغة → احذفها
+            if (remainingActions.length === 0 && remainingDocs.length === 0) {
+                const { error: deleteError } = await supabase
+                    .from('client_followups')
+                    .delete()
+                    .eq('id', oldTask.id);
+                if (deleteError) { toast('❌ فشل حذف المهمة السابقة: ' + deleteError.message, 'error'); return; }
+            } else {
+                // حدّثها بالإجراءات المتبقية
+                const { error: updateError } = await supabase
+                    .from('client_followups')
+                    .update({
+                        action: buildActionString(remainingActions, remainingDocs),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', oldTask.id);
+                if (updateError) { toast('❌ فشل تحديث المهمة السابقة: ' + updateError.message, 'error'); return; }
+            }
+        }
+        
+        toast('✅ تم نقل الإجراءات المتعارضة بنجاح!');
+        // ⚠️ لا نعود — نكمل لإنشاء مهمة جديدة للموظف الجديد
+    }    
     // 2ب: لا توجد تعارضات → إنشاء مهمة إضافية جديدة
     const { error: insertError } = await supabase.from('client_followups').insert({
         request_id: consultationId,
