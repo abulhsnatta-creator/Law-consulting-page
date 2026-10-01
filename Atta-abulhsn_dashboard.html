@@ -1609,15 +1609,15 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
         return;
     }
     
-    // 🆕 اجلب كل المهام الإضافية لهذا الموظف على هذا الطلب
-    const { data: existingExtraTasks, error: findError } = await supabase
-        .from('client_followups')
-        .select('id, action, notes, next_followup, assigned_to')
-        .eq('request_id', consultationId)
-        .eq('assigned_to', extraAssigneeId)
-        .eq('is_attachment_only', false)
-        .order('followup_date', { ascending: false });
-    
+   // 🔴 البحث عن مهمة إضافية سابقة لنفس الطلب (بغض النظر عن الموظف)
+const { data: existingExtraTasks, error: findError } = await supabase
+    .from('client_followups')
+    .select('id, action, notes, next_followup, assigned_to')
+    .eq('request_id', consultationId)
+    .eq('task_type', 'extra')                  // ✅ البحث بـ task_type
+    .eq('is_attachment_only', false)
+    .order('followup_date', { ascending: false })
+    .limit(1); 
     if (findError) { toast('❌ ' + findError.message, 'error'); return; }
     
     // 🆕 ابحث عن مهمة "الأعمال الإضافية" (المميزة)
