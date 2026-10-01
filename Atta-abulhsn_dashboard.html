@@ -1598,7 +1598,6 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
     
     if (!extraAssigneeId) { toast('⚠️ اختر الشخص المكلف.', 'warning'); return; }
     
-    // جمع الإجراءات والمستندات الإضافية
     const selectedExtraActions = [];
     const selectedExtraDocs = [];
     document.querySelectorAll('.extra-action-checkbox:checked').forEach(cb => selectedExtraActions.push(cb.value));
@@ -1609,33 +1608,7 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
         return;
     }
     
-   // 🔴 البحث عن مهمة إضافية سابقة لنفس الطلب (بغض النظر عن الموظف)
-const { data: existingExtraTasks, error: findError } = await supabase
-    .from('client_followups')
-    .select('id, action, notes, next_followup, assigned_to')
-    .eq('request_id', consultationId)
-    .eq('task_type', 'extra')                  // ✅ البحث بـ task_type
-    .eq('is_attachment_only', false)
-    .order('followup_date', { ascending: false })
-    .limit(1); 
-    if (findError) { toast('❌ ' + findError.message, 'error'); return; }
-    
-    // 🆕 ابحث عن مهمة "الأعمال الإضافية" (المميزة)
-    // الأعمال الإضافية لها إجراءات من قائمة: متابعة هاتفية، تذكير بموعد، إلخ
-    const EXTRA_ACTIONS = ['متابعة هاتفية', 'تذكير بموعد', 'تنسيق مع جهة خارجية', 'أعمال إدارية'];
-    const EXTRA_DOCS = ['تقارير', 'مراسلات', 'نماذج'];
-    
-    // مهمة إضافية = مهمة تحتوي على أي إجراء من القائمة الإضافية
-    const existingExtraTask = (existingExtraTasks || []).find(t => {
-        const parsed = parseActionString(t.action);
-        return parsed.actions.some(a => EXTRA_ACTIONS.includes(a)) ||
-               parsed.docs.some(d => EXTRA_DOCS.includes(d));
-    }) || null;
-    
-    // ============================================================
-    // 🆕 منطق المقارنة الذكي
-    // ============================================================
-    
+    // دالة تحليل action
     function parseActionString(actionStr) {
         const parts = (actionStr || '').split('|');
         const actions = parts[0] ? parts[0].replace('الإجراءات:', '').trim().split(',').map(i => i.trim()).filter(i => i && i !== 'لا يوجد') : [];
@@ -1647,123 +1620,140 @@ const { data: existingExtraTasks, error: findError } = await supabase
         return `الإجراءات: ${actions.join(', ') || 'لا يوجد'} | المستندات: ${docs.join(', ') || 'لا يوجد'}`;
     }
     
-    let actionText = buildActionString(selectedExtraActions, selectedExtraDocs);
+    // 🔴 1. جلب جميع المهام الإضافية على الطلب
+    const { data: allExtraTasks, error: findError } = await supabase
+        .from('client_followups')
+        .select('id, action, notes, next_followup, assigned_to')
+        .eq('request_id', consultationId)
+        .eq('task_type', 'extra')
+        .eq('is_attachment_only', false);
     
-    if (existingExtraTask) {
-        // 🆕 استخرج الإجراءات القديمة
-        const old = parseActionString(existingExtraTask.action);
-        const oldActions = old.actions;
-        const oldDocs = old.docs;
+    if (findError) { toast('❌ ' + findError.message, 'error'); return; }
+    
+    // 🔴 2. مهمة إضافية لنفس الموظف؟
+    const existingTaskForSameEmployee = (allExtraTasks || []).find(
+        t => String(t.assigned_to) === String(extraAssigneeId)
+    );
+    
+    // ============================================================
+    // الحالة 1: توجد مهمة لنفس الموظف → تحديث
+    // ============================================================
+    if (existingTaskForSameEmployee) {
+        const existing = existingTaskForSameEmployee;
+        const old = parseActionString(existing.action);
         
-        // 🆕 احسب الفروق
-        const actionsRemoved = oldActions.filter(a => !selectedExtraActions.includes(a));
-        const actionsAdded = selectedExtraActions.filter(a => !oldActions.includes(a));
-        const docsRemoved = oldDocs.filter(d => !selectedExtraDocs.includes(d));
-        const docsAdded = selectedExtraDocs.filter(d => !oldDocs.includes(d));
+        const actionsRemoved = old.actions.filter(a => !selectedExtraActions.includes(a));
+        const actionsAdded = selectedExtraActions.filter(a => !old.actions.includes(a));
+        const docsRemoved = old.docs.filter(d => !selectedExtraDocs.includes(d));
+        const docsAdded = selectedExtraDocs.filter(d => !old.docs.includes(d));
         
         const hasRemoved = actionsRemoved.length > 0 || docsRemoved.length > 0;
         const hasAdded = actionsAdded.length > 0 || docsAdded.length > 0;
         
-        // ============================================================
-        // الحالة 1: متطابقة تماماً
-        // ============================================================
+        // نفس البيانات تماماً → رفض
         if (!hasRemoved && !hasAdded) {
-            toast('⚠️ الأعمال الإضافية موجودة مسبقاً بنفس البيانات.', 'warning');
+            toast('⚠️ المهمة الإضافية موجودة مسبقاً بنفس البيانات.', 'warning');
             return;
         }
         
-        // ============================================================
-        // الحالة 2: جديدة أكبر (لا محذوف، هناك مضاف) — حدّث
-        // ============================================================
+        let finalActions = selectedExtraActions;
+        let finalDocs = selectedExtraDocs;
+        
+        // دمج تلقائي (لا محذوف، هناك مضاف)
         if (!hasRemoved && hasAdded) {
-            // ادمج الإجراءات (القديمة + الجديدة)
-            const finalActions = [...new Set([...oldActions, ...selectedExtraActions])];
-            const finalDocs = [...new Set([...oldDocs, ...selectedExtraDocs])];
-            actionText = buildActionString(finalActions, finalDocs);
-            
-            const { error: updateError } = await supabase
-                .from('client_followups')
-                .update({
-                    action: actionText,
-                    notes: extraNotes,
-                    next_followup: extraDueDate ? new Date(extraDueDate).toISOString() : null,
-                    followup_status: 'pending',
-                    followup_date: new Date().toISOString(),
-                    completed_items: { actions: [], docs: [] }
-                })
-                .eq('id', existingExtraTask.id);
-            
-            if (updateError) { toast('❌ ' + updateError.message, 'error'); return; }
-            
-            toast(`✅ تم تحديث الأعمال الإضافية (${actionsAdded.length + docsAdded.length} عنصر جديد).`);
-            openPreview(consultationId);
-            return;
+            finalActions = [...new Set([...old.actions, ...selectedExtraActions])];
+            finalDocs = [...new Set([...old.docs, ...selectedExtraDocs])];
         }
-        
-        // ============================================================
-        // الحالة 3: جديدة أصغر أو مختلفة (هناك محذوف) — حذّر
-        // ============================================================
-        if (hasRemoved) {
-            const removedList = [...actionsRemoved, ...docsRemoved];
-            const addedList = [...actionsAdded, ...docsAdded];
-            
-            let msg = '⚠️ يوجد أعمال إضافية مسجلة لهذا الموظف.\n\n';
-            if (actionsRemoved.length > 0) msg += `📌 إجراءات سيتم حذفها:\n- ${actionsRemoved.join('\n- ')}\n\n`;
-            if (docsRemoved.length > 0) msg += `📎 مستندات سيتم حذفها:\n- ${docsRemoved.join('\n- ')}\n\n`;
+        // يوجد محذوف → تأكيد
+        else if (hasRemoved) {
+            let msg = '⚠️ يوجد مهمة إضافية لهذا الموظف.\n\n';
+            if (actionsRemoved.length > 0) msg += `📌 إجراءات ستُحذف:\n- ${actionsRemoved.join('\n- ')}\n\n`;
+            if (docsRemoved.length > 0) msg += `📎 مستندات ستُحذف:\n- ${docsRemoved.join('\n- ')}\n\n`;
             if (actionsAdded.length > 0) msg += `➕ إجراءات جديدة:\n- ${actionsAdded.join('\n- ')}\n\n`;
             if (docsAdded.length > 0) msg += `➕ مستندات جديدة:\n- ${docsAdded.join('\n- ')}\n\n`;
-            msg += 'هل تريد تعديل الأعمال الإضافية الحالية؟';
-            
-            if (!confirm(msg)) {
-                toast('تم الإلغاء.', 'info');
-                return;
-            }
-            
-            // المستخدم أكد التعديل
-            const { error: updateError } = await supabase
-                .from('client_followups')
-                .update({
-                    action: actionText,
-                    notes: extraNotes,
-                    next_followup: extraDueDate ? new Date(extraDueDate).toISOString() : null,
-                    followup_status: 'pending',
-                    followup_date: new Date().toISOString(),
-                    completed_items: { actions: [], docs: [] }
-                })
-                .eq('id', existingExtraTask.id);
-            
-            if (updateError) { toast('❌ ' + updateError.message, 'error'); return; }
-            
-            toast('✅ تم تعديل الأعمال الإضافية.');
-            openPreview(consultationId);
-            return;
+            msg += 'هل تريد تعديل المهمة الحالية؟';
+            if (!confirm(msg)) { toast('تم الإلغاء.', 'info'); return; }
         }
+        
+        const { error: updateError } = await supabase
+            .from('client_followups')
+            .update({
+                action: buildActionString(finalActions, finalDocs),
+                notes: extraNotes,
+                next_followup: extraDueDate ? new Date(extraDueDate).toISOString() : null,
+                followup_status: 'pending',
+                followup_date: new Date().toISOString(),
+                completed_items: { actions: [], docs: [] }
+            })
+            .eq('id', existing.id);
+        
+        if (updateError) { toast('❌ ' + updateError.message, 'error'); return; }
+        toast('✅ تم تحديث المهمة الإضافية!');
+        openPreview(consultationId);
+        return;
     }
     
     // ============================================================
-    // لا توجد أعمال إضافية سابقة — أنشئ مهمة جديدة
+    // الحالة 2: لا توجد مهمة لنفس الموظف
     // ============================================================
+    
+    // 2أ: فحص التعارض مع موظفين آخرين
+    const otherTasks = (allExtraTasks || []).filter(
+        t => String(t.assigned_to) !== String(extraAssigneeId)
+    );
+    
+    const conflicts = [];
+    otherTasks.forEach(t => {
+        const parsed = parseActionString(t.action);
+        const overlapActions = selectedExtraActions.filter(a => parsed.actions.includes(a));
+        const overlapDocs = selectedExtraDocs.filter(d => parsed.docs.includes(d));
+        
+        if (overlapActions.length > 0 || overlapDocs.length > 0) {
+            conflicts.push({
+                employee: t.assigned_to,
+                actions: overlapActions,
+                docs: overlapDocs
+            });
+        }
+    });
+    
+    // إذا وُجد تعارض → رفض
+    if (conflicts.length > 0) {
+        let msg = '⚠️ تعارض مع مهام إضافية لموظفين آخرين:\n\n';
+        conflicts.forEach(c => {
+            const empName = getStaffName(c.employee);
+            msg += `👤 ${empName}:\n`;
+            if (c.actions.length > 0) msg += `   📌 ${c.actions.join(', ')}\n`;
+            if (c.docs.length > 0) msg += `   📎 ${c.docs.join(', ')}\n`;
+            msg += '\n';
+        });
+        msg += 'لا يمكن إسناد نفس الإجراءات لموظفين مختلفين.';
+        toast('❌ تعارض مع موظف آخر', 'error');
+        alert(msg);
+        return;
+    }
+    
+    // 2ب: لا توجد تعارضات → إنشاء مهمة إضافية جديدة
     const { error: insertError } = await supabase.from('client_followups').insert({
         request_id: consultationId,
         followup_date: new Date().toISOString(),
         contact_method: 'other',
-        action: actionText,
+        action: `الإجراءات: ${selectedExtraActions.join(', ') || 'لا يوجد'} | المستندات: ${selectedExtraDocs.join(', ') || 'لا يوجد'}`,
         notes: extraNotes,
         next_followup: extraDueDate ? new Date(extraDueDate).toISOString() : null,
         followup_status: 'pending',
         created_by: currentUser.id,
         assigned_to: extraAssigneeId,
         is_attachment_only: false,
-	    task_type: 'extra',                 // ✅ الإضافة
+        task_type: 'extra',
         completed_items: { actions: [], docs: [] }
     });
     
     if (insertError) { toast('❌ ' + insertError.message, 'error'); return; }
-    
     toast('✅ تم إسناد الأعمال الإضافية!');
     openPreview(consultationId);
 });
-        // modal إجراء
+		// modal إجراء
         function openActionModal(mode, actionId = null, actionData = null, presetAssignee = null) {
             const isEdit = mode === 'edit';
             const isManagerRequest = mode === 'manager_request';
