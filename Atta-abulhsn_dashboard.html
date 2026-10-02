@@ -1064,11 +1064,27 @@ const { data: followups } = await supabase
                         <button id="btnCreateExtraTask" class="dashboard-btn" style="margin-top: 15px; background: #2d7aff; width: 100%;">📋 إسناد/تحديث الأعمال الإضافية</button>
                     </div>
                 </div>`;
-            } else if (currentUser.role === 'followup_staff' || currentUser.role === 'secretary') {
-                const myTasks = (followups || []).filter(f => String(f.assigned_to) === String(currentUser.id) && !f.is_attachment_only);
-                const otherTasks = currentUser.role === 'secretary'
-                    ? (followups || []).filter(f => String(f.assigned_to) !== String(currentUser.id) && !f.is_attachment_only)
-                    : [];
+} else if (currentUser.role === 'followup_staff' || currentUser.role === 'secretary') {
+    // 🔴 ترتيب: رئيسية أولاً، ثم إضافية، ثم حسب التاريخ
+    const myTasks = (followups || [])
+        .filter(f => String(f.assigned_to) === String(currentUser.id) && !f.is_attachment_only)
+        .sort((a, b) => {
+            // 1. الرئيسية قبل الإضافية
+            if (a.task_type === 'main' && b.task_type !== 'main') return -1;
+            if (a.task_type !== 'main' && b.task_type === 'main') return 1;
+            // 2. ثم حسب تاريخ الإنشاء (الأحدث أولاً)
+            return new Date(b.followup_date || 0) - new Date(a.followup_date || 0);
+        });
+    
+    const otherTasks = currentUser.role === 'secretary'
+        ? (followups || [])
+            .filter(f => String(f.assigned_to) !== String(currentUser.id) && !f.is_attachment_only)
+            .sort((a, b) => {
+                if (a.task_type === 'main' && b.task_type !== 'main') return -1;
+                if (a.task_type !== 'main' && b.task_type === 'main') return 1;
+                return new Date(b.followup_date || 0) - new Date(a.followup_date || 0);
+            })
+        : [];
 
                 const buildTask = (task, editable) => {
                     const dueDate = task.next_followup ? new Date(task.next_followup).toLocaleDateString('ar-EG') : 'غير محدد';
@@ -1083,10 +1099,14 @@ const { data: followups } = await supabase
                     const totalReq = actionsArray.length + docsArray.length;
                     const totalDone = doneActions.length + doneDocs.length;
                     const percent = totalReq > 0 ? Math.round((totalDone / totalReq) * 100) : 0;
+const typeBadge = task.task_type === 'extra'
+    ? '<span style="background: #2d7aff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-right: 5px;">📋 إضافية</span>'
+    : '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-right: 5px;">📌 رئيسية</span>';
 
-                    return `<div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: ${editable ? '#f8faff' : '#f5f5f5'}; border-right: 4px solid ${status.color};">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><strong>📋 مهمة #${escapeHtml(String(task.id).slice(0, 8))}</strong><span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">${status.text}</span></div>
-                        ${actionsArray.map(act => { const isDone = doneActions.includes(act); return `<label style="display: flex; align-items: center; gap: 5px; background: ${isDone ? '#e7f9ef' : 'white'}; padding: 6px 10px; border-radius: 6px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; font-size: 12px; margin: 4px 0;"><input type="checkbox" class="${editable ? 'employee-task-action' : ''}" data-task-id="${task.id}" value="${escapeHtml(act)}" ${isDone ? 'checked disabled' : (editable && !isFinished ? '' : 'disabled')}> ${isDone ? '✅' : ''} ${escapeHtml(act)}</label>`; }).join('')}
+return `<div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: ${editable ? '#f8faff' : '#f5f5f5'}; border-right: 4px solid ${status.color};">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><strong>${typeBadge} مهمة #${escapeHtml(String(task.id).slice(0, 8))}</strong><span style="background: ${status.color}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">${status.text}</span></div>
+                    
+					${actionsArray.map(act => { const isDone = doneActions.includes(act); return `<label style="display: flex; align-items: center; gap: 5px; background: ${isDone ? '#e7f9ef' : 'white'}; padding: 6px 10px; border-radius: 6px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; font-size: 12px; margin: 4px 0;"><input type="checkbox" class="${editable ? 'employee-task-action' : ''}" data-task-id="${task.id}" value="${escapeHtml(act)}" ${isDone ? 'checked disabled' : (editable && !isFinished ? '' : 'disabled')}> ${isDone ? '✅' : ''} ${escapeHtml(act)}</label>`; }).join('')}
                         ${docsArray.map(doc => { const isDone = doneDocs.includes(doc); return `<label style="display: flex; align-items: center; gap: 5px; background: ${isDone ? '#e7f9ef' : 'white'}; padding: 6px 10px; border-radius: 6px; border: 1px solid ${isDone ? '#28a745' : '#dce1e8'}; font-size: 12px; margin: 4px 0;"><input type="checkbox" class="${editable ? 'employee-task-doc' : ''}" data-task-id="${task.id}" value="${escapeHtml(doc)}" ${isDone ? 'checked disabled' : (editable && !isFinished ? '' : 'disabled')}> ${isDone ? '✅' : ''} ${escapeHtml(doc)}</label>`; }).join('')}
                         ${(task.followup_status === 'in_progress' || task.followup_status === 'completed') && totalReq > 0 ? `<div style="margin-top: 10px;"><div style="display: flex; justify-content: space-between; font-size: 11px;"><span>نسبة الإنجاز</span><span>${percent}%</span></div><div style="background: #f0f2f5; border-radius: 12px; height: 12px; overflow: hidden;"><div style="background: ${percent === 100 ? '#28a745' : '#2d7aff'}; height: 100%; width: ${percent}%;"></div></div></div>` : ''}
                         ${task.notes && !task.notes.includes('تم إنجاز:') ? `<div style="font-size: 12px; margin-top: 8px; background: #fff9e6; padding: 8px; border-radius: 6px; border-right: 3px solid #ffc107;"><strong>📝 تعليمات المدير:</strong> ${safeText(task.notes)}</div>` : ''}
