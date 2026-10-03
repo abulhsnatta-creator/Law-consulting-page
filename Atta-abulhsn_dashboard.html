@@ -1315,8 +1315,80 @@ return `<div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px
     actionCardHtml = cards;
 }
             // عرض كل الكروت
-            body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${initialCard}${attachmentsCard}${actionCardHtml}</div>`;
+                  // 🆕 كارت المهام المسندة للموظفين
+            const allAssignedTasks = (followups || []).filter(f => !f.is_attachment_only);
+            
+            // ترتيب: رئيسية أولاً، ثم إضافية
+            allAssignedTasks.sort((a, b) => {
+                if (a.task_type === 'main' && b.task_type !== 'main') return -1;
+                if (a.task_type !== 'main' && b.task_type === 'main') return 1;
+                return new Date(b.followup_date || 0) - new Date(a.followup_date || 0);
+            });
 
+            let assignedTasksCard = '';
+            if (allAssignedTasks.length > 0) {
+                let tasksTableHtml = `
+                    <div class="table-responsive" style="margin-top: 10px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #2d7aff; color: white;">
+                                    <th style="padding: 8px; text-align: center; font-size: 12px;">#</th>
+                                    <th style="padding: 8px; text-align: center; font-size: 12px;">النوع</th>
+                                    <th style="padding: 8px; text-align: center; font-size: 12px;">الموظف</th>
+                                    <th style="padding: 8px; text-align: center; font-size: 12px;">الإجراءات</th>
+                                    <th style="padding: 8px; text-align: center; font-size: 12px;">تاريخ الانتهاء</th>
+                                    <th style="padding: 8px; text-align: center; font-size: 12px;">الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                allAssignedTasks.forEach((task, idx) => {
+                    const empName = getStaffName(task.assigned_to);
+                    const dueDate = formatDateAr(task.next_followup);
+                    const statusBadge = task.followup_status === 'completed'
+                        ? '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">✅ مكتمل</span>'
+                        : task.followup_status === 'failed'
+                        ? '<span style="background: #dc3545; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">❌ متعذر</span>'
+                        : task.followup_status === 'in_progress'
+                        ? '<span style="background: #17a2b8; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">🔄 قيد التنفيذ</span>'
+                        : '<span style="background: #ffc107; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">⏳ بانتظار</span>';
+                    
+                    const typeBadge = task.task_type === 'extra'
+                        ? '<span style="background: #2d7aff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600;">📋 إضافية</span>'
+                        : '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600;">📌 رئيسية</span>';
+                    
+                    // استخراج الإجراءات من action
+                    const actionParts = (task.action || '').split('|');
+                    const actionsList = actionParts[0] ? actionParts[0].replace('الإجراءات:', '').trim().substring(0, 50) : '';
+                    const actionsDisplay = actionsList ? `${escapeHtml(actionsList)}${actionsList.length >= 50 ? '...' : ''}` : '<span style="color: #cbd5e0;">—</span>';
+                    
+                    tasksTableHtml += `
+                        <tr style="border-bottom: 1px solid #e9edf4; ${task.followup_status === 'completed' ? 'background: #f0fff4;' : ''}">
+                            <td style="padding: 8px; text-align: center; font-size: 12px;">${idx + 1}</td>
+                            <td style="padding: 8px; text-align: center;">${typeBadge}</td>
+                            <td style="padding: 8px; text-align: center; font-size: 12px; font-weight: 600;">${escapeHtml(empName)}</td>
+                            <td style="padding: 8px; text-align: center; font-size: 12px; color: #555;">${actionsDisplay}</td>
+                            <td style="padding: 8px; text-align: center; font-size: 12px;">${dueDate}</td>
+                            <td style="padding: 8px; text-align: center;">${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+                
+                tasksTableHtml += `</tbody></table></div>`;
+                
+                assignedTasksCard = `
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <h3><span class="icon-circle">📊</span> المهام المسندة للموظفين <span style="font-size: 13px; color: #718096; font-weight: normal;">(${allAssignedTasks.length})</span></h3>
+                        </div>
+                        <div class="dashboard-card-body">
+                            ${tasksTableHtml}
+                        </div>
+                    </div>
+                `;
+            }
+            body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${initialCard}${assignedTasksCard}${attachmentsCard}${actionCardHtml}</div>`;
             // ربط الأزرار
             bindPreviewButtons(consultationId, actionFollowups);
 
