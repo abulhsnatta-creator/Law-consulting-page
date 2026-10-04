@@ -692,43 +692,44 @@
                 allConsultations = Array.from(mergedMap.values());
 
 				allConsultations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-				            } else if (currentUser.role === 'followup_staff') {
-                // 🔴 1. الطلبات المُسندة إليه مباشرة
-                const { data: directAssigned, error: err1 } = await supabase
-                    .from('consultation_requests')
-                    .select('*')
-                    .eq('assigned_to', currentUser.id)
-                    .order('created_at', { ascending: false });
-                if (err1) throw err1;
+				                } else if (currentUser.role === 'followup_staff') {
+    // 🔴 1. الطلبات المُسندة إليه مباشرة
+    const { data: directAssigned, error: err1 } = await supabase
+        .from('consultation_requests')
+        .select('*')
+        .eq('assigned_to', currentUser.id)
+        .order('created_at', { ascending: false });
+    if (err1) throw err1;
 
-                // 🔴 2. الطلبات التي لديه فيها مهمة (main أو extra)
-                const { data: myTasks, error: err2 } = await supabase
-                    .from('client_followups')
-                    .select('request_id')
-                    .eq('assigned_to', currentUser.id)
-                    .eq('is_attachment_only', false);
-                if (err2) throw err2;
+    // 🔴 2. الطلبات التي لديه فيها مهمة (main أو extra)
+    const { data: myTasks, error: err2 } = await supabase
+        .from('client_followups')
+        .select('request_id')
+        .eq('assigned_to', currentUser.id)
+        .eq('is_attachment_only', false);
+    if (err2) throw err2;
 
-                const taskRequestIds = [...new Set((myTasks || []).map(t => t.request_id))];
+    const taskRequestIds = [...new Set((myTasks || []).map(t => t.request_id))];
 
-                // 🔴 3. جلب الطلبات المرتبطة بمهامه
-                let assignedByTask = [];
-                if (taskRequestIds.length > 0) {
-                    const { data: taskRequests, error: err3 } = await supabase
-                        .from('consultation_requests')
-                        .select('*')
-                        .in('id', taskRequestIds)
-                        .order('created_at', { ascending: false });
-                    if (err3) throw err3;
-                    assignedByTask = taskRequests || [];
-                }
+    // 🔴 3. جلب الطلبات المرتبطة بمهامه
+    let assignedByTask = [];
+    if (taskRequestIds.length > 0) {
+        const { data: taskRequests, error: err3 } = await supabase
+            .from('consultation_requests')
+            .select('*')
+            .in('id', taskRequestIds)
+            .order('created_at', { ascending: false });
+        if (err3) throw err3;
+        assignedByTask = taskRequests || [];
+    }
 
-                // 🔴 4. دمج النتائج (بدون تكرار)
-                const mergedMap = new Map();
-                [...(directAssigned || []), ...assignedByTask].forEach(item => mergedMap.set(item.id, item));
-                allConsultations = Array.from(mergedMap.values());
-                allConsultations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  } 
+    // 🔴 4. دمج النتائج (بدون تكرار)
+    const mergedMap = new Map();
+    [...(directAssigned || []), ...assignedByTask].forEach(item => mergedMap.set(item.id, item));
+    allConsultations = Array.from(mergedMap.values());
+    allConsultations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
 			else {
                 const { data, error } = await supabase
                     .from('consultation_requests')
