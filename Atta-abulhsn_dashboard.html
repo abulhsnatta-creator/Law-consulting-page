@@ -990,16 +990,18 @@ const { data: followups } = await supabase
             </div>`;
 
             // كارت المهام
-            let tasksCard = '';
+                        let tasksCard = '';
+            let extraAssignCard = '';   // 🆕 كارت إسناد الأعمال الإضافية (للمدير فقط)
+         
             if (currentUser.role === 'manager') {
                 const empOptions = allEmployees
                     .filter(e => e.role === 'followup_staff' || e.role === 'secretary')
                     .map(emp => `<option value="${emp.id}">${escapeHtml(emp.full_name)} (${emp.role === 'secretary' ? 'سكرتير' : 'موظف'})</option>`).join('');
 
+                // 🆕 الكارت الأول: تكليف الموظف الرئيسي
                 tasksCard = `<div class="dashboard-card">
-                    <div class="dashboard-card-header"><h3><span class="icon-circle">📝</span> تكليف الموظف بمتابعة</h3></div>
+                    <div class="dashboard-card-header"><h3><span class="icon-circle">📝</span> تكليف الموظف الرئيسي</h3></div>
                     <div class="dashboard-card-body">
-                        <h4 style="color: #2d7aff; margin: 0 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid #e9edf4;">🟢 تكليف الموظف الرئيسي</h4>
                         <div style="margin-bottom: 12px;">
                             <strong style="color: #333;">📌 الإجراءات المطلوبة <span style="font-size: 11px; color: #718096; font-weight: normal;">(خاصة بخدمة: ${getServiceNameAr(consultation.service)})</span>:</strong>
                             <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
@@ -1030,18 +1032,23 @@ const { data: followups } = await supabase
                             <textarea id="managerNotes" rows="3" style="width:100%; padding:8px; border:1px solid #dce1e8; border-radius:6px;"></textarea>
                         </div>
                         <button id="btnCreateTask" class="dashboard-btn" style="margin-top: 15px; background: #28a745; width: 100%;">🟢 إنشاء/تحديث المهمة الرئيسية</button>
+                    </div>
+                </div>`;
 
-                        <h4 style="color: #2d7aff; margin: 25px 0 12px 0; padding-bottom: 8px; border-bottom: 2px dashed #e9edf4;">📋 إسناد أعمال إضافية (اختياري)</h4>
+                // 🆕 الكارت الثاني: إسناد أعمال إضافية
+                extraAssignCard = `<div class="dashboard-card">
+                    <div class="dashboard-card-header"><h3><span class="icon-circle" style="background: linear-gradient(135deg, #2d7aff, #1a5cc4);">📋</span> إسناد أعمال إضافية</h3></div>
+                    <div class="dashboard-card-body">
                         <div style="margin-bottom: 12px;">
                             <strong style="color: #333;">الإجراءات الإضافية:</strong>
                             <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                                ${['متابعة هاتفية', 'تذكير بموعد', 'تنسيق مع جهة خارجية', 'أعمال إدارية'].map(a => `<label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" class="extra-action-checkbox" value="${a}"> ${a}</label>`).join('')}
+                                ${['متابعة هاتفية', 'تذكير بموعد', 'تنسيق مع جهة خارجية', 'أعمال إدارية'].map(a => `<label style="display: flex; align-items: center; gap: 5px; background: #f0f4ff; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8;"><input type="checkbox" class="extra-action-checkbox" value="${a}"> ${a}</label>`).join('')}
                             </div>
                         </div>
                         <div style="margin-bottom: 12px;">
                             <strong style="color: #333;">المستندات الإضافية:</strong>
                             <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                                ${['تقارير', 'مراسلات', 'نماذج'].map(d => `<label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" class="extra-doc-checkbox" value="${d}"> ${d}</label>`).join('')}
+                                ${['تقارير', 'مراسلات', 'نماذج'].map(d => `<label style="display: flex; align-items: center; gap: 5px; background: #fff9e6; padding: 6px 10px; border-radius: 6px; border: 1px solid #dce1e8;"><input type="checkbox" class="extra-doc-checkbox" value="${d}"> ${d}</label>`).join('')}
                             </div>
                         </div>
                         <div class="dashboard-form-grid">
@@ -1064,7 +1071,8 @@ const { data: followups } = await supabase
                         <button id="btnCreateExtraTask" class="dashboard-btn" style="margin-top: 15px; background: #2d7aff; width: 100%;">📋 إسناد/تحديث الأعمال الإضافية</button>
                     </div>
                 </div>`;
-} else if (currentUser.role === 'followup_staff' || currentUser.role === 'secretary') {
+            }
+else if (currentUser.role === 'followup_staff' || currentUser.role === 'secretary') {
     // 🔴 ترتيب: رئيسية أولاً، ثم إضافية، ثم حسب التاريخ
     const myTasks = (followups || [])
         .filter(f => String(f.assigned_to) === String(currentUser.id) && !f.is_attachment_only)
@@ -1115,17 +1123,50 @@ return `<div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px
                     </div>`;
                 };
 
-                let tasksHtml = '';
-                if (currentUser.role === 'secretary') {
-                    tasksHtml = `<h4 style="color: #28a745; margin: 0 0 10px 0;">📌 مهامي</h4>`;
-                    tasksHtml += myTasks.length > 0 ? myTasks.map(t => buildTask(t, true)).join('') : '<div class="message">لا توجد مهام.</div>';
-                    tasksHtml += `<hr style="margin: 15px 0;"><h4 style="color: #2d7aff; margin: 0 0 10px 0;">👁️ مهام الموظف (للاطلاع)</h4>`;
-                    tasksHtml += otherTasks.length > 0 ? otherTasks.map(t => buildTask(t, false)).join('') : '<div class="message">لا توجد مهام.</div>';
-                } else {
-                    tasksHtml = myTasks.length > 0 ? myTasks.map(t => buildTask(t, true)).join('') : '<div class="message">✅ لا توجد مهام نشطة.</div>';
+                // 🔴 فصل المهام الرئيسية عن الإضافية
+                const mainMyTasks = myTasks.filter(t => t.task_type !== 'extra');
+                const extraMyTasks = myTasks.filter(t => t.task_type === 'extra');
+
+                // بناء HTML للمهام الرئيسية
+                let mainTasksHtml = mainMyTasks.length > 0
+                    ? mainMyTasks.map(t => buildTask(t, true)).join('')
+                    : '<div class="message" style="text-align: center; padding: 15px; background: #f0f4ff; border-radius: 8px; font-size: 13px;">📭 لا توجد مهام رئيسية.</div>';
+
+                // بناء HTML للأعمال الإضافية
+                let extraTasksHtml = extraMyTasks.length > 0
+                    ? extraMyTasks.map(t => buildTask(t, true)).join('')
+                    : '<div class="message" style="text-align: center; padding: 15px; background: #f0f4ff; border-radius: 8px; font-size: 13px;">📭 لا توجد أعمال إضافية.</div>';
+
+                // كارت الاطلاع (للسكرتير فقط)
+                let otherViewCard = '';
+                if (currentUser.role === 'secretary' && otherTasks.length > 0) {
+                    otherViewCard = `
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h3><span class="icon-circle" style="background: linear-gradient(135deg, #6c757d, #495057);">👁️</span> مهام الموظف (للاطلاع) <span style="font-size: 13px; color: #718096; font-weight: normal;">(${otherTasks.length})</span></h3>
+                            </div>
+                            <div class="dashboard-card-body">
+                                ${otherTasks.map(t => buildTask(t, false)).join('')}
+                            </div>
+                        </div>
+                    `;
                 }
 
-                tasksCard = `<div class="dashboard-card"><div class="dashboard-card-header"><h3><span class="icon-circle">🔔</span> المهام</h3></div><div class="dashboard-card-body">${tasksHtml}</div></div>`;
+                // كارت المهام الرئيسية + كارت الأعمال الإضافية
+                tasksCard = `
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <h3><span class="icon-circle" style="background: linear-gradient(135deg, #28a745, #20c997);">📌</span> المهام الرئيسية <span style="font-size: 13px; color: #718096; font-weight: normal;">(${mainMyTasks.length})</span></h3>
+                        </div>
+                        <div class="dashboard-card-body">${mainTasksHtml}</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <h3><span class="icon-circle" style="background: linear-gradient(135deg, #2d7aff, #1a5cc4);">📋</span> الأعمال الإضافية <span style="font-size: 13px; color: #718096; font-weight: normal;">(${extraMyTasks.length})</span></h3>
+                        </div>
+                        <div class="dashboard-card-body">${extraTasksHtml}</div>
+                    </div>
+                ` + otherViewCard;
             }
 
             // كارت المقابلة الأولى
@@ -1315,58 +1356,57 @@ return `<div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px
     actionCardHtml = cards;
 }
             // عرض كل الكروت
-                  // 🆕 كارت المهام المسندة للموظفين
-            const allAssignedTasks = (followups || []).filter(f => !f.is_attachment_only);
-            
-            // ترتيب: رئيسية أولاً، ثم إضافية
-            allAssignedTasks.sort((a, b) => {
-                if (a.task_type === 'main' && b.task_type !== 'main') return -1;
-                if (a.task_type !== 'main' && b.task_type === 'main') return 1;
-                return new Date(b.followup_date || 0) - new Date(a.followup_date || 0);
-            });
-
-            let assignedTasksCard = '';
-            if (allAssignedTasks.length > 0) {
+            // 🆕 دالة موحدة لبناء كارت المهام المسندة
+            function buildAssignedTasksCard(tasks, title, icon, gradient) {
+                if (tasks.length === 0) {
+                    return `
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h3><span class="icon-circle" style="background: linear-gradient(135deg, ${gradient});">${icon}</span> ${title} <span style="font-size: 13px; color: #718096; font-weight: normal;">(0)</span></h3>
+                            </div>
+                            <div class="dashboard-card-body">
+                                <div class="message" style="text-align: center; padding: 15px; background: #f0f4ff; border-radius: 8px; font-size: 13px;">📭 لا توجد مهام مسندة.</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // ترتيب حسب تاريخ الإنشاء (الأحدث أولاً)
+                const sortedTasks = [...tasks].sort((a, b) => new Date(b.followup_date || 0) - new Date(a.followup_date || 0));
+                
                 let tasksTableHtml = `
                     <div class="table-responsive" style="margin-top: 10px;">
                         <table style="width: 100%; border-collapse: collapse;">
                             <thead>
                                 <tr style="background: #2d7aff; color: white;">
                                     <th style="padding: 8px; text-align: center; font-size: 12px;">#</th>
-                                    <th style="padding: 8px; text-align: center; font-size: 12px;">النوع</th>
                                     <th style="padding: 8px; text-align: center; font-size: 12px;">الموظف</th>
                                     <th style="padding: 8px; text-align: center; font-size: 12px;">الإجراءات</th>
-                                    <th style="padding: 8px; text-align: center; font-size: 12px;">تاريخ الانتهاء</th>
+                                    <th style="padding: 8px; text-align: center; font-size: 12px;">الانتهاء</th>
                                     <th style="padding: 8px; text-align: center; font-size: 12px;">الحالة</th>
                                 </tr>
                             </thead>
                             <tbody>
                 `;
                 
-                allAssignedTasks.forEach((task, idx) => {
+                sortedTasks.forEach((task, idx) => {
                     const empName = getStaffName(task.assigned_to);
                     const dueDate = formatDateAr(task.next_followup);
                     const statusBadge = task.followup_status === 'completed'
-                        ? '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">✅ مكتمل</span>'
+                        ? '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">✅</span>'
                         : task.followup_status === 'failed'
-                        ? '<span style="background: #dc3545; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">❌ متعذر</span>'
+                        ? '<span style="background: #dc3545; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">❌</span>'
                         : task.followup_status === 'in_progress'
-                        ? '<span style="background: #17a2b8; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">🔄 قيد التنفيذ</span>'
-                        : '<span style="background: #ffc107; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">⏳ بانتظار</span>';
+                        ? '<span style="background: #17a2b8; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">🔄</span>'
+                        : '<span style="background: #ffc107; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">⏳</span>';
                     
-                    const typeBadge = task.task_type === 'extra'
-                        ? '<span style="background: #2d7aff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600;">📋 إضافية</span>'
-                        : '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600;">📌 رئيسية</span>';
-                    
-                    // استخراج الإجراءات من action
                     const actionParts = (task.action || '').split('|');
-                    const actionsList = actionParts[0] ? actionParts[0].replace('الإجراءات:', '').trim().substring(0, 50) : '';
-                    const actionsDisplay = actionsList ? `${escapeHtml(actionsList)}${actionsList.length >= 50 ? '...' : ''}` : '<span style="color: #cbd5e0;">—</span>';
+                    const actionsList = actionParts[0] ? actionParts[0].replace('الإجراءات:', '').trim().substring(0, 35) : '';
+                    const actionsDisplay = actionsList ? `${escapeHtml(actionsList)}${actionsList.length >= 35 ? '...' : ''}` : '<span style="color: #cbd5e0;">—</span>';
                     
                     tasksTableHtml += `
                         <tr style="border-bottom: 1px solid #e9edf4; ${task.followup_status === 'completed' ? 'background: #f0fff4;' : ''}">
                             <td style="padding: 8px; text-align: center; font-size: 12px;">${idx + 1}</td>
-                            <td style="padding: 8px; text-align: center;">${typeBadge}</td>
                             <td style="padding: 8px; text-align: center; font-size: 12px; font-weight: 600;">${escapeHtml(empName)}</td>
                             <td style="padding: 8px; text-align: center; font-size: 12px; color: #555;">${actionsDisplay}</td>
                             <td style="padding: 8px; text-align: center; font-size: 12px;">${dueDate}</td>
@@ -1377,10 +1417,10 @@ return `<div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px
                 
                 tasksTableHtml += `</tbody></table></div>`;
                 
-                assignedTasksCard = `
+                return `
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
-                            <h3><span class="icon-circle">📊</span> المهام المسندة للموظفين <span style="font-size: 13px; color: #718096; font-weight: normal;">(${allAssignedTasks.length})</span></h3>
+                            <h3><span class="icon-circle" style="background: linear-gradient(135deg, ${gradient});">${icon}</span> ${title} <span style="font-size: 13px; color: #718096; font-weight: normal;">(${tasks.length})</span></h3>
                         </div>
                         <div class="dashboard-card-body">
                             ${tasksTableHtml}
@@ -1388,9 +1428,15 @@ return `<div style="border: 1px solid #e9edf4; padding: 12px; border-radius: 8px
                     </div>
                 `;
             }
-            body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${initialCard}${assignedTasksCard}${attachmentsCard}${actionCardHtml}</div>`;
-            // ربط الأزرار
-            bindPreviewButtons(consultationId, actionFollowups);
+
+            // 🔴 فصل المهام: رئيسية vs إضافية
+            const mainAssignedTasks = (followups || []).filter(f => !f.is_attachment_only && f.task_type !== 'extra');
+            const extraAssignedTasks = (followups || []).filter(f => !f.is_attachment_only && f.task_type === 'extra');
+
+            const mainTasksCard = buildAssignedTasksCard(mainAssignedTasks, 'المهام الرئيسية', '📌', '#28a745, #20c997');
+            const extraTasksCard = buildAssignedTasksCard(extraAssignedTasks, 'الأعمال الإضافية', '📋', '#2d7aff, #1a5cc4'); 
+body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${extraAssignCard}${initialCard}${mainTasksCard}${extraTasksCard}${attachmentsCard}${actionCardHtml}</div>`;  
+          bindPreviewButtons(consultationId, actionFollowups);
 
         } catch (err) {
             console.error('openPreview error:', err);
