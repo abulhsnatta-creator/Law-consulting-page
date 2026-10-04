@@ -2242,11 +2242,53 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
             const inSevenDays = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
             const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 
-            let reqQ = supabase.from('consultation_requests').select('*', { count: 'exact', head: true }).is('final_completed_at', null);
-            if (currentUser.role === 'followup_staff') reqQ = reqQ.eq('assigned_to', currentUser.id);
-            const { count: activeReq } = await reqQ;
-            document.getElementById('quickActiveRequests').textContent = activeReq || 0;
+// 🔴 عدّ الطلبات النشطة (نفس منطق fetchConsultations)
+let activeCount = 0;
+if (currentUser.role === 'followup_staff') {
+    // الموظف: الطلبات المُسندة إليه + الطلبات التي لديه مهام فيها
+    const { data: directReq } = await supabase
+        .from('consultation_requests')
+        .select('id')
+        .eq('assigned_to', currentUser.id)
+        .is('final_completed_at', null);
 
+    const { data: myTaskIds } = await supabase
+        .from('client_followups')
+        .select('request_id')
+        .eq('assigned_to', currentUser.id)
+        .eq('is_attachment_only', false);
+
+    const taskReqIds = [...new Set((myTaskIds || []).map(t => t.request_id))];
+    let taskReqs = [];
+    if (taskReqIds.length > 0) {
+        const { data: tr } = await supabase
+            .from('consultation_requests')
+            .select('id')
+            .in('id', taskReqIds)
+            .is('final_completed_at', null);
+        taskReqs = tr || [];
+    }
+
+    // دمج بدون تكرار
+    const mergedIds = new Set([
+        ...(directReq || []).map(r => r.id),
+        ...taskReqs.map(r => r.id)
+    ]);
+    activeCount = mergedIds.size;
+} else if (currentUser.role === 'secretary') {
+    const { count } = await supabase
+        .from('consultation_requests')
+        .select('*', { count: 'exact', head: true })
+        .is('final_completed_at', null);
+    activeCount = count || 0;
+} else {
+    const { count } = await supabase
+        .from('consultation_requests')
+        .select('*', { count: 'exact', head: true })
+        .is('final_completed_at', null);
+    activeCount = count || 0;
+}
+document.getElementById('quickActiveRequests').textContent = activeCount;
             let upQ = supabase.from('action_followups').select('*', { count: 'exact', head: true }).eq('status', 'pending').gte('next_followup_date', today).lte('next_followup_date', inSevenDays);
             if (currentUser.role === 'followup_staff' || currentUser.role === 'secretary') upQ = upQ.eq('assigned_to', currentUser.id);
             const { count: upcoming } = await upQ;
