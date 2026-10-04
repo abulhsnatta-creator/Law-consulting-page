@@ -2140,7 +2140,7 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
     // ============================================================
     // 16. التنبيهات الذكية
     // ============================================================
-    async function loadSmartAlerts() {
+       async function loadSmartAlerts() {
         const container = document.getElementById('alertsContainer');
         if (!container) return;
         let alerts = [];
@@ -2149,41 +2149,165 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
         const inThreeDays = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
 
         try {
+            // ============================================================
+            // 🔴 الموظف / السكرتير
+            // ============================================================
             if (currentUser.role === 'followup_staff' || currentUser.role === 'secretary') {
-                const { data: todayActions } = await supabase.from('action_followups').select('id').eq('assigned_to', currentUser.id).eq('status', 'pending').eq('next_followup_date', today);
-                if (todayActions?.length > 0) alerts.push({ icon: '⏰', color: '#dc3545', bg: '#f8d7da', text: `${todayActions.length} إجراء ينتهي اليوم`, type: 'actions_today', priority: 'urgent' });
+                
+                // 1. مهام رئيسية متأخرة
+                const { data: overdueMain } = await supabase
+                    .from('client_followups')
+                    .select('id')
+                    .eq('assigned_to', currentUser.id)
+                    .eq('is_attachment_only', false)
+                    .neq('task_type', 'extra')
+                    .in('followup_status', ['pending', 'in_progress'])
+                    .lt('next_followup', today);
+                if (overdueMain?.length > 0) {
+                    alerts.push({ icon: '📌', color: '#dc3545', bg: '#f8d7da', text: `${overdueMain.length} مهمة رئيسية متأخرة`, type: 'overdue_main', priority: 'urgent' });
+                }
 
-                const { data: overdueActions } = await supabase.from('action_followups').select('id').eq('assigned_to', currentUser.id).eq('status', 'pending').lt('next_followup_date', today);
-                if (overdueActions?.length > 0) alerts.push({ icon: '⚠️', color: '#dc3545', bg: '#f8d7da', text: `${overdueActions.length} إجراء متأخر`, type: 'overdue_actions', priority: 'urgent' });
+                // 2. أعمال إضافية متأخرة
+                const { data: overdueExtra } = await supabase
+                    .from('client_followups')
+                    .select('id')
+                    .eq('assigned_to', currentUser.id)
+                    .eq('is_attachment_only', false)
+                    .eq('task_type', 'extra')
+                    .in('followup_status', ['pending', 'in_progress'])
+                    .lt('next_followup', today);
+                if (overdueExtra?.length > 0) {
+                    alerts.push({ icon: '📋', color: '#dc3545', bg: '#f8d7da', text: `${overdueExtra.length} عمل إضافي متأخر`, type: 'overdue_extra', priority: 'urgent' });
+                }
 
-                const { data: unreadNotes } = await supabase.from('action_followups').select('id').eq('assigned_to', currentUser.id).eq('note_read_by_employee', false).not('manager_note', 'is', null);
-                if (unreadNotes?.length > 0) alerts.push({ icon: '📌', color: '#dc3545', bg: '#f8d7da', text: `${unreadNotes.length} ملاحظة من المدير`, type: 'manager_notes', priority: 'urgent' });
+                // 3. مهام تنتهي اليوم
+                const { data: todayTasks } = await supabase
+                    .from('client_followups')
+                    .select('id')
+                    .eq('assigned_to', currentUser.id)
+                    .eq('is_attachment_only', false)
+                    .in('followup_status', ['pending', 'in_progress'])
+                    .eq('next_followup', today);
+                if (todayTasks?.length > 0) {
+                    alerts.push({ icon: '⏰', color: '#ffc107', bg: '#fff9e6', text: `${todayTasks.length} مهمة تنتهي اليوم`, type: 'tasks_today', priority: 'important' });
+                }
 
-                const { data: tomorrowActions } = await supabase.from('action_followups').select('id').eq('assigned_to', currentUser.id).eq('status', 'pending').eq('next_followup_date', tomorrow);
-                if (tomorrowActions?.length > 0) alerts.push({ icon: '🔔', color: '#ffc107', bg: '#fff9e6', text: `${tomorrowActions.length} إجراء ينتهي غداً`, type: 'actions_tomorrow', priority: 'important' });
+                // 4. مهام تنتهي خلال 3 أيام
+                const { data: soonTasks } = await supabase
+                    .from('client_followups')
+                    .select('id')
+                    .eq('assigned_to', currentUser.id)
+                    .eq('is_attachment_only', false)
+                    .in('followup_status', ['pending', 'in_progress'])
+                    .gt('next_followup', today)
+                    .lte('next_followup', inThreeDays);
+                if (soonTasks?.length > 0) {
+                    alerts.push({ icon: '🔔', color: '#17a2b8', bg: '#e7f3ff', text: `${soonTasks.length} مهمة تنتهي خلال 3 أيام`, type: 'tasks_soon', priority: 'important' });
+                }
 
-                const { data: overdueTasks } = await supabase.from('client_followups').select('id').eq('assigned_to', currentUser.id).eq('is_attachment_only', false).in('followup_status', ['pending', 'in_progress']).lt('next_followup', today);
-                if (overdueTasks?.length > 0) alerts.push({ icon: '⚠️', color: '#dc3545', bg: '#f8d7da', text: `${overdueTasks.length} مهمة متأخرة`, type: 'overdue', priority: 'urgent' });
+                // 5. ملاحظات جديدة من المدير
+                const { data: unreadNotes } = await supabase
+                    .from('action_followups')
+                    .select('id')
+                    .eq('assigned_to', currentUser.id)
+                    .eq('note_read_by_employee', false)
+                    .not('manager_note', 'is', null);
+                if (unreadNotes?.length > 0) {
+                    alerts.push({ icon: '📌', color: '#dc3545', bg: '#f8d7da', text: `${unreadNotes.length} ملاحظة جديدة من المدير`, type: 'manager_notes', priority: 'urgent' });
+                }
             }
 
+            // ============================================================
+            // 🔴 المدير
+            // ============================================================
             if (currentUser.role === 'manager') {
-                const { data: allOverdue } = await supabase.from('action_followups').select('id').eq('status', 'pending').lt('next_followup_date', today);
-                if (allOverdue?.length > 0) alerts.push({ icon: '⚠️', color: '#dc3545', bg: '#f8d7da', text: `${allOverdue.length} إجراء متأخر`, type: 'overdue_actions', priority: 'urgent' });
+                
+                // 1. مهام متأخرة (كل الموظفين)
+                const { data: allOverdue } = await supabase
+                    .from('client_followups')
+                    .select('id, task_type')
+                    .eq('is_attachment_only', false)
+                    .in('followup_status', ['pending', 'in_progress'])
+                    .lt('next_followup', today);
+                
+                if (allOverdue && allOverdue.length > 0) {
+                    const mainOverdue = allOverdue.filter(t => t.task_type !== 'extra').length;
+                    const extraOverdue = allOverdue.filter(t => t.task_type === 'extra').length;
+                    
+                    if (mainOverdue > 0) alerts.push({ icon: '📌', color: '#dc3545', bg: '#f8d7da', text: `${mainOverdue} مهمة رئيسية متأخرة`, type: 'overdue_main', priority: 'urgent' });
+                    if (extraOverdue > 0) alerts.push({ icon: '📋', color: '#dc3545', bg: '#f8d7da', text: `${extraOverdue} عمل إضافي متأخر`, type: 'overdue_extra', priority: 'urgent' });
+                }
 
-                const { data: unreadEmpNotes } = await supabase.from('action_followups').select('id').eq('note_read_by_manager', false).not('employee_note', 'is', null);
-                if (unreadEmpNotes?.length > 0) alerts.push({ icon: '💬', color: '#dc3545', bg: '#f8d7da', text: `${unreadEmpNotes.length} ملاحظة جديدة`, type: 'employee_notes', priority: 'urgent' });
+                // 2. مهام تنتهي اليوم
+                const { data: todayTasks } = await supabase
+                    .from('client_followups')
+                    .select('id')
+                    .eq('is_attachment_only', false)
+                    .in('followup_status', ['pending', 'in_progress'])
+                    .eq('next_followup', today);
+                if (todayTasks?.length > 0) {
+                    alerts.push({ icon: '⏰', color: '#ffc107', bg: '#fff9e6', text: `${todayTasks.length} مهمة تنتهي اليوم`, type: 'tasks_today', priority: 'important' });
+                }
 
-                const { data: todayActions } = await supabase.from('action_followups').select('id').eq('status', 'pending').eq('next_followup_date', today);
-                if (todayActions?.length > 0) alerts.push({ icon: '⏰', color: '#ffc107', bg: '#fff9e6', text: `${todayActions.length} إجراء ينتهي اليوم`, type: 'actions_today', priority: 'important' });
+                // 3. مهام تنتهي خلال 3 أيام
+                const { data: soonTasks } = await supabase
+                    .from('client_followups')
+                    .select('id')
+                    .eq('is_attachment_only', false)
+                    .in('followup_status', ['pending', 'in_progress'])
+                    .gt('next_followup', today)
+                    .lte('next_followup', inThreeDays);
+                if (soonTasks?.length > 0) {
+                    alerts.push({ icon: '🔔', color: '#17a2b8', bg: '#e7f3ff', text: `${soonTasks.length} مهمة تنتهي خلال 3 أيام`, type: 'tasks_soon', priority: 'important' });
+                }
+
+                // 4. ملاحظات جديدة من الموظفين
+                const { data: unreadEmpNotes } = await supabase
+                    .from('action_followups')
+                    .select('id')
+                    .eq('note_read_by_manager', false)
+                    .not('employee_note', 'is', null);
+                if (unreadEmpNotes?.length > 0) {
+                    alerts.push({ icon: '💬', color: '#dc3545', bg: '#f8d7da', text: `${unreadEmpNotes.length} ملاحظة جديدة من الموظفين`, type: 'employee_notes', priority: 'urgent' });
+                }
+
+                // 5. طلبات جاهزة للاعتماد (جميع مهامها مكتملة)
+                const { data: activeRequests } = await supabase
+                    .from('consultation_requests')
+                    .select('id')
+                    .is('final_completed_at', null);
+                
+                if (activeRequests && activeRequests.length > 0) {
+                    const reqIds = activeRequests.map(r => r.id);
+                    const { data: reqTasks } = await supabase
+                        .from('client_followups')
+                        .select('request_id, followup_status')
+                        .in('request_id', reqIds)
+                        .eq('is_attachment_only', false);
+                    
+                    // حساب الطلبات التي جميع مهامها مكتملة
+                    const tasksByReq = {};
+                    (reqTasks || []).forEach(t => {
+                        if (!tasksByReq[t.request_id]) tasksByReq[t.request_id] = { total: 0, completed: 0 };
+                        tasksByReq[t.request_id].total++;
+                        if (t.followup_status === 'completed') tasksByReq[t.request_id].completed++;
+                    });
+                    
+                    const readyCount = Object.values(tasksByReq).filter(g => g.total > 0 && g.total === g.completed).length;
+                    if (readyCount > 0) {
+                        alerts.push({ icon: '🎉', color: '#28a745', bg: '#e7f9ef', text: `${readyCount} طلب جاهز للاعتماد النهائي`, type: 'ready_for_approval', priority: 'important' });
+                    }
+                }
             }
 
+            // ترتيب حسب الأولوية
             const priorityOrder = { urgent: 1, important: 2, info: 3 };
             alerts.sort((a, b) => (priorityOrder[a.priority] || 99) - (priorityOrder[b.priority] || 99));
 
             if (alerts.length === 0) {
-                container.innerHTML = `<div style="background: #e7f9ef; border-radius: 8px; padding: 10px 15px; font-size: 13px; color: #28a745;">✅ لا توجد تنبيهات.</div>`;
+                container.innerHTML = `<div style="background: #e7f9ef; border-radius: 8px; padding: 10px 15px; font-size: 13px; color: #28a745;">✅ لا توجد تنبيهات — كل شيء يسير بسلاسة.</div>`;
             } else {
-                container.innerHTML = alerts.map(a => `<div class="smart-alert" data-type="${a.type}" style="background: ${a.bg || 'white'}; border-radius: 8px; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-right: 4px solid ${a.color}; cursor: pointer;"><span style="font-size: 18px;">${a.icon}</span><span style="font-weight: 600;">${escapeHtml(a.text)}</span></div>`).join('');
+                container.innerHTML = alerts.map(a => `<div class="smart-alert" data-type="${a.type}" style="background: ${a.bg || 'white'}; border-radius: 8px; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-right: 4px solid ${a.color}; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateX(-4px)'" onmouseout="this.style.transform='translateX(0)'"><span style="font-size: 18px;">${a.icon}</span><span style="font-weight: 600;">${escapeHtml(a.text)}</span></div>`).join('');
                 document.querySelectorAll('.smart-alert').forEach(el => el.addEventListener('click', function() { showAlertDetails(this.dataset.type); }));
             }
         } catch (e) {
@@ -2191,81 +2315,168 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
             container.innerHTML = `<div style="color: #dc3545;">❌ خطأ في التحميل.</div>`;
         }
     }
-
     // ============================================================
     // 17. تفاصيل التنبيهات
     // ============================================================
     async function showAlertDetails(alertType) {
-        const modalHtml = `<div id="alertDetailsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;"><div style="background: white; border-radius: 16px; padding: 25px; width: 90%; max-width: 1000px; max-height: 85vh; overflow-y: auto;"><div style="display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #2d7aff; padding-bottom: 12px;"><h2>📋 التفاصيل</h2><button id="closeAlertModal" style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer;">✕</button></div><div id="alertModalBody"><div class="spinner"></div></div></div></div>`;
+        const modalHtml = `<div id="alertDetailsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;"><div style="background: white; border-radius: 16px; padding: 25px; width: 90%; max-width: 1000px; max-height: 85vh; overflow-y: auto;"><div style="display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #2d7aff; padding-bottom: 12px;"><h2 id="alertModalTitle">📋 التفاصيل</h2><button id="closeAlertModal" style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer;">✕</button></div><div id="alertModalBody"><div class="spinner"></div></div></div></div>`;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         document.getElementById('closeAlertModal').addEventListener('click', () => document.getElementById('alertDetailsModal').remove());
         const body = document.getElementById('alertModalBody');
+        const titleEl = document.getElementById('alertModalTitle');
         const today = new Date().toISOString().split('T')[0];
 
         try {
             let tasks = [];
-            let isActionType = false;
+            let title = '📋 التفاصيل';
 
-            if (alertType === 'overdue') {
-                let q = supabase.from('client_followups').select('*, consultation_requests!inner(client_name, service)').eq('is_attachment_only', false).in('followup_status', ['pending', 'in_progress']).lt('next_followup', today);
+            // ============================================================
+            // 🔴 مهام من client_followups
+            // ============================================================
+            if (alertType === 'overdue_main' || alertType === 'overdue_extra' || alertType === 'tasks_today' || alertType === 'tasks_soon') {
+                let q = supabase
+                    .from('client_followups')
+                    .select('id, action, next_followup, followup_status, assigned_to, task_type, request_id, consultation_requests!inner(client_name, service)')
+                    .eq('is_attachment_only', false);
+                
+                if (alertType === 'overdue_main' || alertType === 'overdue_extra') {
+                    q = q.in('followup_status', ['pending', 'in_progress']).lt('next_followup', today);
+                    if (alertType === 'overdue_main') q = q.neq('task_type', 'extra');
+                    else q = q.eq('task_type', 'extra');
+                    title = alertType === 'overdue_main' ? '📌 المهام الرئيسية المتأخرة' : '📋 الأعمال الإضافية المتأخرة';
+                } else if (alertType === 'tasks_today') {
+                    q = q.in('followup_status', ['pending', 'in_progress']).eq('next_followup', today);
+                    title = '⏰ المهام التي تنتهي اليوم';
+                } else if (alertType === 'tasks_soon') {
+                    const inThreeDays = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
+                    q = q.in('followup_status', ['pending', 'in_progress']).gt('next_followup', today).lte('next_followup', inThreeDays);
+                    title = '🔔 المهام التي تنتهي خلال 3 أيام';
+                }
+                
                 if (currentUser.role !== 'manager') q = q.eq('assigned_to', currentUser.id);
-                const { data } = await q; tasks = data || [];
-            } else if (alertType === 'overdue_actions' || alertType === 'actions_today' || alertType === 'actions_tomorrow') {
-                isActionType = true;
-                let q = supabase.from('action_followups').select('*, consultation_requests!inner(client_name, service)').eq('status', 'pending');
-                if (alertType === 'overdue_actions') q = q.lt('next_followup_date', today);
-                else if (alertType === 'actions_today') q = q.eq('next_followup_date', today);
-                else if (alertType === 'actions_tomorrow') q = q.eq('next_followup_date', new Date(Date.now() + 86400000).toISOString().split('T')[0]);
-                if (currentUser.role !== 'manager') q = q.eq('assigned_to', currentUser.id);
-                const { data } = await q; tasks = data || [];
-            } else if (alertType === 'manager_notes') {
-                isActionType = true;
-                const { data } = await supabase.from('action_followups').select('*, consultation_requests!inner(client_name, service)').eq('assigned_to', currentUser.id).eq('note_read_by_employee', false).not('manager_note', 'is', null);
+                
+                const { data } = await q;
                 tasks = data || [];
-            } else if (alertType === 'employee_notes') {
-                isActionType = true;
-                const { data } = await supabase.from('action_followups').select('*, consultation_requests!inner(client_name, service)').eq('note_read_by_manager', false).not('employee_note', 'is', null);
-                tasks = data || [];
-            }
-
-            if (tasks.length === 0) { body.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">لا توجد تفاصيل.</div>'; return; }
-
-            let html = '';
-            if (isActionType) {
-                html = '<div class="table-responsive"><table style="width: 100%;"><thead><tr style="background: #2d7aff; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">العميل</th><th style="padding: 10px;">الخدمة</th><th style="padding: 10px;">الإجراء</th><th style="padding: 10px;">تاريخ الانتهاء</th><th style="padding: 10px;">ملاحظة</th><th style="padding: 10px;">الإجراء</th></tr></thead><tbody>';
+                
+                titleEl.textContent = title;
+                
+                if (tasks.length === 0) {
+                    body.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">لا توجد تفاصيل.</div>';
+                    return;
+                }
+                
+                let html = '<div class="table-responsive"><table style="width: 100%;"><thead><tr style="background: #2d7aff; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">النوع</th><th style="padding: 10px;">العميل</th><th style="padding: 10px;">الخدمة</th><th style="padding: 10px;">الموظف</th><th style="padding: 10px;">الانتهاء</th><th style="padding: 10px;">معاينة</th></tr></thead><tbody>';
                 tasks.forEach((t, i) => {
-                    const note = t.manager_note || t.employee_note || '—';
-                    const dueDate = t.next_followup_date ? new Date(t.next_followup_date).toLocaleDateString('ar-EG') : '—';
-                    html += `<tr style="border-bottom: 1px solid #e9edf4;"><td style="padding: 10px; text-align: center;">${i+1}</td><td style="padding: 10px; text-align: center;">${safeText(t.consultation_requests?.client_name)}</td><td style="padding: 10px; text-align: center;">${getServiceNameAr(t.consultation_requests?.service)}</td><td style="padding: 10px; text-align: center; font-weight: 600;">${safeText(t.action_name)}</td><td style="padding: 10px; text-align: center;">${dueDate}</td><td style="padding: 10px; text-align: center; font-size: 12px;">${safeText(note)}</td><td style="padding: 10px; text-align: center;"><button class="btn-open-preview" data-request-id="${t.request_id}" style="background: #17a2b8; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer;">📄 معاينة</button></td></tr>`;
+                    const typeBadge = t.task_type === 'extra' 
+                        ? '<span style="background: #2d7aff; color: white; padding: 2px 8px; border-radius: 8px; font-size: 10px;">📋 إضافية</span>'
+                        : '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 8px; font-size: 10px;">📌 رئيسية</span>';
+                    const dueDate = t.next_followup ? new Date(t.next_followup).toLocaleDateString('ar-EG') : '—';
+                    html += `<tr style="border-bottom: 1px solid #e9edf4;"><td style="padding: 10px; text-align: center;">${i+1}</td><td style="padding: 10px; text-align: center;">${typeBadge}</td><td style="padding: 10px; text-align: center;">${safeText(t.consultation_requests?.client_name)}</td><td style="padding: 10px; text-align: center;">${getServiceNameAr(t.consultation_requests?.service)}</td><td style="padding: 10px; text-align: center;">${escapeHtml(getStaffName(t.assigned_to))}</td><td style="padding: 10px; text-align: center;">${dueDate}</td><td style="padding: 10px; text-align: center;"><button class="btn-open-preview" data-request-id="${t.request_id}" style="background: #17a2b8; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer;">📄</button></td></tr>`;
                 });
                 html += '</tbody></table></div>';
-            } else {
-                html = '<div class="table-responsive"><table style="width: 100%;"><thead><tr style="background: #2d7aff; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">العميل</th><th style="padding: 10px;">الخدمة</th><th style="padding: 10px;">الإجراء</th></tr></thead><tbody>';
-                tasks.forEach((t, i) => {
-                    html += `<tr style="border-bottom: 1px solid #e9edf4;"><td style="padding: 10px; text-align: center;">${i+1}</td><td style="padding: 10px; text-align: center;">${safeText(t.consultation_requests?.client_name)}</td><td style="padding: 10px; text-align: center;">${getServiceNameAr(t.consultation_requests?.service)}</td><td style="padding: 10px; text-align: center;"><button class="btn-open-preview" data-request-id="${t.request_id}" style="background: #17a2b8; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer;">📄 معاينة</button></td></tr>`;
+                body.innerHTML = html;
+            }
+            
+            // ============================================================
+            // 🔴 طلبات جاهزة للاعتماد
+            // ============================================================
+            else if (alertType === 'ready_for_approval') {
+                titleEl.textContent = '🎉 الطلبات الجاهزة للاعتماد';
+                
+                const { data: activeRequests } = await supabase
+                    .from('consultation_requests')
+                    .select('id, client_name, service')
+                    .is('final_completed_at', null);
+                
+                if (!activeRequests || activeRequests.length === 0) {
+                    body.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">لا توجد طلبات نشطة.</div>';
+                    return;
+                }
+                
+                const reqIds = activeRequests.map(r => r.id);
+                const { data: reqTasks } = await supabase
+                    .from('client_followups')
+                    .select('request_id, followup_status')
+                    .in('request_id', reqIds)
+                    .eq('is_attachment_only', false);
+                
+                const tasksByReq = {};
+                (reqTasks || []).forEach(t => {
+                    if (!tasksByReq[t.request_id]) tasksByReq[t.request_id] = { total: 0, completed: 0 };
+                    tasksByReq[t.request_id].total++;
+                    if (t.followup_status === 'completed') tasksByReq[t.request_id].completed++;
+                });
+                
+                const readyRequests = activeRequests.filter(r => {
+                    const g = tasksByReq[r.id];
+                    return g && g.total > 0 && g.total === g.completed;
+                });
+                
+                if (readyRequests.length === 0) {
+                    body.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">لا توجد طلبات جاهزة.</div>';
+                    return;
+                }
+                
+                let html = '<div class="table-responsive"><table style="width: 100%;"><thead><tr style="background: #28a745; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">العميل</th><th style="padding: 10px;">الخدمة</th><th style="padding: 10px;">عدد المهام</th><th style="padding: 10px;">معاينة</th></tr></thead><tbody>';
+                readyRequests.forEach((r, i) => {
+                    html += `<tr style="border-bottom: 1px solid #e9edf4; background: #f0fff4;"><td style="padding: 10px; text-align: center;">${i+1}</td><td style="padding: 10px; text-align: center; font-weight: 600;">${safeText(r.client_name)}</td><td style="padding: 10px; text-align: center;">${getServiceNameAr(r.service)}</td><td style="padding: 10px; text-align: center;"><span style="background: #e7f9ef; color: #28a745; padding: 4px 10px; border-radius: 10px; font-weight: 600;">${tasksByReq[r.id].total} مكتملة</span></td><td style="padding: 10px; text-align: center;"><button class="btn-open-preview" data-request-id="${r.id}" style="background: #28a745; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">🎉 اعتماد</button></td></tr>`;
                 });
                 html += '</tbody></table></div>';
+                body.innerHTML = html;
             }
-
-            body.innerHTML = html;
+            
+            // ============================================================
+            // 🔴 ملاحظات
+            // ============================================================
+            else if (alertType === 'manager_notes' || alertType === 'employee_notes') {
+                titleEl.textContent = alertType === 'manager_notes' ? '📌 ملاحظات المدير' : '💬 ملاحظات الموظفين';
+                
+                let q = supabase
+                    .from('action_followups')
+                    .select('id, action_name, manager_note, employee_note, assigned_to, request_id, next_followup_date, consultation_requests!inner(client_name, service)');
+                
+                if (alertType === 'manager_notes') {
+                    q = q.eq('assigned_to', currentUser.id).eq('note_read_by_employee', false).not('manager_note', 'is', null);
+                } else {
+                    q = q.eq('note_read_by_manager', false).not('employee_note', 'is', null);
+                }
+                
+                const { data } = await q;
+                tasks = data || [];
+                
+                if (tasks.length === 0) {
+                    body.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">لا توجد ملاحظات.</div>';
+                    return;
+                }
+                
+                let html = '<div class="table-responsive"><table style="width: 100%;"><thead><tr style="background: #2d7aff; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">العميل</th><th style="padding: 10px;">الإجراء</th><th style="padding: 10px;">الموظف</th><th style="padding: 10px;">الملاحظة</th><th style="padding: 10px;">معاينة</th></tr></thead><tbody>';
+                tasks.forEach((t, i) => {
+                    const note = alertType === 'manager_notes' ? t.manager_note : t.employee_note;
+                    html += `<tr style="border-bottom: 1px solid #e9edf4; background: #fff9e6;"><td style="padding: 10px; text-align: center;">${i+1}</td><td style="padding: 10px; text-align: center;">${safeText(t.consultation_requests?.client_name)}</td><td style="padding: 10px; text-align: center; font-weight: 600;">${safeText(t.action_name)}</td><td style="padding: 10px; text-align: center;">${escapeHtml(getStaffName(t.assigned_to))}</td><td style="padding: 10px; text-align: center; font-size: 12px; color: #856404;">${safeText(note)}</td><td style="padding: 10px; text-align: center;"><button class="btn-open-preview" data-request-id="${t.request_id}" style="background: #17a2b8; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer;">📄</button></td></tr>`;
+                });
+                html += '</tbody></table></div>';
+                body.innerHTML = html;
+                
+                // تعليم الملاحظات كمقروءة
+                const ids = tasks.map(t => t.id);
+                if (alertType === 'manager_notes') {
+                    await supabase.from('action_followups').update({ note_read_by_employee: true }).in('id', ids);
+                } else {
+                    await supabase.from('action_followups').update({ note_read_by_manager: true }).in('id', ids);
+                }
+            }
+            
+            // ربط أزرار المعاينة
             body.querySelectorAll('.btn-open-preview').forEach(btn => btn.addEventListener('click', function() {
                 document.getElementById('alertDetailsModal')?.remove();
                 openPreview(this.dataset.requestId);
             }));
-
-            if (alertType === 'manager_notes' && tasks.length > 0) {
-                const ids = tasks.map(t => t.id);
-                await supabase.from('action_followups').update({ note_read_by_employee: true }).in('id', ids);
-            }
-            if (alertType === 'employee_notes' && tasks.length > 0) {
-                const ids = tasks.map(t => t.id);
-                await supabase.from('action_followups').update({ note_read_by_manager: true }).in('id', ids);
-            }
+            
         } catch (e) {
+            console.error('Alert details error:', e);
             body.innerHTML = `<div style="color: #dc3545;">❌ ${escapeHtml(e.message)}</div>`;
         }
     }
-
     // ============================================================
     // 18. التقارير
     // ============================================================
