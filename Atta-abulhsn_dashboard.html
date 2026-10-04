@@ -427,7 +427,31 @@
         document.body.appendChild(div);
         setTimeout(() => div.remove(), duration);
     }
-
+    // 🔴 دالة تسجيل العمليات في Audit Log
+    async function logAudit(actionType, entityType, entityId, options = {}) {
+        if (!currentUser) return;
+        
+        try {
+            const { details = {}, oldValues = null, newValues = null, requestId = null } = options;
+            
+            await supabase.from('audit_log').insert({
+                user_id: currentUser.id,
+                user_name: currentUser.full_name,
+                action_type: actionType,
+                entity_type: entityType,
+                entity_id: entityId,
+                request_id: requestId,
+                details: details,
+                old_values: oldValues,
+                new_values: newValues,
+                ip_address: null,
+                user_agent: navigator.userAgent.substring(0, 200)
+            });
+        } catch (e) {
+            console.warn('⚠️ Audit log error:', e);
+            // لا نوقف العملية إذا فشل التسجيل
+        }
+    }
     // Debounce
     function debounce(func, wait) {
         let timeout;
@@ -690,9 +714,9 @@
                 const mergedMap = new Map();
                 [...(createdByMe || []), ...assignedRequests].forEach(item => mergedMap.set(item.id, item));
                 allConsultations = Array.from(mergedMap.values());
+                allConsultations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-				allConsultations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-				                } else if (currentUser.role === 'followup_staff') {
+           } else if (currentUser.role === 'followup_staff') {
     // 🔴 1. الطلبات المُسندة إليه مباشرة
     const { data: directAssigned, error: err1 } = await supabase
         .from('consultation_requests')
@@ -729,21 +753,8 @@
     allConsultations = Array.from(mergedMap.values());
     allConsultations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
-
 			else {
                 const { data, error } = await supabase
-                    .from('consultation_requests')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                if (error) throw error;
-                allConsultations = data || [];
-            }
-
-            applyFilters();
-        } catch (err) {
-            console.error('fetchConsultations error:', err);
-}
-            } else const { data, error } = await supabase
                     .from('consultation_requests')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -1517,8 +1528,21 @@ body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${
                     followup_status: isComplete ? 'completed' : 'in_progress'
                 }).eq('id', taskId);
 
-                if (error) toast('❌ ' + error.message, 'error');
-                else { toast(isComplete ? '✅ اكتملت المهمة!' : `✅ تم حفظ التقدم (${totalDone}/${totalReq}).`); openPreview(consultationId); }
+                if (error) { toast('❌ ' + error.message, 'error'); }
+                else {
+                    // 🔴 تسجيل التقدم
+                    await logAudit('update_task_progress', 'client_followups', taskId, {
+                        details: {
+                            completed_actions: checkedActions,
+                            completed_docs: checkedDocs,
+                            is_complete: isComplete,
+                            progress: `${totalDone}/${totalReq}`
+                        },
+                        requestId: consultationId
+                    });
+                    toast(isComplete ? '✅ اكتملت المهمة!' : `✅ تم حفظ التقدم (${totalDone}/${totalReq}).`);
+                    openPreview(consultationId);
+                }
             });
         });
 
@@ -1529,8 +1553,16 @@ body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${
                 const reason = prompt('سبب تعذر التنفيذ:');
                 if (!reason) return;
                 const { error } = await supabase.from('client_followups').update({ followup_status: 'failed', notes: reason }).eq('id', taskId);
-                if (error) toast('❌ ' + error.message, 'error');
-                else { toast('✅ تم التسجيل'); openPreview(consultationId); }
+                if (error) { toast('❌ ' + error.message, 'error'); }
+                else {
+                    // 🔴 تسجيل التعذر
+                    await logAudit('task_failed', 'client_followups', taskId, {
+                        details: { reason: reason },
+                        requestId: consultationId
+                    });
+                    toast('✅ تم التسجيل');
+                    openPreview(consultationId);
+                }
             });
         });
 
@@ -1550,8 +1582,19 @@ body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${
                 contact_method: 'other', action: '', followup_date: new Date().toISOString(),
                 attachment_path: urlData.publicUrl, attachment_name: file.name, is_attachment_only: true
             });
-            if (error) toast('❌ ' + error.message, 'error');
-            else { toast('✅ تم إضافة المرفق!'); openPreview(consId); }
+            if (error) { toast('❌ ' + error.message, 'error'); }
+            else {
+                // 🔴 تسجيل المرفق
+                await logAudit('add_attachment', 'client_followups', null, {
+                    details: {
+                        file_name: file.name,
+                        file_size: Math.round(file.size / 1024) + ' KB'
+                    },
+                    requestId: consId
+                });
+                toast('✅ تم إضافة المرفق!');
+                openPreview(consId);
+            }
         });
 
         // حذف مرفق
@@ -1761,6 +1804,21 @@ document.getElementById('btnCreateTask')?.addEventListener('click', async functi
     
     if (insertError) { toast('❌ ' + insertError.message, 'error'); return; }
     
+    // 🔴 تسجيل العملية
+    await logAudit('create_task', 'client_followups', null, {
+        details: {
+            type: 'main',
+            assigned_to: getStaffName(assigneeId),
+            actions: selectedActions,
+            docs: selectedDocs,
+            due_date: dueDate
+        },
+        requestId: consultationId
+    });
+    
+    // تحديث الطلب ليعكس الموظف المسند (إن كان followup_staff)
+
+    
     // 🆕 حدّث consultation_requests دائماً (وليس فقط followup_staff)
     await supabase.from('consultation_requests')
         .update({ assigned_to: assigneeId })
@@ -1946,9 +2004,21 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
             }
         }
         
+        // 🔴 تسجيل عملية النقل
+        await logAudit('transfer_actions', 'client_followups', null, {
+            details: {
+                transferred_items: conflicts.reduce((sum, c) => sum + c.actions.length + c.docs.length, 0),
+                from_employees: conflicts.map(c => getStaffName(c.employee)),
+                to_employee: getStaffName(extraAssigneeId),
+                actions: conflicts.flatMap(c => c.actions),
+                docs: conflicts.flatMap(c => c.docs)
+            },
+            requestId: consultationId
+        });
+        
         toast('✅ تم نقل الإجراءات المتعارضة بنجاح!');
         // ⚠️ لا نعود — نكمل لإنشاء مهمة جديدة للموظف الجديد
-    }    
+    } 
     // 2ب: لا توجد تعارضات → إنشاء مهمة إضافية جديدة
     const { error: insertError } = await supabase.from('client_followups').insert({
         request_id: consultationId,
@@ -1966,6 +2036,19 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
     });
     
     if (insertError) { toast('❌ ' + insertError.message, 'error'); return; }
+    
+    // 🔴 تسجيل العملية
+    await logAudit('create_extra_task', 'client_followups', null, {
+        details: {
+            type: 'extra',
+            assigned_to: getStaffName(extraAssigneeId),
+            actions: selectedExtraActions,
+            docs: selectedExtraDocs,
+            due_date: extraDueDate
+        },
+        requestId: consultationId
+    });
+    
     toast('✅ تم إسناد الأعمال الإضافية!');
     openPreview(consultationId);
 });
@@ -2087,9 +2170,16 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
                 .eq('request_id', consultationId).eq('assigned_to', currentUser.id).eq('status', 'pending');
             if (!myActions || myActions.length === 0) { toast('⚠️ لا توجد إجراءات قيد التنفيذ.', 'warning'); return; }
             const ids = myActions.map(a => a.id);
-            const { error } = await supabase.from('action_followups')
+                       const { error } = await supabase.from('action_followups')
                 .update({ status: 'completed', updated_at: new Date().toISOString() }).in('id', ids);
             if (error) { toast('❌ ' + error.message, 'error'); return; }
+            
+            // 🔴 تسجيل الإكمال
+            await logAudit('complete_my_actions', 'action_followups', null, {
+                details: { count: ids.length, action_ids: ids },
+                requestId: consultationId
+            });
+            
             toast(`✅ تم إعلان اكتمال ${ids.length} إجراء!`);
             openPreview(consultationId);
         });
@@ -2132,8 +2222,14 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
                 status: 'completed'
             }).eq('id', consultationId);
             if (error) { toast('❌ ' + error.message, 'error'); return; }
+            
+            // 🔴 تسجيل الاعتماد
+            await logAudit('approve_request', 'consultation_requests', consultationId, {
+                details: { pending_actions_at_approval: pendingCount },
+                requestId: consultationId
+            });
+            
             toast('🏁 تم إعلان اكتمال الخدمة!');
-            openPreview(consultationId);
         });
     }
 
