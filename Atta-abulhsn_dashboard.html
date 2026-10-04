@@ -796,9 +796,10 @@
                 <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—'}</td>
                 <td>${statusBadge} ${escapeHtml(assignedName)}</td>
                 <td>
+                <td>
                     <button class="btn-preview" data-id="${item.id}">📄 معاينة</button>
                     <button class="btn-edit-cons" data-id="${item.id}">✏️ تعديل</button>
-                    <button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button>
+                    ${currentUser.role === 'manager' ? `<button class="btn-delete-cons" data-id="${item.id}">🗑️ حذف</button>` : ''}
                 </td>
             </tr>`;
         });
