@@ -729,8 +729,9 @@
     allConsultations = Array.from(mergedMap.values());
     allConsultations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
-            } else {
-                const { data, error } = await supabase
+            } 
+		
+		else const { data, error } = await supabase
                     .from('consultation_requests')
                     .select('*')
                     .order('created_at', { ascending: false });
