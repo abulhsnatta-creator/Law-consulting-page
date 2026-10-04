@@ -743,9 +743,7 @@
         } catch (err) {
             console.error('fetchConsultations error:', err);
 }
-            } 
-		
-		else const { data, error } = await supabase
+            } else const { data, error } = await supabase
                     .from('consultation_requests')
                     .select('*')
                     .order('created_at', { ascending: false });
