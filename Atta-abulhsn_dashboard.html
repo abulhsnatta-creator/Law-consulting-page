@@ -728,8 +728,8 @@
                 [...(directAssigned || []), ...assignedByTask].forEach(item => mergedMap.set(item.id, item));
                 allConsultations = Array.from(mergedMap.values());
                 allConsultations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-            } else {
+  } 
+			else {
                 const { data, error } = await supabase
                     .from('consultation_requests')
                     .select('*')
