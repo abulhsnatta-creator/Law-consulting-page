@@ -852,20 +852,32 @@
         }
 
         const requestIds = data.map(item => item.id);
-        const { data: followupsData } = await supabase
-            .from('client_followups')
-            .select('request_id, followup_status, followup_date')
-            .in('request_id', requestIds)
-            .eq('is_attachment_only', false)
-            .order('followup_date', { ascending: false });
-
+const { data: followupsData } = await supabase
+    .from('client_followups')
+    .select('request_id, followup_status, followup_date, task_type, assigned_to, is_attachment_only')
+    .in('request_id', requestIds)
+    .eq('is_attachment_only', false)
+    .order('followup_date', { ascending: false });
         const latestTaskMap = {};
-        (followupsData || []).forEach(f => { if (!latestTaskMap[f.request_id]) latestTaskMap[f.request_id] = f; });
+const mainTaskMap = {};  // 🆕 المهمة الرئيسية لكل طلب
 
+(followupsData || []).forEach(f => {
+    // أحدث مهمة (للحالة)
+    if (!latestTaskMap[f.request_id]) latestTaskMap[f.request_id] = f;
+    
+    // 🆕 المهمة الرئيسية (للعرض)
+    if (f.task_type !== 'extra' && !f.is_attachment_only) {
+        if (!mainTaskMap[f.request_id]) mainTaskMap[f.request_id] = f;
+    }
+});
         let rows = '';
         data.forEach((item, idx) => {
             // 🆕 استخدام staffMap
-            const assignedName = getStaffName(item.assigned_to);
+            // 🔴 أولوية: مُسند المهمة الرئيسية → ثم مُسند الطلب
+const mainTask = mainTaskMap[item.id];
+const assignedName = mainTask 
+    ? getStaffName(mainTask.assigned_to) 
+    : getStaffName(item.assigned_to);
 
             let statusBadge = '';
             const latestTask = latestTaskMap[item.id];
@@ -1176,6 +1188,13 @@ const { data: followups } = await supabase
             }
 
             const originalAssigneeId = consultation.assigned_to || null;
+			// 🔴 الموظف المُسند الفعلي (من المهمة الرئيسية إن وُجدت)
+const mainTask = (followups || []).find(f => 
+    f.task_type !== 'extra' && !f.is_attachment_only
+);
+const displayAssigneeName = mainTask 
+    ? getStaffName(mainTask.assigned_to) 
+    : originalAssigneeName;
             const originalAssigneeName = getStaffName(originalAssigneeId);
 
             let serviceCompletedInfo = '';
@@ -1196,7 +1215,7 @@ const { data: followups } = await supabase
                     <div class="dashboard-detail-row"><span class="dashboard-detail-label">الهاتف</span><span class="dashboard-detail-value">${safeText(consultation.phone)}</span></div>
                     <div class="dashboard-detail-row"><span class="dashboard-detail-label">الخدمة</span><span class="dashboard-detail-value">${getServiceBadge(consultation.service)}</span></div>
                     <div class="dashboard-detail-row"><span class="dashboard-detail-label">تاريخ الطلب</span><span class="dashboard-detail-value">${consultation.created_at ? new Date(consultation.created_at).toLocaleString('ar-EG') : '—'}</span></div>
-                    <div class="dashboard-detail-row"><span class="dashboard-detail-label">الموظف المسند</span><span class="dashboard-detail-value">${escapeHtml(originalAssigneeName)}</span></div>
+<div class="dashboard-detail-row"><span class="dashboard-detail-label">الموظف المسند</span><span class="dashboard-detail-value">${escapeHtml(displayAssigneeName)}</span></div>
                     ${consultation.message ? `<div class="dashboard-detail-row"><span class="dashboard-detail-label">الرسالة</span><span class="dashboard-detail-value">${safeText(consultation.message)}</span></div>` : ''}
                     ${consultation.attachment_path ? `<div class="dashboard-detail-row"><span class="dashboard-detail-label">📎 الملف</span><span class="dashboard-detail-value"><a href="${escapeHtml(consultation.attachment_path)}" target="_blank" style="color: #2d7aff;">تحميل</a></span></div>` : ''}
                     ${serviceCompletedInfo}
