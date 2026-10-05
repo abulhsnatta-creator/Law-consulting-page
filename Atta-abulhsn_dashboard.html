@@ -332,8 +332,50 @@
             <div id="overdueTasksDetailedTable" style="background: white; border-radius: 12px; padding: 15px;">
                 <div class="spinner"></div>
             </div>
-        </div>      
-	  </div>
+       	   </div>      
+	         <!-- 🆕 سجل العمليات (Audit Log) -->
+        <div style="margin-top: 25px;">
+            <h3 style="display: flex; align-items: center; gap: 10px;">
+                <span style="background: linear-gradient(135deg, #6c757d, #495057); color: white; width: 35px; height: 35px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">📜</span>
+                سجل العمليات (Audit Log)
+            </h3>
+
+            <!-- الفلاتر -->
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin: 15px 0; padding: 12px; background: #f8faff; border-radius: 8px; align-items: center;">
+                <label style="font-weight: 600; font-size: 13px;">👤 المستخدم:</label>
+                <select id="auditFilterUser" style="padding: 8px 12px; border: 1px solid #dce1e8; border-radius: 6px; font-size: 13px;">
+                    <option value="">الكل</option>
+                </select>
+
+                <label style="font-weight: 600; font-size: 13px;">🔧 العملية:</label>
+                <select id="auditFilterAction" style="padding: 8px 12px; border: 1px solid #dce1e8; border-radius: 6px; font-size: 13px;">
+                    <option value="">الكل</option>
+                    <option value="create_task">🟢 إنشاء مهمة رئيسية</option>
+                    <option value="create_extra_task">📋 إنشاء مهمة إضافية</option>
+                    <option value="update_task_progress">📊 تحديث تقدم</option>
+                    <option value="task_failed">❌ تعذر تنفيذ</option>
+                    <option value="transfer_actions">🔀 نقل إجراءات</option>
+                    <option value="add_attachment">📎 إضافة مرفق</option>
+                    <option value="approve_request">🏁 اعتماد طلب</option>
+                    <option value="complete_my_actions">✅ إكمال إجراءات</option>
+                </select>
+
+                <label style="font-weight: 600; font-size: 13px;">📅 من:</label>
+                <input type="date" id="auditFilterFrom" style="padding: 8px 12px; border: 1px solid #dce1e8; border-radius: 6px; font-size: 13px;">
+
+                <label style="font-weight: 600; font-size: 13px;">إلى:</label>
+                <input type="date" id="auditFilterTo" style="padding: 8px 12px; border: 1px solid #dce1e8; border-radius: 6px; font-size: 13px;">
+
+                <button onclick="loadAuditLog()" style="background: #2d7aff; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">🔍 تطبيق</button>
+                <button onclick="resetAuditFilters()" style="background: #6c757d; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">↺ إعادة تعيين</button>
+            </div>
+
+            <!-- جدول السجلات -->
+            <div id="auditLogContainer" style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+                <div style="text-align: center; color: #6c757d;">⏳ جاري التحميل...</div>
+            </div>
+        </div>
+	 </div>
     </div>
 </div>
 
@@ -2695,7 +2737,18 @@ document.getElementById('quickActiveRequests').textContent = activeCount;
 await loadTasksTimelineStatistics();     // 🆕
 await loadTasksTimelineTable();          // 🆕
 await loadOverdueTasksDetailedTable();   // 🆕
-
+// ملء قائمة المستخدمين
+const userSelect = document.getElementById('auditFilterUser');
+if (userSelect && userSelect.options.length <= 1) {
+    const users = [...new Set(allEmployees.map(e => e.full_name))];
+    users.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        userSelect.appendChild(opt);
+    });
+}
+await loadAuditLog();
         } catch (e) { console.error(e); }
     }
 
@@ -3191,6 +3244,125 @@ await loadOverdueTasksDetailedTable();   // 🆕
             container.querySelectorAll('.btn-open-preview').forEach(btn => btn.addEventListener('click', function() { openPreview(this.dataset.requestId); }));
         } catch (e) { container.innerHTML = `<div class="message error">❌ ${escapeHtml(e.message)}</div>`; }
     }
+	    // ============================================================
+    // 🆕 دالة تحميل سجل العمليات (Audit Log)
+    // ============================================================
+    async function loadAuditLog() {
+        const container = document.getElementById('auditLogContainer');
+        if (!container) return;
+        
+        try {
+            const userFilter = document.getElementById('auditFilterUser')?.value || '';
+            const actionFilter = document.getElementById('auditFilterAction')?.value || '';
+            const dateFrom = document.getElementById('auditFilterFrom')?.value || '';
+            const dateTo = document.getElementById('auditFilterTo')?.value || '';
+            
+            let query = supabase
+                .from('audit_log')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(200);
+            
+            if (userFilter) query = query.eq('user_name', userFilter);
+            if (actionFilter) query = query.eq('action_type', actionFilter);
+            if (dateFrom) query = query.gte('created_at', dateFrom + 'T00:00:00');
+            if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
+            
+            const { data, error } = await query;
+            if (error) throw error;
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="message" style="text-align: center; padding: 20px;">📭 لا توجد سجلات مطابقة.</div>';
+                return;
+            }
+            
+            // أيقونات العمليات
+            const actionLabels = {
+                create_task: { icon: '🟢', text: 'إنشاء مهمة رئيسية', color: '#28a745' },
+                create_extra_task: { icon: '📋', text: 'إنشاء مهمة إضافية', color: '#2d7aff' },
+                update_task_progress: { icon: '📊', text: 'تحديث تقدم مهمة', color: '#17a2b8' },
+                task_failed: { icon: '❌', text: 'تعذر تنفيذ مهمة', color: '#dc3545' },
+                transfer_actions: { icon: '🔀', text: 'نقل إجراءات', color: '#fd7e14' },
+                add_attachment: { icon: '📎', text: 'إضافة مرفق', color: '#6c757d' },
+                approve_request: { icon: '🏁', text: 'اعتماد طلب', color: '#28a745' },
+                complete_my_actions: { icon: '✅', text: 'إكمال إجراءات', color: '#20c997' }
+            };
+            
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #f8faff; border-radius: 8px;">
+                    <span style="font-size: 13px; color: #555;">📊 <strong>${data.length}</strong> سجل (آخر 200 عملية)</span>
+                </div>
+                <div class="table-responsive">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #2d7aff; color: white;">
+                                <th style="padding: 10px; text-align: center; font-size: 12px;">#</th>
+                                <th style="padding: 10px; text-align: center; font-size: 12px;">المستخدم</th>
+                                <th style="padding: 10px; text-align: center; font-size: 12px;">العملية</th>
+                                <th style="padding: 10px; text-align: center; font-size: 12px;">التفاصيل</th>
+                                <th style="padding: 10px; text-align: center; font-size: 12px;">التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.forEach((log, idx) => {
+                const action = actionLabels[log.action_type] || { icon: '📝', text: log.action_type, color: '#6c757d' };
+                const date = log.created_at ? new Date(log.created_at).toLocaleString('ar-EG') : '—';
+                
+                // تنسيق التفاصيل
+                let detailsText = '—';
+                if (log.details) {
+                    const d = log.details;
+                    if (log.action_type === 'create_task' || log.action_type === 'create_extra_task') {
+                        detailsText = `إلى: ${d.assigned_to || '—'} | إجراءات: ${(d.actions || []).length} | مستندات: ${(d.docs || []).length}`;
+                    } else if (log.action_type === 'update_task_progress') {
+                        detailsText = `التقدم: ${d.progress || '—'} | ${d.is_complete ? 'مكتملة ✅' : 'قيد التنفيذ'}`;
+                    } else if (log.action_type === 'task_failed') {
+                        detailsText = `السبب: ${d.reason || '—'}`;
+                    } else if (log.action_type === 'transfer_actions') {
+                        detailsText = `من: ${(d.from_employees || []).join(', ')} → إلى: ${d.to_employee || '—'} | عناصر: ${d.transferred_items || 0}`;
+                    } else if (log.action_type === 'add_attachment') {
+                        detailsText = `الملف: ${d.file_name || '—'} (${d.file_size || '—'})`;
+                    } else if (log.action_type === 'approve_request') {
+                        detailsText = `إجراءات معلقة وقت الاعتماد: ${d.pending_actions_at_approval || 0}`;
+                    } else if (log.action_type === 'complete_my_actions') {
+                        detailsText = `عدد الإجراءات: ${d.count || 0}`;
+                    } else {
+                        detailsText = JSON.stringify(d).substring(0, 60) + '...';
+                    }
+                }
+                
+                html += `
+                    <tr style="border-bottom: 1px solid #e9edf4;">
+                        <td style="padding: 10px; text-align: center; font-size: 12px;">${idx + 1}</td>
+                        <td style="padding: 10px; text-align: center; font-size: 12px; font-weight: 600;">${escapeHtml(log.user_name || 'غير محدد')}</td>
+                        <td style="padding: 10px; text-align: center; font-size: 12px;">
+                            <span style="background: ${action.color}; color: white; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 600;">${action.icon} ${action.text}</span>
+                        </td>
+                        <td style="padding: 10px; text-align: center; font-size: 11px; color: #555;">${escapeHtml(detailsText)}</td>
+                        <td style="padding: 10px; text-align: center; font-size: 11px; color: #718096;">${date}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+            
+        } catch (e) {
+            console.error('Audit log error:', e);
+            container.innerHTML = `<div class="message error">❌ ${escapeHtml(e.message)}</div>`;
+        }
+    }
+
+    // 🆕 إعادة تعيين فلاتر السجل
+    function resetAuditFilters() {
+        document.getElementById('auditFilterUser').value = '';
+        document.getElementById('auditFilterAction').value = '';
+        document.getElementById('auditFilterFrom').value = '';
+        document.getElementById('auditFilterTo').value = '';
+        loadAuditLog();
+    }
 
     // ============================================================
     // 19. إضافة طلب يدوي
@@ -3289,7 +3461,10 @@ await loadOverdueTasksDetailedTable();   // 🆕
     // ============================================================
     // 21. تشغيل التهيئة
     // ============================================================
-    document.addEventListener('DOMContentLoaded', initPage);
+       // 🔴 إتاحة الدوال للنطاق العام (لأزرار HTML)
+    window.loadAuditLog = loadAuditLog;
+    window.resetAuditFilters = resetAuditFilters;
+   document.addEventListener('DOMContentLoaded', initPage);
 
 })();
 </script>
