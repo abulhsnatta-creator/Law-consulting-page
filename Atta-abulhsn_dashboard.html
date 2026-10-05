@@ -1577,11 +1577,12 @@ body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${
             if (uploadError) { toast('❌ ' + uploadError.message, 'error'); return; }
             const { data: urlData } = supabase.storage.from('consultation-files').getPublicUrl(safeFileName);
             const { data: { user } } = await supabase.auth.getUser();
-            const { error } = await supabase.from('client_followups').insert({
-                request_id: consId, notes: '', followup_status: 'new', created_by: user?.id,
-                contact_method: 'other', action: '', followup_date: new Date().toISOString(),
-                attachment_path: urlData.publicUrl, attachment_name: file.name, is_attachment_only: true
-            });
+const { error } = await supabase.from('client_followups').insert({
+    request_id: consId, notes: '', followup_status: 'new', created_by: user?.id,
+    contact_method: 'other', action: '', followup_date: new Date().toISOString(),
+    attachment_path: urlData.publicUrl, attachment_name: file.name, is_attachment_only: true,
+    task_type: 'main'  // ← 🆕 الإضافة
+});
             if (error) { toast('❌ ' + error.message, 'error'); }
             else {
                 // 🔴 تسجيل المرفق
