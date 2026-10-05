@@ -1577,7 +1577,7 @@ body.innerHTML = `<div class="dashboard-container">${customerCard}${tasksCard}${
             if (uploadError) { toast('❌ ' + uploadError.message, 'error'); return; }
             const { data: urlData } = supabase.storage.from('consultation-files').getPublicUrl(safeFileName);
             const { data: { user } } = await supabase.auth.getUser();
-const { error } = await supabase.from('client_followups').insert({
+            const { error } = await supabase.from('client_followups').insert({
     request_id: consId, notes: '', followup_status: 'new', created_by: user?.id,
     contact_method: 'other', action: '', followup_date: new Date().toISOString(),
     attachment_path: urlData.publicUrl, attachment_name: file.name, is_attachment_only: true,
@@ -1957,6 +1957,10 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
     });
     
     // 🔴 إذا وُجد تعارض → عرض خيار النقل
+      // 🔴 متغيرات للاحتفاظ بالإجراءات والمستندات النهائية
+    let finalExtraActions = [...selectedExtraActions];
+    let finalExtraDocs = [...selectedExtraDocs];
+    
     if (conflicts.length > 0) {
         let msg = '⚠️ تعارض مع مهام إضافية لموظفين آخرين:\n\n';
         conflicts.forEach(c => {
@@ -1969,10 +1973,16 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
         msg += '🔀 هل تريد نقل هذه الإجراءات من الموظفين السابقين إلى الموظف الجديد؟\n\n';
         msg += '⚠️ سيتم حذفها من مهام الموظفين السابقين.';
         
-        if (!confirm(msg)) {
+               if (!confirm(msg)) {
             toast('تم الإلغاء.', 'info');
             return;
         }
+        
+        // 🔴 ادمج الإجراءات والمستندات المُنقلة مع اختيار المستخدم
+        const transferredActions = conflicts.flatMap(c => c.actions);
+        const transferredDocs = conflicts.flatMap(c => c.docs);
+        finalExtraActions = [...new Set([...selectedExtraActions, ...transferredActions])];
+        finalExtraDocs = [...new Set([...selectedExtraDocs, ...transferredDocs])];
         
         // 🔴 نقل الإجراءات المتعارضة
         for (const conflict of conflicts) {
@@ -2025,8 +2035,7 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
         request_id: consultationId,
         followup_date: new Date().toISOString(),
         contact_method: 'other',
-        action: `الإجراءات: ${selectedExtraActions.join(', ') || 'لا يوجد'} | المستندات: ${selectedExtraDocs.join(', ') || 'لا يوجد'}`,
-        notes: extraNotes,
+        action: `الإجراءات: ${finalExtraActions.join(', ') || 'لا يوجد'} | المستندات: ${finalExtraDocs.join(', ') || 'لا يوجد'}`,        notes: extraNotes,
         next_followup: extraDueDate ? new Date(extraDueDate).toISOString() : null,
         followup_status: 'pending',
         created_by: currentUser.id,
@@ -2243,7 +2252,7 @@ document.getElementById('btnCreateExtraTask')?.addEventListener('click', async f
             const inSevenDays = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
             const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 
-// 🔴 عدّ الطلبات النشطة (نفس منطق fetchConsultations)
+           // 🔴 عدّ الطلبات النشطة (نفس منطق fetchConsultations)
 let activeCount = 0;
 if (currentUser.role === 'followup_staff') {
     // الموظف: الطلبات المُسندة إليه + الطلبات التي لديه مهام فيها
