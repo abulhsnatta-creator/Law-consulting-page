@@ -6,6 +6,7 @@
     <title>لوحة التحكم</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f6f9; padding: 20px; }
@@ -201,6 +202,20 @@
             📊 لوحة التقارير
             <button onclick="window.print()" style="background: #2d7aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">🖨️ طباعة</button>
         </h2>
+		        <!-- 🆕 قسم تصدير Excel -->
+        <div style="display: flex; gap: 10px; align-items: center; padding: 15px 20px; background: linear-gradient(135deg, #e7f9ef, #d4f4dd); border-radius: 12px; margin-bottom: 25px; border-right: 5px solid #28a745; flex-wrap: wrap;">
+            <span style="font-size: 20px;">📥</span>
+            <label style="font-weight: 600; font-size: 14px;">تصدير البيانات إلى Excel:</label>
+            <select id="exportTableSelect" style="padding: 8px 15px; border: 1px solid #dce1e8; border-radius: 8px; font-size: 14px; font-family: inherit; flex: 1; min-width: 200px; max-width: 350px;">
+                <option value="">-- اختر الجدول --</option>
+                <option value="consultations">📋 قائمة الطلبات</option>
+                <option value="audit_log">📜 سجل العمليات</option>
+                <option value="employee_performance">👥 أداء الموظفين</option>
+                <option value="overdue_tasks">⚠️ المهام المتأخرة</option>
+                <option value="employee_tasks">📌 المهام حسب الموظف</option>
+            </select>
+            <button onclick="exportSelectedTable()" style="background: #28a745; color: white; border: none; padding: 10px 25px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">📥 تصدير</button>
+        </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
             <div class="dashboard-card" style="text-align: center; border-right: 4px solid #2d7aff;">
                 <div style="font-size: 32px;">📋</div>
@@ -403,7 +418,10 @@
     // ============================================================
     let currentUser = null;
     let allConsultations = [];
+    let currentFilteredData = [];
     let allEmployees = [];
+	    // 🔴 متغيرات للاحتفاظ ببيانات التصدير
+    let lastAuditLogData = [];
     let staffMap = {};   // 🆕 UUID → { full_name, role, email, ... }
 
     // ============================================================
@@ -829,7 +847,8 @@
         if (service) filtered = filtered.filter(item => item.service === service);
         if (clientName) filtered = filtered.filter(item => (item.client_name || '').toLowerCase().includes(clientName));
 
-        renderConsultations(filtered);
+       currentFilteredData = filtered;
+	   renderConsultations(filtered);
     }
 
     function resetFilters() {
@@ -2921,7 +2940,8 @@ await loadAuditLog();
                 html += `<tr style="border-bottom: 1px solid #e9edf4;"><td style="padding: 10px; text-align: center;">${i+1}</td><td style="padding: 10px; text-align: center; font-weight: 600;">${escapeHtml(e.name)}</td><td style="padding: 10px; text-align: center; font-size: 11px;">${e.role}</td><td style="padding: 10px; text-align: center;">${e.taskTotal}</td><td style="padding: 10px; text-align: center; color: #28a745;">${e.taskComp}</td><td style="padding: 10px; text-align: center;">${e.actTotal}</td><td style="padding: 10px; text-align: center; color: #28a745;">${e.actComp}</td><td style="padding: 10px; text-align: center;"><div style="background: #f0f2f5; border-radius: 12px; height: 20px; position: relative; min-width: 80px;"><div style="background: ${rc}; height: 100%; width: ${e.rate}%; border-radius: 12px;"></div><span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 11px; font-weight: 600;">${e.rate}%</span></div></td></tr>`;
             });
             html += '</tbody></table></div>';
-            container.innerHTML = html;
+           lastEmployeePerformanceData = perf;  // 🆕 حفظ للتصدير
+		   container.innerHTML = html;
         } catch (e) { container.innerHTML = `<div class="message error">❌ ${escapeHtml(e.message)}</div>`; }
     }
 
@@ -3106,7 +3126,8 @@ await loadAuditLog();
                 ).length
             });
             
-            let html = `<div class="table-responsive"><table style="width: 100%;">
+          const perf = [];  // 🆕 مصفوفة للتصدير
+		  let html = `<div class="table-responsive"><table style="width: 100%;">
                 <thead>
                     <tr style="background: #2d7aff; color: white;">
                         <th style="padding: 10px;">#</th>
@@ -3138,6 +3159,18 @@ await loadAuditLog();
                 const rate = total > 0 ? Math.round((completedCount / total) * 100) : 0;
                 const rc = rate >= 80 ? '#28a745' : rate >= 50 ? '#ffc107' : '#dc3545';
                 const roleLabel = emp.role === 'manager' ? 'مدير' : emp.role === 'secretary' ? 'سكرتير' : 'موظف';
+				                // 🆕 إضافة البيانات للتصدير
+                perf.push({
+                    name: emp.full_name || 'بدون اسم',
+                    role: roleLabel,
+                    main: mainCount,
+                    extra: extraCount,
+                    pending: pendingCount,
+                    completed: completedCount,
+                    overdue: overdueCount,
+                    rate: rate
+                });
+                
                 
                 html += `<tr style="border-bottom: 1px solid #e9edf4;">
                     <td style="padding: 10px; text-align: center;">${i+1}</td>
@@ -3158,7 +3191,8 @@ await loadAuditLog();
             });
             
             html += '</tbody></table></div>';
-            container.innerHTML = html;
+           lastEmployeeTasksData = perf;
+		   container.innerHTML = html;
             
         } catch (e) {
             console.error('Tasks by employee error:', e);
@@ -3234,7 +3268,8 @@ await loadAuditLog();
                 return;
             }
             
-            let html = `<div class="table-responsive"><table style="width: 100%;">
+           const perf = [];  // 🆕 للتصدير
+		   let html = `<div class="table-responsive"><table style="width: 100%;">
                 <thead><tr style="background: #2d7aff; color: white;">
                     <th style="padding: 10px;">#</th>
                     <th style="padding: 10px;">العميل</th>
@@ -3408,8 +3443,10 @@ await loadAuditLog();
             
             const { data, error } = await query;
             if (error) throw error;
+			lastAuditLogData = data || [];
             
-            if (!data || data.length === 0) {
+            lastAuditLogData = data || [];  // 🆕 حفظ للتصدير
+			if (!data || data.length === 0) {
                 container.innerHTML = '<div class="message" style="text-align: center; padding: 20px;">📭 لا توجد سجلات مطابقة.</div>';
                 return;
             }
@@ -3602,6 +3639,159 @@ await loadAuditLog();
        // 🔴 إتاحة الدوال للنطاق العام (لأزرار HTML)
     window.loadAuditLog = loadAuditLog;
     window.resetAuditFilters = resetAuditFilters;
+
+    // ============================================================
+    // 🔴 متغيرات تصدير Excel
+    // ============================================================
+    let lastEmployeePerformanceData = [];
+    let lastEmployeeTasksData = [];
+
+    // 🔴 دالة تصدير Excel الأساسية
+    function exportToExcel(data, sheetName, fileName) {
+        if (typeof XLSX === 'undefined') {
+            toast('⚠️ مكتبة Excel لم تُحمَّل. أعد تحميل الصفحة.', 'error');
+            return;
+        }
+        
+        if (!data || data.length === 0) {
+            toast('⚠️ لا توجد بيانات للتصدير.', 'warning');
+            return;
+        }
+        
+        try {
+            const ws = XLSX.utils.json_to_sheet(data);
+            const keys = Object.keys(data[0]);
+            ws['!cols'] = keys.map(key => ({ wch: Math.max(key.length * 1.8, 18) }));
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            
+            const date = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `${fileName}_${date}.xlsx`);
+            
+            toast(`✅ تم تصدير ${data.length} سجل بنجاح!`, 'success');
+        } catch (e) {
+            console.error('Excel export error:', e);
+            toast('❌ فشل التصدير: ' + e.message, 'error');
+        }
+    }
+
+    // 🔴 دالة تصدير الجدول المختار
+    function exportSelectedTable() {
+        const select = document.getElementById('exportTableSelect');
+        if (!select || !select.value) {
+            toast('⚠️ يرجى اختيار الجدول أولاً.', 'warning');
+            return;
+        }
+        
+        const table = select.value;
+        const today = new Date().toISOString().split('T')[0];
+        console.log('📥 تصدير الجدول:', table);
+        
+        // 📋 قائمة الطلبات
+        if (table === 'consultations') {
+            const source = (typeof currentFilteredData !== 'undefined' && currentFilteredData && currentFilteredData.length > 0) 
+                ? currentFilteredData 
+                : allConsultations;
+            
+            if (!source || source.length === 0) {
+                toast('⚠️ لا توجد طلبات للتصدير.', 'warning');
+                return;
+            }
+            
+            const data = source.map((item, idx) => ({
+                '#': idx + 1,
+                'اسم العميل': item.client_name || '—',
+                'البريد الإلكتروني': item.email || '—',
+                'الهاتف': item.phone || '—',
+                'الخدمة': getServiceNameAr(item.service),
+                'المرفقات': item.attachment_path ? 'نعم' : 'لا',
+                'التاريخ': item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—',
+                'المتابع': getStaffName(item.assigned_to),
+                'الحالة': item.final_completed_at ? 'مكتملة' : 'نشطة'
+            }));
+            exportToExcel(data, 'الطلبات', `consultations_${today}`);
+        }
+        
+        // 📜 سجل العمليات
+        else if (table === 'audit_log') {
+            if (!lastAuditLogData || lastAuditLogData.length === 0) {
+                toast('⚠️ لا توجد سجلات. افتح قسم التقارير أولاً.', 'warning');
+                return;
+            }
+            
+            const actionLabels = {
+                create_task: 'إنشاء مهمة رئيسية',
+                create_extra_task: 'إنشاء مهمة إضافية',
+                update_task_progress: 'تحديث تقدم مهمة',
+                task_failed: 'تعذر تنفيذ مهمة',
+                transfer_actions: 'نقل إجراءات',
+                add_attachment: 'إضافة مرفق',
+                approve_request: 'اعتماد طلب',
+                complete_my_actions: 'إكمال إجراءات',
+                edit_client: 'تعديل بيانات عميل'
+            };
+            
+            const data = lastAuditLogData.map((log, idx) => ({
+                '#': idx + 1,
+                'المستخدم': log.user_name || '—',
+                'العملية': actionLabels[log.action_type] || log.action_type,
+                'نوع الكيان': log.entity_type || '—',
+                'التفاصيل': log.details ? JSON.stringify(log.details) : '—',
+                'التاريخ': log.created_at ? new Date(log.created_at).toLocaleString('ar-EG') : '—'
+            }));
+            exportToExcel(data, 'سجل العمليات', `audit_log_${today}`);
+        }
+        
+        // 👥 أداء الموظفين
+        else if (table === 'employee_performance') {
+            if (!lastEmployeePerformanceData || lastEmployeePerformanceData.length === 0) {
+                toast('⚠️ لا توجد بيانات. افتح قسم التقارير أولاً.', 'warning');
+                return;
+            }
+            
+            const data = lastEmployeePerformanceData.map((e, idx) => ({
+                '#': idx + 1,
+                'الموظف': e.name,
+                'الدور': e.role,
+                'إجمالي المهام': e.total,
+                'المنجزة': e.comp,
+                'قيد التنفيذ': e.pend,
+                'المتأخرة': e.over,
+                'نسبة الإنجاز': `${e.rate}%`
+            }));
+            exportToExcel(data, 'أداء الموظفين', `employees_performance_${today}`);
+        }
+        
+        // 📌 المهام حسب الموظف
+        else if (table === 'employee_tasks') {
+            if (!lastEmployeeTasksData || lastEmployeeTasksData.length === 0) {
+                toast('⚠️ لا توجد بيانات. افتح قسم التقارير أولاً.', 'warning');
+                return;
+            }
+            
+            const data = lastEmployeeTasksData.map((e, idx) => ({
+                '#': idx + 1,
+                'الموظف': e.name,
+                'الدور': e.role,
+                'رئيسية': e.main,
+                'إضافية': e.extra,
+                'قيد التنفيذ': e.pending,
+                'مكتملة': e.completed,
+                'متأخرة': e.overdue,
+                'نسبة الإنجاز': `${e.rate}%`
+            }));
+            exportToExcel(data, 'المهام حسب الموظف', `employee_tasks_${today}`);
+        }
+        
+        else {
+            toast('⚠️ هذا الخيار غير مدعوم حالياً.', 'warning');
+        }
+    }
+
+    // 🔴 إتاحة دالة التصدير للنطاق العام
+    window.exportSelectedTable = exportSelectedTable;
+
    document.addEventListener('DOMContentLoaded', initPage);
 
 })();
