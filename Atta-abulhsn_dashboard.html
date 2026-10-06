@@ -1187,16 +1187,16 @@ const { data: followups } = await supabase
                 attachmentsHtml = '<div class="message">لا توجد مرفقات إضافية.</div>';
             }
 
-            const originalAssigneeId = consultation.assigned_to || null;
-			// 🔴 الموظف المُسند الفعلي (من المهمة الرئيسية إن وُجدت)
-const mainTask = (followups || []).find(f => 
-    f.task_type !== 'extra' && !f.is_attachment_only
-);
-const displayAssigneeName = mainTask 
-    ? getStaffName(mainTask.assigned_to) 
-    : originalAssigneeName;
+                  const originalAssigneeId = consultation.assigned_to || null;
             const originalAssigneeName = getStaffName(originalAssigneeId);
-
+            
+            // 🔴 الموظف المُسند الفعلي (من المهمة الرئيسية إن وُجدت)
+            const mainTask = (followups || []).find(f => 
+                f.task_type !== 'extra' && !f.is_attachment_only
+            );
+            const displayAssigneeName = mainTask 
+                ? getStaffName(mainTask.assigned_to) 
+                : originalAssigneeName;
             let serviceCompletedInfo = '';
             if (consultation.final_completed_at) {
                 const completedByName = getStaffName(consultation.final_completed_by);
