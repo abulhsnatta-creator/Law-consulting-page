@@ -200,7 +200,10 @@
     <div id="sectionReports" class="section">
         <h2 style="display: flex; justify-content: space-between; align-items: center;">
             📊 لوحة التقارير
-            <button onclick="window.print()" style="background: #2d7aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">🖨️ طباعة</button>
+        </h2>
+		        <h2 style="display: flex; justify-content: space-between; align-items: center;">
+            📊 لوحة التقارير
+            <button onclick="window.print()" style="background: #2d7aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">🖨️ طباعة الصفحة</button>
         </h2>
 		        <!-- 🆕 قسم تصدير Excel -->
         <div style="display: flex; gap: 10px; align-items: center; padding: 15px 20px; background: linear-gradient(135deg, #e7f9ef, #d4f4dd); border-radius: 12px; margin-bottom: 25px; border-right: 5px solid #28a745; flex-wrap: wrap;">
@@ -215,6 +218,7 @@
                 <option value="employee_tasks">📌 المهام حسب الموظف</option>
             </select>
             <button onclick="exportSelectedTable()" style="background: #28a745; color: white; border: none; padding: 10px 25px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">📥 تصدير</button>
+			            <button onclick="printSelectedTable()" style="background: #dc3545; color: white; border: none; padding: 10px 25px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">🖨️ طباعة</button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
             <div class="dashboard-card" style="text-align: center; border-right: 4px solid #2d7aff;">
@@ -3789,7 +3793,335 @@ await loadAuditLog();
         }
     }
 
-    // 🔴 إتاحة دالة التصدير للنطاق العام
+    // ============================================================
+    // 🔴 دالة طباعة التقرير
+    // ============================================================
+    function printSelectedTable() {
+        const select = document.getElementById('exportTableSelect');
+        if (!select || !select.value) {
+            toast('⚠️ يرجى اختيار الجدول أولاً.', 'warning');
+            return;
+        }
+        
+        const table = select.value;
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+        const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        
+        let reportTitle = '';
+        let headers = [];
+        let rows = [];
+        let totalCount = 0;
+        
+        // 📋 قائمة الطلبات
+        if (table === 'consultations') {
+            const source = (typeof currentFilteredData !== 'undefined' && currentFilteredData && currentFilteredData.length > 0) 
+                ? currentFilteredData 
+                : allConsultations;
+            
+            if (!source || source.length === 0) {
+                toast('⚠️ لا توجد طلبات للطباعة.', 'warning');
+                return;
+            }
+            
+            reportTitle = 'قائمة طلبات الاستشارات';
+            headers = ['#', 'اسم العميل', 'البريد', 'الهاتف', 'الخدمة', 'التاريخ', 'المتابع', 'الحالة'];
+            rows = source.map((item, idx) => [
+                idx + 1,
+                item.client_name || '—',
+                item.email || '—',
+                item.phone || '—',
+                getServiceNameAr(item.service),
+                item.created_at ? new Date(item.created_at).toLocaleDateString('ar-EG') : '—',
+                getStaffName(item.assigned_to),
+                item.final_completed_at ? 'مكتملة' : 'نشطة'
+            ]);
+            totalCount = source.length;
+        }
+        
+        // 📜 سجل العمليات
+        else if (table === 'audit_log') {
+            if (!lastAuditLogData || lastAuditLogData.length === 0) {
+                toast('⚠️ لا توجد سجلات. افتح قسم التقارير أولاً.', 'warning');
+                return;
+            }
+            
+            const actionLabels = {
+                create_task: 'إنشاء مهمة رئيسية',
+                create_extra_task: 'إنشاء مهمة إضافية',
+                update_task_progress: 'تحديث تقدم مهمة',
+                task_failed: 'تعذر تنفيذ مهمة',
+                transfer_actions: 'نقل إجراءات',
+                add_attachment: 'إضافة مرفق',
+                approve_request: 'اعتماد طلب',
+                complete_my_actions: 'إكمال إجراءات',
+                edit_client: 'تعديل بيانات عميل'
+            };
+            
+            reportTitle = 'سجل العمليات (Audit Log)';
+            headers = ['#', 'المستخدم', 'العملية', 'نوع الكيان', 'التاريخ والوقت'];
+            rows = lastAuditLogData.slice(0, 100).map((log, idx) => [
+                idx + 1,
+                log.user_name || '—',
+                actionLabels[log.action_type] || log.action_type,
+                log.entity_type || '—',
+                log.created_at ? new Date(log.created_at).toLocaleString('ar-EG') : '—'
+            ]);
+            totalCount = lastAuditLogData.length;
+        }
+        
+        // 👥 أداء الموظفين
+        else if (table === 'employee_performance') {
+            if (!lastEmployeePerformanceData || lastEmployeePerformanceData.length === 0) {
+                toast('⚠️ لا توجد بيانات. افتح قسم التقارير أولاً.', 'warning');
+                return;
+            }
+            
+            reportTitle = 'تقرير أداء الموظفين';
+            headers = ['#', 'الموظف', 'الدور', 'إجمالي المهام', 'المنجزة', 'قيد التنفيذ', 'المتأخرة', 'نسبة الإنجاز'];
+            rows = lastEmployeePerformanceData.map((e, idx) => [
+                idx + 1,
+                e.name,
+                e.role,
+                e.total,
+                e.comp,
+                e.pend,
+                e.over,
+                `${e.rate}%`
+            ]);
+            totalCount = lastEmployeePerformanceData.length;
+        }
+        
+        // 📌 المهام حسب الموظف
+        else if (table === 'employee_tasks') {
+            if (!lastEmployeeTasksData || lastEmployeeTasksData.length === 0) {
+                toast('⚠️ لا توجد بيانات. افتح قسم التقارير أولاً.', 'warning');
+                return;
+            }
+            
+            reportTitle = 'تقرير المهام حسب الموظف';
+            headers = ['#', 'الموظف', 'الدور', 'رئيسية', 'إضافية', 'قيد التنفيذ', 'مكتملة', 'متأخرة', 'النسبة'];
+            rows = lastEmployeeTasksData.map((e, idx) => [
+                idx + 1,
+                e.name,
+                e.role,
+                e.main,
+                e.extra,
+                e.pending,
+                e.completed,
+                e.overdue,
+                `${e.rate}%`
+            ]);
+            totalCount = lastEmployeeTasksData.length;
+        }
+        
+        else {
+            toast('⚠️ هذا الخيار غير مدعوم.', 'warning');
+            return;
+        }
+        
+        // بناء جدول HTML
+        let tableHtml = '<table>';
+        tableHtml += '<thead><tr>';
+        headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
+        tableHtml += '</tr></thead><tbody>';
+        
+        rows.forEach(row => {
+            tableHtml += '<tr>';
+            row.forEach((cell, i) => {
+                tableHtml += `<td${i === 0 ? ' class="num"' : ''}>${escapeHtml(String(cell))}</td>`;
+            });
+            tableHtml += '</tr>';
+        });
+        
+        tableHtml += '</tbody></table>';
+        
+        // فتح نافذة جديدة
+        const win = window.open('', '_blank', 'width=1000,height=700');
+        if (!win) {
+            toast('⚠️ يرجى السماح بالنوافذ المنبثقة.', 'error');
+            return;
+        }
+        
+        win.document.write(`
+            <!DOCTYPE html>
+            <html lang="ar" dir="rtl">
+            <head>
+                <meta charset="UTF-8">
+                <title>${reportTitle} - ${dateStr}</title>
+                <style>
+                    @media print {
+                        @page { size: A4 landscape; margin: 10mm; }
+                        .no-print { display: none !important; }
+                    }
+                    
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    
+                    body {
+                        font-family: 'Segoe UI', Tahoma, sans-serif;
+                        direction: rtl;
+                        padding: 20px;
+                        background: white;
+                        color: #1a2a3a;
+                    }
+                    
+                    .header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding-bottom: 15px;
+                        border-bottom: 3px solid #2d7aff;
+                        margin-bottom: 20px;
+                    }
+                    
+                    .header .logo {
+                        font-size: 28px;
+                        font-weight: 700;
+                        color: #2d7aff;
+                    }
+                    
+                    .header .info {
+                        text-align: left;
+                        font-size: 12px;
+                        color: #666;
+                    }
+                    
+                    .report-title {
+                        text-align: center;
+                        font-size: 22px;
+                        font-weight: 700;
+                        color: #1a2a3a;
+                        margin: 20px 0;
+                        padding: 10px;
+                        background: linear-gradient(135deg, #f0f4ff, #e7f3ff);
+                        border-radius: 10px;
+                    }
+                    
+                    .meta {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 15px;
+                        font-size: 12px;
+                        color: #666;
+                    }
+                    
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 20px;
+                        font-size: 12px;
+                    }
+                    
+                    thead {
+                        background: #2d7aff;
+                        color: white;
+                    }
+                    
+                    th {
+                        padding: 10px 8px;
+                        text-align: right;
+                        font-weight: 600;
+                        border: 1px solid #1a5cc4;
+                    }
+                    
+                    td {
+                        padding: 8px;
+                        border: 1px solid #e9edf4;
+                        text-align: right;
+                    }
+                    
+                    tbody tr:nth-child(even) {
+                        background: #f8faff;
+                    }
+                    
+                    td.num {
+                        text-align: center;
+                        font-weight: 600;
+                        color: #2d7aff;
+                        width: 40px;
+                    }
+                    
+                    .footer {
+                        margin-top: 30px;
+                        padding-top: 15px;
+                        border-top: 2px solid #e9edf4;
+                        text-align: center;
+                        font-size: 11px;
+                        color: #999;
+                    }
+                    
+                    .toolbar {
+                        position: fixed;
+                        top: 20px;
+                        left: 20px;
+                        background: white;
+                        padding: 10px;
+                        border-radius: 10px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                        z-index: 100;
+                    }
+                    
+                    .toolbar button {
+                        background: #2d7aff;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        font-size: 14px;
+                        margin-left: 5px;
+                    }
+                    
+                    .toolbar button.close {
+                        background: #dc3545;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="toolbar no-print">
+                    <button onclick="window.print()">🖨️ طباعة</button>
+                    <button class="close" onclick="window.close()">✕ إغلاق</button>
+                </div>
+                
+                <div class="header">
+                    <div class="logo">⚖️ مكتب المحاماة</div>
+                    <div class="info">
+                        <div>التاريخ: ${dateStr}</div>
+                        <div>الوقت: ${timeStr}</div>
+                        <div>المستخدم: ${escapeHtml(currentUser?.full_name || 'غير محدد')}</div>
+                    </div>
+                </div>
+                
+                <div class="report-title">${reportTitle}</div>
+                
+                <div class="meta">
+                    <div>📊 إجمالي السجلات: <strong>${totalCount}</strong></div>
+                    <div>📅 تاريخ الطباعة: ${dateStr}</div>
+                </div>
+                
+                ${tableHtml}
+                
+                <div class="footer">
+                    تم إنشاء هذا التقرير تلقائياً بواسطة نظام إدارة الاستشارات القانونية
+                </div>
+            </body>
+            </html>
+        `);
+        
+        win.document.close();
+        
+        // انتظر تحميل المحتوى قبل الطباعة
+        setTimeout(() => {
+            win.focus();
+        }, 300);
+        
+        toast('✅ تم فتح نافذة الطباعة!', 'success');
+    }
+
+    window.printSelectedTable = printSelectedTable;
+   
+   // 🔴 إتاحة دالة التصدير للنطاق العام
     window.exportSelectedTable = exportSelectedTable;
 
    document.addEventListener('DOMContentLoaded', initPage);
