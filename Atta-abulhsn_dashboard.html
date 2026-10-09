@@ -201,7 +201,7 @@
 
 		        <h2 style="display: flex; justify-content: space-between; align-items: center;">
             📊 لوحة التقارير
-            <button onclick="window.print()" style="background: #2d7aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">🖨️ طباعة الصفحة</button>
+            <button onclick="showPrintRangeModal()" style="background: #2d7aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">🖨️ طباعة الصفحة</button>
         </h2>
 		        <!-- 🆕 قسم تصدير Excel -->
         <div style="display: flex; gap: 10px; align-items: center; padding: 15px 20px; background: linear-gradient(135deg, #e7f9ef, #d4f4dd); border-radius: 12px; margin-bottom: 25px; border-right: 5px solid #28a745; flex-wrap: wrap;">
@@ -4117,7 +4117,198 @@ await loadAuditLog();
         toast('✅ تم فتح نافذة الطباعة!', 'success');
     }
 
-    window.printSelectedTable = printSelectedTable;
+    // ============================================================
+    // 🔴 دالة نافذة تحديد فترة الطباعة
+    // ============================================================
+    function showPrintRangeModal() {
+        document.getElementById('printRangeModal')?.remove();
+        
+        const modalHtml = `
+            <div id="printRangeModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;">
+                <div style="background: white; border-radius: 16px; padding: 25px; width: 90%; max-width: 450px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #2d7aff; padding-bottom: 12px;">
+                        <h3 style="color: #1a2a3a; margin: 0; font-size: 18px;">🖨️ طباعة التقرير</h3>
+                        <button id="closePrintModal" style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer;">✕</button>
+                    </div>
+                    
+                    <p style="color: #718096; font-size: 13px; margin-bottom: 15px;">
+                        حدد الفترة المطلوبة، أو اتركها فارغة لطباعة الكل.
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                        <div>
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px; font-size: 13px;">📅 من:</label>
+                            <input type="date" id="printModalFrom" style="width: 100%; padding: 10px; border: 1px solid #dce1e8; border-radius: 8px; font-size: 13px; font-family: inherit;">
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px; font-size: 13px;">📅 إلى:</label>
+                            <input type="date" id="printModalTo" style="width: 100%; padding: 10px; border: 1px solid #dce1e8; border-radius: 8px; font-size: 13px; font-family: inherit;">
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button id="printWithRangeBtn" style="flex: 1; background: linear-gradient(135deg, #2d7aff, #1a5cc4); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">🖨️ طباعة بالفترة</button>
+                        <button id="printAllBtn" style="flex: 1; background: #6c757d; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">📄 طباعة الكل</button>
+                    </div>
+                    
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        const closeModal = () => document.getElementById('printRangeModal')?.remove();
+        document.getElementById('closePrintModal').addEventListener('click', closeModal);
+        document.getElementById('printRangeModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+        
+        document.getElementById('printAllBtn').addEventListener('click', function() {
+            closeModal();
+            setTimeout(() => window.print(), 200);
+        });
+        
+        document.getElementById('printWithRangeBtn').addEventListener('click', function() {
+            const dateFrom = document.getElementById('printModalFrom').value;
+            const dateTo = document.getElementById('printModalTo').value;
+            closeModal();
+            setTimeout(() => {
+                if (!dateFrom && !dateTo) {
+                    window.print();
+                } else {
+                    printWithDateFilter(dateFrom, dateTo);
+                }
+            }, 200);
+        });
+    }
+
+    // ============================================================
+    // 🔴 دالة الطباعة مع فلترة البيانات
+    // ============================================================
+    function printWithDateFilter(dateFrom, dateTo) {
+        console.clear();
+        console.log('🔍 [PRINT] بدء:', { dateFrom, dateTo });
+        
+        // 🔴 إزالة علامات RTL + تحويل الأرقام العربية
+        const normalizeText = (str) => {
+            return String(str)
+                .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
+                .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660))
+                .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06F0));
+        };
+        
+        // 🔴 استخراج التاريخ
+        const extractDate = (text) => {
+            if (!text) return null;
+            const cleaned = normalizeText(text);
+            
+            // ابحث عن كل تسلسلات الأرقام + الفواصل
+            const sequences = cleaned.match(/[\d\/\-\.]+/g) || [];
+            
+            for (const seq of sequences) {
+                // YYYY/MM/DD
+                let m = seq.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+                if (m) {
+                    const y = parseInt(m[1]), mo = parseInt(m[2]), d = parseInt(m[3]);
+                    if (y >= 2000 && y <= 2100 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31) {
+                        return new Date(y, mo - 1, d);
+                    }
+                }
+                // DD/MM/YYYY
+                m = seq.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+                if (m) {
+                    const d = parseInt(m[1]), mo = parseInt(m[2]), y = parseInt(m[3]);
+                    if (y >= 2000 && y <= 2100 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31) {
+                        return new Date(y, mo - 1, d);
+                    }
+                }
+            }
+            return null;
+        };
+        
+        const fromDate = dateFrom ? new Date(dateFrom + 'T00:00:00') : null;
+        const toDate = dateTo ? new Date(dateTo + 'T23:59:59') : null;
+        
+        const isInRange = (d) => {
+            if (!d) return true;
+            if (fromDate && d < fromDate) return false;
+            if (toDate && d > toDate) return false;
+            return true;
+        };
+        
+        const changes = [];
+        let hiddenCount = 0;
+        let checkedCount = 0;
+        
+        // 🔴 فلترة كل جداول الصفحة
+        document.querySelectorAll('table').forEach((table, tIdx) => {
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach((row, rIdx) => {
+                let rowDate = null;
+                for (const cell of row.querySelectorAll('td')) {
+                    const d = extractDate(cell.textContent);
+                    if (d) { rowDate = d; break; }
+                }
+                if (rowDate) {
+                    checkedCount++;
+                    if (!isInRange(rowDate)) {
+                        changes.push({ el: row, oldValue: row.style.display });
+                        row.style.display = 'none';
+                        hiddenCount++;
+                    }
+                }
+            });
+        });
+        
+        console.log(`🔍 [PRINT] فحص ${checkedCount} صف — أُخفي ${hiddenCount}`);
+        
+        // تشخيص: اعرض عينة من البيانات
+        if (checkedCount === 0) {
+            console.warn('⚠️ لم يتم العثور على تواريخ. عينة من أول جدول:');
+            const t = document.querySelector('table tbody tr');
+            if (t) {
+                const cells = [...t.querySelectorAll('td')].map(c => c.textContent.trim());
+                console.log(cells);
+            }
+        }
+        
+        // 🔴 ترويسة الطباعة
+        const printHeader = document.createElement('div');
+        printHeader.id = 'printFilterHeader';
+        printHeader.style.cssText = 'display: none; padding: 12px 20px; background: linear-gradient(135deg, #f0f4ff, #e7f3ff); border-radius: 10px; margin-bottom: 20px; border-right: 5px solid #2d7aff; text-align: center; font-size: 14px; color: #1a2a3a; font-weight: 600;';
+        printHeader.innerHTML = `🔍 الفترة: ${dateFrom ? `من ${new Date(dateFrom).toLocaleDateString('ar-EG')}` : ''} ${dateFrom && dateTo ? ' — ' : ''} ${dateTo ? `إلى ${new Date(dateTo).toLocaleDateString('ar-EG')}` : ''}`;
+        
+        const container = document.querySelector('.container');
+        if (container) container.insertBefore(printHeader, container.firstChild);
+        
+        const styleEl = document.createElement('style');
+        styleEl.id = 'printFilterStyle';
+        styleEl.textContent = '@media print { #printFilterHeader { display: block !important; } }';
+        document.head.appendChild(styleEl);
+        
+        // 🔴 استرجاع بعد الطباعة
+        const restore = () => {
+            changes.forEach(c => { c.el.style.display = c.oldValue; });
+            printHeader.remove();
+            styleEl.remove();
+            window.removeEventListener('afterprint', restore);
+            toast('✅ تمت الطباعة!', 'success');
+        };
+        
+        window.addEventListener('afterprint', restore);
+        
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                if (document.getElementById('printFilterHeader')) restore();
+            }, 5000);
+        }, 300);
+    }
+    window.showPrintRangeModal = showPrintRangeModal;
+    window.printWithDateFilter = printWithDateFilter;
+   
+   window.printSelectedTable = printSelectedTable;
    
    // 🔴 إتاحة دالة التصدير للنطاق العام
     window.exportSelectedTable = exportSelectedTable;
